@@ -250,18 +250,32 @@ export default class AdvancedSearchPlugin extends Plugin {
     }
 
     private async handleTypeIconClick(row: HTMLDivElement) {
-        const type = (row.querySelector('.type') as HTMLSelectElement).value;
+        const typeSelect = row.querySelector('.type') as HTMLSelectElement;
+        const type = typeSelect.value;
         const options = this.getOptionsByType(type);
         if (options.length === 0) return;
 
         const choice = await new GenericSuggester(this.app, options).openAndGetValue();
         if (choice) {
-            const input = row.querySelector('input[type="text"]') as HTMLInputElement;
+            const input = row.querySelector('.search-input') as HTMLInputElement;
+            if (!input) return;
+            
+            const currentValue = input.value.trim();
+            let newValue = choice;
+
             if (type === 'tag') {
-                input.value += ` ${choice.replace(/^#/, '')}`;
-            } else {
-                input.value += ` "${choice}"`;
+                newValue = choice.replace(/^#/, '');
+            } else if (type === 'file' || type === 'path') {
+                newValue = `"${choice}"`;
             }
+
+            if (currentValue) {
+                input.value = `${currentValue} ${newValue}`;
+            } else {
+                input.value = newValue;
+            }
+            
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
 
@@ -270,9 +284,15 @@ export default class AdvancedSearchPlugin extends Plugin {
             case 'file':
                 return this.app.vault.getMarkdownFiles().map(f => f.basename).sort();
             case 'tag':
-                return Object.keys((this.app.metadataCache as any).getTags()).sort();
+                // Using metadataCache.getTags() keys
+                const tags = (this.app.metadataCache as any).getTags();
+                return Object.keys(tags).map(t => t.replace(/^#/, '')).sort();
             case 'path':
-                return this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder).map(f => f.path);
+                // Get all folders in the vault
+                return this.app.vault.getAllLoadedFiles()
+                    .filter(f => f instanceof TFolder)
+                    .map(f => f.path)
+                    .sort();
             default:
                 return [];
         }
