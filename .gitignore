@@ -1,6 +1,7 @@
 # vscode
 .vscode 
-.history    
+.history 
+.github  
 
 # Intellij
 *.iml
