@@ -9,6 +9,8 @@ The plugin relies entirely on Obsidian's official search query syntax. For more 
 > [!NOTE]
 > **No configuration required!** Once installed and enabled, the UI will automatically appear at the top of your Search view. No hotkeys or settings are needed.
 
+![Advanced Search UI Interface](assets/image.png)
+
 ## Features
 
 - **Visual Query Builder**: Build complex search strings without memorizing any syntax.
