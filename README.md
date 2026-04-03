@@ -10,10 +10,11 @@ The plugin relies entirely on Obsidian's official search query syntax. For more 
 > **No configuration required!** Once installed and enabled, the UI will automatically appear at the top of your Search view. No hotkeys or settings are needed.
 
 ![Advanced Search UI Interface](assets/image.png)
-![Advanced Search UI Demo](assets/demo.gif)
 
-> [!TIP]
-> **Folded by Default!** To keep your search interface clean, the UI is collapsed by default under the Obsidian search tools. Simply click the "Advanced Search" header to expand and use it.
+> [!NOTE]
+> To keep the interface clean, the plugin is collapsed by default below the Obsidian native search tools (e.g., sort, collapse buttons). Just click the title/header to expand.
+
+![Advanced Search UI Demo](assets/demo.gif)
 
 ## Features
 
