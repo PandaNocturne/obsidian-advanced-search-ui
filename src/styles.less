@@ -1,15 +1,33 @@
+/*
+================================================================================
+  Advanced Search UI - 样式表 (styles.less)
+  此文件定义了高级搜索面板的全部 UI 控件、排列及响应式交互样式
+================================================================================
+*/
+
+/* 搜索参数外层容器，使用多行 Flex 布局，两端对齐 */
 .search-params {
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
 }
 
+/* 
+ * 整个检索视图容器 
+ * 限制最大宽高，避免当检索条件过多时将 Obsidian 其他原生面板撑开或顶出屏幕
+ */
 .search-form-container {
   width: 100%;
+  max-width: 100%;
+  max-height: 50vh;          /* 最大高度为主屏幕的一半，超出则出现滚动条 */
+  box-sizing: border-box;    /* 保证内边距不会撑爆宽度 */
+  overflow-y: auto;          /* 垂直方向溢出滚动 */
+  overflow-x: hidden;        /* 水平方向溢出隐藏 */
   padding: 10px;
   margin: auto;
-  background-color: var(--background-primary);
+  background-color: var(--background-primary); /* 使用 Obsidian 原生背景色变量 */
 
+  /* 容器内的普通按钮通用样式 */
   button {
     background-color: var(--interactive-normal);
     border-radius: 4px;
@@ -19,12 +37,14 @@
     box-shadow: none !important;
   }
 
+  /* 按钮悬停状态 */
   button:hover {
     background-color: var(--interactive-hover);
     color: var(--text-normal);
     border-color: var(--text-muted);
   }
 
+  /* 下拉选择框样式，采用自定义右侧箭头以适配原生感 */
   select {
     background-color: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
@@ -34,7 +54,7 @@
     box-shadow: none !important;
     outline: none !important;
     transition: all 0.15s ease;
-    padding: 0 20px 0 8px;
+    padding: 0 20px 0 8px; /* 为右侧的自定义箭头留出空间 */
     appearance: none;
     -webkit-appearance: none;
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%23777777%22%20d%3D%22M0%200l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E');
@@ -43,17 +63,20 @@
     background-size: 8px auto;
   }
 
+  /* 下拉框悬停高亮 */
   select:hover {
     background-color: var(--background-modifier-hover-emphasis);
     border-color: var(--text-muted);
   }
 
+  /* 通用标签和按钮内边距 */
   label,
   button {
     padding: 4px;
   }
 }
 
+/* 强制统一搜索行内各个表单控件的高度（28px），确保垂直对齐整齐 */
 .form-row select,
 .form-row .input-group,
 .form-row .input-group input,
@@ -65,68 +88,82 @@
   box-sizing: border-box;
 }
 
+/* 微调下拉菜单字体和行高 */
 .form-row select {
   font-size: 13px;
   line-height: normal;
   padding: 0 4px;
 }
 
-/* 隐藏第一行操作符和删除按钮 */
-.form-row:first-child .operator,
-.form-row:first-child .remove-row {
+/* 
+ * 隐藏第一行的逻辑操作符（AND / OR / NOT）
+ * 因为第一行作为起点不需要与前面的条件组合
+ */
+.form-row:first-child .operator {
   display: none;
 }
 
+/* 
+ * 单行检索条件容器
+ * 使用 Flex 布局横向排列当前行的检索类型、关键词和控制开关，并支持因尺寸不足而换行
+ */
 .form-row {
   display: flex;
-  gap: 0 5px;
-  align-items: center;
-  margin-bottom: 10px;
+  gap: 5px;             /* 元素之间留出 5px 间隙 */
+  align-items: center;  /* 垂直居中对齐 */
+  margin-bottom: 10px;  /* 行间距 */
+  flex-wrap: wrap;      /* 当侧边栏太窄时，允许控件折行而不是撑出水平滚动条 */
 }
 
+/* 搜索输入框弹性充满可用空间 */
 .form-row input[type="search"] {
   flex: 1;
   border-width: 1px;
 }
 
+/* 将输入框与图标按钮组合在一起的包裹盒子 */
 .input-group {
   display: flex;
-  flex: 1;
-  align-items: stretch;
+  flex: 1;              /* 占据可用空间的弹性伸缩 */
+  align-items: stretch; /* 垂直方向拉伸填满高度 */
 }
 
+/* 输入框紧凑靠左 */
 .input-group input {
   flex: 1;
   margin: 0 !important;
   padding: 0 8px;
-  border-radius: 4px 0 0 4px;
+  border-radius: 4px 0 0 4px; /* 右侧不需要圆角，用来紧贴附带的图标按钮 */
   box-shadow: none !important;
   border: 1px solid var(--background-modifier-border);
 }
 
+/* 智能填充/推荐图标按钮（在输入框右边） */
 .input-group .icon-button {
   width: 32px;
   box-shadow: none;
   color: var(--text-normal);
   margin: 0 !important;
-  border-left: none;
-  border-radius: 0 4px 4px 0;
+  border-left: none; /* 移除左边框，使其融入输入框 */
+  border-radius: 0 4px 4px 0; /* 仅右侧圆角 */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* 当未匹配到预设项（如纯文本搜索没有对应图标）时，隐藏该图标按钮 */
 .icon-button[data-select-option=""] {
   display: none;
 }
 
-/* 大小写和正则控件 */
+/* 大小写敏感和正则表达式的控制开关组合 */
 .controls {
   display: flex;
   gap: 4px;
 }
 
+/* 开关 Toggle 容器样式 */
 .controls .toggle {
   padding: 0;
   margin: 0;
@@ -134,10 +171,12 @@
   display: flex;
 }
 
+/* 隐藏原始的 Checkbox / Radio 控件，借助相邻兄弟选择器控制下方样式 */
 .controls .toggle input {
   display: none;
 }
 
+/* 大小写、正则的图标标签默认状态，做成类似按钮的质感 */
 .toggle-label {
   display: flex;
   align-items: center;
@@ -151,23 +190,25 @@
   box-shadow: none !important;
 }
 
+/* 背景和边框悬停强调 */
 .toggle-label:hover {
   background-color: var(--interactive-hover);
   color: var(--text-normal);
   border-color: var(--text-muted);
 }
 
+/* 选中（激活）状态：变成 Obsidian 的强调色（Accent） */
 .toggle input:checked + .toggle-label {
   background-color: var(--interactive-accent);
   border-color: var(--interactive-accent);
   color: var(--text-on-accent);
 }
 
+/* 各类底部操作按钮分组 */
 .button-group {
   display: flex;
   justify-content: space-between;
 }
-
 .button-group button {
   padding: 5px 10px;
 }
@@ -177,12 +218,14 @@
   display: flex;
   justify-content: space-between;
 }
-
 .date-group button {
   border-width: 1px;
   border-radius: 3px;
 }
 
+/* 
+ * 插件底部的主导航操作按钮栏：导入、复制、图谱、检索、清空 
+ */
 .navigation-buttons {
   width: 100%;
   display: flex;
@@ -191,6 +234,7 @@
   margin-top: 15px;
 }
 
+/* 主操作按钮通用样式，更宽的内边距和圆角 */
 .navigation-buttons button {
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
@@ -210,30 +254,32 @@
   border-color: var(--text-muted);
 }
 
+/* 平均分配按钮宽度 */
 .import-button,
 .copy-button,
 .reset-button {
   flex: 1;
 }
 
+/* 蓝色的导入按钮定制 */
 .import-button {
   border-color: #17a2b8 !important;
   color: #17a2b8 !important;
 }
-
-.copy-button {
-  border-color: #6f42c1 !important;
-  color: #6f42c1 !important;
-}
-
 .import-button:hover {
   background-color: rgba(23, 162, 184, 0.1) !important;
 }
 
+/* 紫色的复制按钮定制 */
+.copy-button {
+  border-color: #6f42c1 !important;
+  color: #6f42c1 !important;
+}
 .copy-button:hover {
   background-color: rgba(111, 66, 193, 0.1) !important;
 }
 
+/* 紫色的主动作按钮（图谱与检索），采用主题交互色 */
 .graph-button,
 .search-button {
   flex: 1;
@@ -241,7 +287,6 @@
   border: 1px solid var(--interactive-accent) !important;
   color: var(--interactive-accent) !important;
 }
-
 .graph-button:hover,
 .search-button:hover {
   background-color: var(--interactive-hover) !important;
@@ -249,41 +294,41 @@
   border-color: var(--interactive-accent-hover) !important;
 }
 
+/* 红色的重置/清空按钮定制 */
 .reset-button {
   border-color: var(--text-error) !important;
   color: var(--text-error) !important;
 }
-
 .reset-button:hover {
   background-color: var(--background-modifier-error) !important;
   color: var(--text-on-accent) !important;
   border-color: var(--background-modifier-error) !important;
 }
 
-/* 行操作按钮颜色区分 */
+/* ==== 行内操作按钮颜色区分 ==== */
+
+/* 绿色的添加条件按钮 (+) */
 .form-row .add-row {
   border-color: #28a745 !important;
   color: #28a745 !important;
 }
-
 .form-row .add-row:hover {
   background-color: rgba(40, 167, 69, 0.1) !important;
 }
 
+/* 红色的移除条件按钮 (-) */
 .form-row .remove-row {
   border-color: #dc3545 !important;
   color: #dc3545 !important;
 }
-
 .form-row .remove-row:hover {
   background-color: rgba(220, 53, 69, 0.1) !important;
 }
 
-
+/* ==== 检索结果容器（如有） ==== */
 .result {
   margin-top: 10px;
 }
-
 .result textarea {
   width: 100%;
   height: 300px;
