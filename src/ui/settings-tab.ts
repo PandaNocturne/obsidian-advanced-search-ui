@@ -15,7 +15,7 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Advanced Search UI' });
+
 
         new Setting(containerEl)
             .setName(t('SEARCH_ALSO_GRAPH'))

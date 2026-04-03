@@ -1,9 +1,9 @@
-import { Notice, Plugin, setIcon } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { SearchRow, SearchRowDelegate } from './components/SearchRow';
-import { QueryParser, ParsedRow } from './utils/QueryParser';
+import { QueryParser } from './utils/QueryParser';
 
 /**
  * 高级检索 UI 插件的主入口类
@@ -30,7 +30,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData() as Partial<AdvancedSearchSettings>));
     }
 
     async saveSettings() {
@@ -64,12 +64,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
 
             // 1. 创建主面板容器 (Search Form)
             const queryControlsContainer = searchParams.createDiv({ cls: 'search-form-container' });
-            const searchSection = queryControlsContainer.createDiv({ cls: 'search-section' });
+            queryControlsContainer.createDiv({ cls: 'search-section' });
             
             // 2. 底部操作区
             const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
             this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.importFromSearchBox(queryControlsContainer));
-            this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => this.copySearchQuery(queryControlsContainer));
+            this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => { void this.copySearchQuery(queryControlsContainer); });
             this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => this.openGraphView(queryControlsContainer, true));
             this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.executeSearch(queryControlsContainer));
             this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => this.clearSearchForm(queryControlsContainer));
@@ -320,7 +320,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
 
         // 如果是手动点击按钮（forceOpen = true），无论开没开都执行指令，以达到打开或聚焦的效果
         if (forceOpen) {
-            (this.app as any).commands.executeCommandById("graph:open");
+            (this.app as unknown as { commands: { executeCommandById(id: string): void } }).commands.executeCommandById("graph:open");
         }
 
         // 延迟等图谱挂载或同步（如果是刚打开，需要一点时间加载 DOM）
@@ -340,11 +340,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
     /**
      * 复制查询块
      */
-    private copySearchQuery(uiContainer: HTMLElement) {
+    private async copySearchQuery(uiContainer: HTMLElement) {
         const queryValue = this.convertToObsidianQuery(uiContainer, true);
         const formattedQuery = `\`\`\`query\n${queryValue}\n\`\`\``;
-        navigator.clipboard.writeText(formattedQuery).then(() => {
-            new Notice(t('COPIED_TO_CLIPBOARD'));
-        });
+        await navigator.clipboard.writeText(formattedQuery);
+        new Notice(t('COPIED_TO_CLIPBOARD'));
     }
 }

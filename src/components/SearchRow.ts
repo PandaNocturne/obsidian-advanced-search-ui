@@ -57,7 +57,7 @@ export class SearchRow {
         
         // 检索类型下拉
         this.typeSelect = this.container.createEl('select', { cls: 'type' });
-        SearchRow.OPTIONS.forEach(opt => this.typeSelect.createEl('option', { text: t(opt as any) || opt, value: opt }));
+        SearchRow.OPTIONS.forEach(opt => this.typeSelect.createEl('option', { text: t(opt as Parameters<typeof t>[0]) || opt, value: opt }));
         
         // 输入框组
         const inputGroup = this.container.createDiv({ cls: 'input-group' });
@@ -112,7 +112,7 @@ export class SearchRow {
         
         // Radio 逻辑：同一个组互斥，且允许取消选中
         const radios = [this.caseInput, this.regexInput];
-        const rowId = `search-mode-${Math.random().toString(36).substr(2, 9)}`;
+        const rowId = `search-mode-${Math.random().toString(36).substring(2, 11)}`;
         radios.forEach(radio => {
             radio.name = rowId;
             let lastState = false;
@@ -165,9 +165,10 @@ export class SearchRow {
         switch (type) {
             case 'file':
                 return this.app.vault.getMarkdownFiles().map(f => f.basename).sort();
-            case 'tag':
-                const tags = (this.app.metadataCache as any).getTags();
+            case 'tag': {
+                const tags = (this.app.metadataCache as unknown as { getTags(): Record<string, number> }).getTags();
                 return Object.keys(tags).map(t => t.replace(/^#/, '')).sort();
+            }
             case 'path':
                 return this.app.vault.getAllLoadedFiles()
                     .filter(f => f instanceof TFolder)
