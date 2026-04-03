@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-advanced-search-ui",
 	"version": "1.0.2",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "A powerful search UI for Obsidian that provides AND/OR/NOT operators and easy access to search filters.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
