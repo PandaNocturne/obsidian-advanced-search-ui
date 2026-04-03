@@ -9,7 +9,8 @@
 .search-params {
   display: flex;
   flex-flow: row wrap;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 4px;
 }
 
 /* 
@@ -17,15 +18,20 @@
  * 限制最大宽高，避免当检索条件过多时将 Obsidian 其他原生面板撑开或顶出屏幕
  */
 .search-form-container {
+  flex-basis: 100%;           /* 强制占满一整行以实现折行显示 */
+  order: -1;                  /* 强制排在原生检索选项（如大小写、正则）之前 */
+  
   width: 100%;
   max-width: 100%;
-  max-height: 50vh;          /* 最大高度为主屏幕的一半，超出则出现滚动条 */
+  max-height: 40vh;          /* 最大高度为主屏幕的一半，超出则出现滚动条 */
   box-sizing: border-box;    /* 保证内边距不会撑爆宽度 */
   overflow-y: auto;          /* 垂直方向溢出滚动 */
   overflow-x: hidden;        /* 水平方向溢出隐藏 */
-  padding: 10px;
-  margin: auto;
-  background-color: var(--background-primary); /* 使用 Obsidian 原生背景色变量 */
+  padding: 10px 5px;
+  margin: 0px 0 5px 0;
+  background-color: var(--background-primary); /* 使用 Obsidian 原生主背景色记录 */
+  border-radius: 6px;
+  border: none; /* 移除边框，使其与 search-params 的背景融为一体 */
 
   /* 容器内的普通按钮通用样式 */
   button {
@@ -333,4 +339,19 @@
   width: 100%;
   height: 300px;
   resize: vertical;
+}
+
+// 修改搜索界面的排序
+.workspace-leaf-content[data-type="search"]{
+  display: flex;
+  flex-flow: column nowrap;
+  .search-row{
+    order: -3;
+  }
+  .search-params{
+    order: -2;
+  }
+  .search-info-container{
+    order: -1;
+  }
 }

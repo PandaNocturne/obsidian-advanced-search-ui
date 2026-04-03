@@ -11,5 +11,9 @@ export default {
     "ADD_CRITERIA": "添加条件",
     "NO_QUERY_TO_IMPORT": "没有可导入的查询",
     "COPIED_TO_CLIPBOARD": "已复制到剪贴板",
-    "FAILED_TO_COPY": "复制失败"
+    "FAILED_TO_COPY": "复制失败",
+    
+    // Settings
+    "SEARCH_ALSO_GRAPH": "搜索连带图谱搜索",
+    "SEARCH_ALSO_GRAPH_DESC": "开启后，在执行检索时会自动同步过滤图谱视图"
 };

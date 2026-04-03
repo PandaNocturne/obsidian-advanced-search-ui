@@ -11,5 +11,9 @@ export default {
     "ADD_CRITERIA": "Add criteria",
     "NO_QUERY_TO_IMPORT": "No query to import",
     "COPIED_TO_CLIPBOARD": "Copied to clipboard",
-    "FAILED_TO_COPY": "Failed to copy"
+    "FAILED_TO_COPY": "Failed to copy",
+    
+    // Settings
+    "SEARCH_ALSO_GRAPH": "Update graph on search",
+    "SEARCH_ALSO_GRAPH_DESC": "When enabled, graph view filters will be automatically updated when performing a search."
 };
