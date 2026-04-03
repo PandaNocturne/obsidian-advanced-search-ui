@@ -50,12 +50,12 @@
 1. 在 Obsidian 社区插件市场安装 **BRAT** 插件。
 2. 前往 **设置** -> **BRAT**。
 3. 点击 **Add Beta plugin** (添加测试插件)。
-4. 输入本仓库地址：`https://github.com/panda-no-night/obsidian-advanced-search-ui`。
+4. 输入本仓库地址：`https://github.com/PandaNocturne/obsidian-advanced-search-ui`。
 5. 点击 **Add Plugin**。
 6. 在 **社区插件** 中启用该插件。
 
 ### 手动安装
-1. 在 [Releases](https://github.com/panda-no-night/obsidian-advanced-search-ui/releases) 页面下载最新的 `main.js`, `manifest.json`, `styles.css`。
+1. 在 [Releases](https://github.com/PandaNocturne/obsidian-advanced-search-ui/releases) 页面下载最新的 `main.js`, `manifest.json`, `styles.css`。
 2. 在你的库的 `.obsidian/plugins/` 目录下创建一个名为 `obsidian-advanced-search-ui` 的文件夹。
 3. 将下载的文件放入该文件夹。
 4. 重启 Obsidian 并在设置中启用。

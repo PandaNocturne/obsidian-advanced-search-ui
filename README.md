@@ -45,12 +45,12 @@ The plugin relies entirely on Obsidian's official search query syntax. For more 
 1. Install the **Obsidian BRAT** plugin from the community plugin store.
 2. Open BRAT settings: **Settings** -> **BRAT**.
 3. Click **Add Beta plugin**.
-4. Paste the repository URL: `https://github.com/panda-no-night/obsidian-advanced-search-ui`.
+4. Paste the repository URL: `https://github.com/PandaNocturne/obsidian-advanced-search-ui`.
 5. Click **Add Plugin**.
 6. Enable the plugin in **Community plugins**.
 
 ### Manual Installation
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/panda-no-night/obsidian-advanced-search-ui/releases).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/PandaNocturne/obsidian-advanced-search-ui/releases).
 2. Create a folder named `obsidian-advanced-search-ui` in your vault's `.obsidian/plugins/` directory.
 3. Move the downloaded files into this folder.
 4. Restart Obsidian and enable the plugin in settings.
