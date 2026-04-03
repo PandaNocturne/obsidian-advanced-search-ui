@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-advanced-search-ui",
+	"name": "advanced-search-ui",
 	"version": "1.1.0",
-	"description": "A powerful search UI for Obsidian that provides AND/OR/NOT operators and easy access to search filters.",
+	"description": "A powerful search UI that provides AND/OR/NOT operators and easy access to search filters.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

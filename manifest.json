@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-advanced-search-ui",
+	"id": "advanced-search-ui",
 	"name": "Advanced Search UI",
 	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "A powerful search UI for Obsidian that provides AND/OR/NOT operators and easy access to search filters.",
+	"description": "A powerful search UI that provides AND/OR/NOT operators and easy access to search filters.",
 	"author": "PandaNocturne",
 	"authorUrl": "https://github.com/PandaNocturne",
 	"isDesktopOnly": true
