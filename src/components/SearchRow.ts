@@ -111,7 +111,7 @@ export class SearchRow {
         this.iconButton.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.handleIconClick();
+            void this.handleIconClick();
         };
         
         // Radio 逻辑：同一个组互斥，且允许取消选中
@@ -164,11 +164,16 @@ export class SearchRow {
 
             if (type === 'tag') {
                 newValue = choice.replace(/^#/, '');
+                // 标签允许多个组合，追加到现有内容后
+                this.input.value = currentValue ? `${currentValue} ${newValue}` : newValue;
             } else if (type === 'file' || type === 'path') {
                 newValue = `"${choice}"`;
+                // 文件和文件夹是单一目标，直接替换
+                this.input.value = newValue;
+            } else {
+                this.input.value = currentValue ? `${currentValue} ${newValue}` : newValue;
             }
 
-            this.input.value = currentValue ? `${currentValue} ${newValue}` : newValue;
             this.input.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }

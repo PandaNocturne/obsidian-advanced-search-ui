@@ -49,8 +49,8 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
                 
         new Setting(containerEl)
-            .setName((t as any)('AUTO_SCALE_UI') || 'Auto scale UI')
-            .setDesc((t as any)('AUTO_SCALE_UI_DESC') || 'Auto scale UI elements when sidebar is narrow.')
+            .setName(t('AUTO_SCALE_UI') || 'Auto scale UI')
+            .setDesc(t('AUTO_SCALE_UI_DESC') || 'Auto scale UI elements when sidebar is narrow.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoScaleUI)
                 .onChange(async (value) => {

@@ -1,4 +1,4 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
@@ -160,7 +160,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
                 // 1. 创建主面板容器 (Search Form)
                 const queryControlsContainer = searchParams.createDiv({ cls: 'search-form-container' });
                 if (this.settings.defaultCollapsed) {
-                    queryControlsContainer.style.display = 'none';
+                    queryControlsContainer.classList.add('is-hidden');
                 }
 
                 queryControlsContainer.createDiv({ cls: 'search-section' });
@@ -213,19 +213,18 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
                 }
 
                 // 使用类似滤镜的图标
-                toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-list-filter"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>`;
+                setIcon(toggleBtn, 'list-filter');
 
                 toggleBtn.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     const queryControlsContainer = searchContainer.querySelector('.search-form-container') as HTMLElement;
                     if (queryControlsContainer) {
-                        if (queryControlsContainer.style.display === 'none') {
-                            queryControlsContainer.style.display = 'block';
-                            toggleBtn.classList.add('is-active');
-                        } else {
-                            queryControlsContainer.style.display = 'none';
+                        const isHidden = queryControlsContainer.classList.toggle('is-hidden');
+                        if (isHidden) {
                             toggleBtn.classList.remove('is-active');
+                        } else {
+                            toggleBtn.classList.add('is-active');
                         }
                     }
                 };
