@@ -101,20 +101,20 @@ export class QueryParser {
         let isRegex = false;
         let type = 'all';
 
-        // 识别 match-case:
-        if (content.startsWith('match-case:')) {
-            caseSensitive = true;
-            content = content.slice(11).trim();
-            // 剥掉可能存在的第二层括号，有些情况下生成的语句是 match-case:(...)
-            content = content.replace(/^\(|\)$/g, '').trim();
-        }
-
         // 识别内置类型前缀 (file:, tag:, path: 等)
         const typeMatch = content.match(/^(file|tag|path|content|line|block|section|task|task-todo|tasks-done):/);
         if (typeMatch && typeMatch[1]) {
             type = typeMatch[1];
             content = content.slice(typeMatch[0].length).trim();
-            // 再剥掉一层括号，因为 convertToObsidianQuery 会生成 (type:(value))
+            // 再剥掉一层括号，因为 convertToObsidianQuery 会生成 (type:(value)) 或针对 match-case 导致内部括号
+            content = content.replace(/^\(|\)$/g, '').trim();
+        }
+
+        // 识别 match-case:
+        if (content.startsWith('match-case:')) {
+            caseSensitive = true;
+            content = content.slice(11).trim();
+            // 剥掉可能存在的括号
             content = content.replace(/^\(|\)$/g, '').trim();
         }
 

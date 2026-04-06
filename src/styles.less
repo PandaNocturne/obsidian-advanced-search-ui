@@ -11,6 +11,11 @@
   flex-flow: row wrap;
   justify-content: space-between;
   gap: 4px;
+
+  &>.setting-item {
+    border: none;
+    padding: 8px 10px !important;
+  }
 }
 
 /* 
@@ -18,20 +23,24 @@
  * 限制最大宽高，避免当检索条件过多时将 Obsidian 其他原生面板撑开或顶出屏幕
  */
 .search-form-container {
-  flex-basis: 100%;           /* 强制占满一整行以实现折行显示 */
-  order: -1;                  /* 强制排在原生检索选项（如大小写、正则）之前 */
-  
-  width: 100%;
+  width: auto;
   max-width: 100%;
-  max-height: 40vh;          /* 最大高度为主屏幕的一半，超出则出现滚动条 */
-  box-sizing: border-box;    /* 保证内边距不会撑爆宽度 */
-  overflow-y: auto;          /* 垂直方向溢出滚动 */
-  overflow-x: hidden;        /* 水平方向溢出隐藏 */
+  height: fit-content;
+  max-height: 40vh;
+  /* 最大高度为主屏幕的一半，超出则出现滚动条 */
+  box-sizing: border-box;
+  /* 保证内边距不会撑爆宽度 */
+  overflow-y: auto;
+  /* 垂直方向溢出滚动 */
+  overflow-x: hidden;
+  /* 水平方向溢出隐藏 */
   padding: 10px;
-  margin: 0px 0 5px 0;
-  background-color: var(--background-primary); /* 使用 Obsidian 原生主背景色记录 */
+  margin: 0px 5px 5px 5px;
+  background-color: var(--background-primary);
+  /* 使用 Obsidian 原生主背景色记录 */
   border-radius: 6px;
-  border: none; /* 移除边框，使其与 search-params 的背景融为一体 */
+  border: none;
+  /* 移除边框，使其与 search-params 的背景融为一体 */
 
   /* 容器内的普通按钮通用样式 */
   button {
@@ -52,7 +61,7 @@
 
   /* 下拉选择框样式，采用自定义右侧箭头以适配原生感 */
   select {
-    background-color: var(--background-secondary);
+    // background-color: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
     color: var(--text-normal);
@@ -60,7 +69,8 @@
     box-shadow: none !important;
     outline: none !important;
     transition: all 0.15s ease;
-    padding: 0 20px 0 8px; /* 为右侧的自定义箭头留出空间 */
+    padding: 0 20px 0 8px;
+    /* 为右侧的自定义箭头留出空间 */
     appearance: none;
     -webkit-appearance: none;
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%23777777%22%20d%3D%22M0%200l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E');
@@ -115,10 +125,14 @@
  */
 .form-row {
   display: flex;
-  gap: 5px;             /* 元素之间留出 5px 间隙 */
-  align-items: center;  /* 垂直居中对齐 */
-  margin-bottom: 10px;  /* 行间距 */
-  flex-wrap: wrap;      /* 当侧边栏太窄时，允许控件折行而不是撑出水平滚动条 */
+  gap: 5px;
+  /* 元素之间留出 5px 间隙 */
+  align-items: center;
+  /* 垂直居中对齐 */
+  margin-bottom: 10px;
+  /* 行间距 */
+  flex-wrap: wrap;
+  /* 当侧边栏太窄时，允许控件折行而不是撑出水平滚动条 */
 }
 
 /* 搜索输入框弹性充满可用空间 */
@@ -130,8 +144,10 @@
 /* 将输入框与图标按钮组合在一起的包裹盒子 */
 .input-group {
   display: flex;
-  flex: 1;              /* 占据可用空间的弹性伸缩 */
-  align-items: stretch; /* 垂直方向拉伸填满高度 */
+  flex: 1;
+  /* 占据可用空间的弹性伸缩 */
+  align-items: stretch;
+  /* 垂直方向拉伸填满高度 */
 }
 
 /* 输入框紧凑靠左 */
@@ -139,7 +155,8 @@
   flex: 1;
   margin: 0 !important;
   padding: 0 8px;
-  border-radius: 4px 0 0 4px; /* 右侧不需要圆角，用来紧贴附带的图标按钮 */
+  border-radius: 4px 0 0 4px;
+  /* 右侧不需要圆角，用来紧贴附带的图标按钮 */
   box-shadow: none !important;
   border: 1px solid var(--background-modifier-border);
 }
@@ -150,8 +167,10 @@
   box-shadow: none;
   color: var(--text-normal);
   margin: 0 !important;
-  border-left: none; /* 移除左边框，使其融入输入框 */
-  border-radius: 0 4px 4px 0; /* 仅右侧圆角 */
+  border-left: none;
+  /* 移除左边框，使其融入输入框 */
+  border-radius: 0 4px 4px 0;
+  /* 仅右侧圆角 */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -204,7 +223,7 @@
 }
 
 /* 选中（激活）状态：变成 Obsidian 的强调色（Accent） */
-.toggle input:checked + .toggle-label {
+.toggle input:checked+.toggle-label {
   background-color: var(--interactive-accent);
   border-color: var(--interactive-accent);
   color: var(--text-on-accent);
@@ -215,6 +234,7 @@
   display: flex;
   justify-content: space-between;
 }
+
 .button-group button {
   padding: 5px 10px;
 }
@@ -224,6 +244,7 @@
   display: flex;
   justify-content: space-between;
 }
+
 .date-group button {
   border-width: 1px;
   border-radius: 3px;
@@ -272,6 +293,7 @@
   border-color: #17a2b8 !important;
   color: #17a2b8 !important;
 }
+
 .import-button:hover {
   background-color: rgba(23, 162, 184, 0.1) !important;
 }
@@ -281,6 +303,7 @@
   border-color: #6f42c1 !important;
   color: #6f42c1 !important;
 }
+
 .copy-button:hover {
   background-color: rgba(111, 66, 193, 0.1) !important;
 }
@@ -293,6 +316,7 @@
   border: 1px solid var(--interactive-accent) !important;
   color: var(--interactive-accent) !important;
 }
+
 .graph-button:hover,
 .search-button:hover {
   background-color: var(--interactive-hover) !important;
@@ -305,6 +329,7 @@
   border-color: var(--text-error) !important;
   color: var(--text-error) !important;
 }
+
 .reset-button:hover {
   background-color: var(--background-modifier-error) !important;
   color: var(--text-on-accent) !important;
@@ -318,6 +343,7 @@
   border-color: #28a745 !important;
   color: #28a745 !important;
 }
+
 .form-row .add-row:hover {
   background-color: rgba(40, 167, 69, 0.1) !important;
 }
@@ -327,6 +353,7 @@
   border-color: #dc3545 !important;
   color: #dc3545 !important;
 }
+
 .form-row .remove-row:hover {
   background-color: rgba(220, 53, 69, 0.1) !important;
 }
@@ -335,6 +362,7 @@
 .result {
   margin-top: 10px;
 }
+
 .result textarea {
   width: 100%;
   height: 300px;
@@ -342,16 +370,42 @@
 }
 
 // 修改搜索界面的排序
-.workspace-leaf-content[data-type="search"]{
+.workspace-leaf-content[data-type="search"] {
   display: flex;
   flex-flow: column nowrap;
-  .search-row{
+
+  .search-row {
     order: -3;
   }
-  .search-params{
+
+  .search-form-container {
     order: -2;
   }
-  .search-info-container{
+
+  .search-params {
     order: -1;
+  }
+
+  .search-info-container {
+    order: 0;
+  }
+}
+
+// 高级搜索 UI 展开/收起按钮的样式
+.advanced-search-ui-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+
+  .advanced-search-toggle {
+    transition: all 0.15s ease;
+    border-radius: var(--radius-s);
+
+
+    &.is-active {
+      color: var(--icon-color-active);
+      background-color: var(--background-modifier-active-hover);
+    }
   }
 }

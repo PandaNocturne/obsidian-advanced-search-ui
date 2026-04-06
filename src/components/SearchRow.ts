@@ -63,7 +63,7 @@ export class SearchRow {
         const inputGroup = this.container.createDiv({ cls: 'input-group' });
         this.input = inputGroup.createEl('input', { type: 'search', cls: 'search-input' });
         this.input.placeholder = t('SEARCH_BUTTON'); // 设一个占位符或随便什么
-        this.iconButton = inputGroup.createEl('button', { cls: 'icon-button' });
+        this.iconButton = inputGroup.createEl('button', { cls: 'icon-button', attr: { type: 'button' } });
         
         // 控制开关
         const controls = this.container.createDiv({ cls: 'controls' });
@@ -79,8 +79,8 @@ export class SearchRow {
         regexLabel.createEl('span', { cls: 'toggle-label icon-regex' });
         
         // 添加删除按钮
-        this.container.createEl('button', { cls: 'remove-row', attr: { 'aria-label': t('REMOVE_CRITERIA') } });
-        this.container.createEl('button', { cls: 'add-row', attr: { 'aria-label': t('ADD_CRITERIA') } });
+        this.container.createEl('button', { cls: 'remove-row', attr: { 'aria-label': t('REMOVE_CRITERIA'), type: 'button' } });
+        this.container.createEl('button', { cls: 'add-row', attr: { 'aria-label': t('ADD_CRITERIA'), type: 'button' } });
     }
 
     /**
@@ -108,7 +108,11 @@ export class SearchRow {
         SearchRow.setIconForEl(this.container.querySelector('.add-row') as HTMLElement, 'plus');
 
         // 按钮交互
-        this.iconButton.onclick = () => this.handleIconClick();
+        this.iconButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleIconClick();
+        };
         
         // Radio 逻辑：同一个组互斥，且允许取消选中
         const radios = [this.caseInput, this.regexInput];
@@ -133,8 +137,16 @@ export class SearchRow {
         });
 
         // 加减号按钮绑定
-        this.container.querySelector('.remove-row')?.addEventListener('click', () => this.delegate.onRemoveRow(this));
-        this.container.querySelector('.add-row')?.addEventListener('click', () => this.delegate.onAddRow(this));
+        this.container.querySelector('.remove-row')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.delegate.onRemoveRow(this);
+        });
+        this.container.querySelector('.add-row')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.delegate.onAddRow(this);
+        });
     }
 
     /**
