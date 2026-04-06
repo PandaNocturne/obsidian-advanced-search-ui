@@ -401,11 +401,59 @@
   .advanced-search-toggle {
     transition: all 0.15s ease;
     border-radius: var(--radius-s);
-
+    /* 跟随 Obsidian 按钮圆角 */
+    padding: 0 4px;
+    /* 防止图标被压扁 */
 
     &.is-active {
       color: var(--icon-color-active);
       background-color: var(--background-modifier-active-hover);
     }
+  }
+}
+
+/* 窄屏自动缩放支持 */
+.advanced-search-auto-scale {
+  .search-form-container {
+    container-type: inline-size;
+    container-name: searchform;
+  }
+}
+
+@container searchform (max-width: 600px) {
+
+  .search-form-container .search-section,
+  .search-form-container .navigation-buttons {
+    zoom: 0.8;
+  }
+
+  .search-form-container .search-row-container {
+    padding: 6px 2px;
+    /* 更为紧凑的间距 */
+  }
+}
+
+/* 更细粒度的自动缩放 */
+@container searchform (max-width: 500px) {
+  .search-form-container .search-section,
+  .search-form-container .navigation-buttons {
+    zoom: 0.75;
+  }
+
+  .search-form-container .search-row-container {
+    padding: 5px 2px;
+    /* 更紧凑的间距 */
+  }
+}
+
+@container searchform (max-width: 400px) {
+  .search-form-container .search-section,
+  .search-form-container .navigation-buttons {
+    zoom: 0.7;
+  }
+
+  .search-form-container .search-row-container {
+    padding: 4px 2px;
+    /* 极致紧凑 */
   }
 }

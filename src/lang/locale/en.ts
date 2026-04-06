@@ -16,9 +16,11 @@ export default {
     // Settings
     "SEARCH_ALSO_GRAPH": "Update graph on search",
     "SEARCH_ALSO_GRAPH_DESC": "When enabled, graph view filters will be automatically updated when performing a search.",
-    "DEFAULT_COLLAPSED": "Default collapsed",
-    "DEFAULT_COLLAPSED_DESC": "When enabled, the advanced search UI will be collapsed by default.",
+    "DEFAULT_COLLAPSED": "Default Collapsed",
+    "DEFAULT_COLLAPSED_DESC": "If enabled, the advanced search UI panel will be collapsed by default.",
     "ADAPT_FLOAT_SEARCH": "Adapt to Float Search",
-    "ADAPT_FLOAT_SEARCH_DESC": "When enabled, the advanced search UI will be injected into Float Search plugin's modals. Requires plugin restart to take effect.",
-    "TOGGLE_ADVANCED_SEARCH": "Toggle advanced search"
+    "ADAPT_FLOAT_SEARCH_DESC": "If enabled, the UI will be injected into Float Search modal and other search views. Otherwise, it only targets the native sidebar search.",
+    "AUTO_SCALE_UI": "Auto Scale UI",
+    "AUTO_SCALE_UI_DESC": "If enabled, the advanced search elements will scale down automatically when the sidebar is narrow (Requires reload).",
+    "TOGGLE_ADVANCED_SEARCH": "Toggle advanced search UI"
 };

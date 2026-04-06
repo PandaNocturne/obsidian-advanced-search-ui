@@ -47,5 +47,21 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.updateInterval();
                 }));
+                
+        new Setting(containerEl)
+            .setName((t as any)('AUTO_SCALE_UI') || 'Auto scale UI')
+            .setDesc((t as any)('AUTO_SCALE_UI_DESC') || 'Auto scale UI elements when sidebar is narrow.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoScaleUI)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoScaleUI = value;
+                    await this.plugin.saveSettings();
+                    // 立即应用或移除 class
+                    if (value) {
+                        document.body.classList.add('advanced-search-auto-scale');
+                    } else {
+                        document.body.classList.remove('advanced-search-auto-scale');
+                    }
+                }));
     }
 }

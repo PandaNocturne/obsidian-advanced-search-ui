@@ -23,6 +23,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
      */
     async onload() {
         await this.loadSettings();
+        
+        if (this.settings.autoScaleUI) {
+            document.body.classList.add('advanced-search-auto-scale');
+        }
 
         // 界面就绪后开始注入，并注册布局变动事件防止 UI 丢失
         this.app.workspace.onLayoutReady(() => this.injectSearchUI());
@@ -107,6 +111,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
      * 卸载清理
      */
     onunload() {
+        document.body.classList.remove('advanced-search-auto-scale');
         if (this.observer) {
             this.observer.disconnect();
             this.observer = null;
