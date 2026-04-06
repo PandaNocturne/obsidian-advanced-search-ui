@@ -22,5 +22,5 @@ export default {
     "ADAPT_FLOAT_SEARCH_DESC": "开启后，将适配 Float Search 插件的模态框及其它检索工作区，否则将只向侧边栏的原生搜索窗注入高级检索面板。",
     "AUTO_SCALE_UI": "自动缩放UI",
     "AUTO_SCALE_UI_DESC": "开启后，当侧边栏宽度变窄时，高级检索面板的元素将会自动缩小以适应屏幕（需要重新加载插件生效）",
-    "TOGGLE_ADVANCED_SEARCH": "切换高级检索面板"
+    "TOGGLE_ADVANCED_SEARCH": "切换高级检索面板",
 };

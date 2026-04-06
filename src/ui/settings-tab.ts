@@ -15,8 +15,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-
-
         new Setting(containerEl)
             .setName(t('SEARCH_ALSO_GRAPH') || 'SEARCH_ALSO_GRAPH')
             .setDesc(t('SEARCH_ALSO_GRAPH_DESC') || 'SEARCH_ALSO_GRAPH_DESC')
