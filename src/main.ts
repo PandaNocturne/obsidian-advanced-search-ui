@@ -387,12 +387,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
                 searchInput.dispatchEvent(new Event('input', { bubbles: true }));
 
                 // 将焦点重定向回原生输入框，防止因焦点遗失（停留在按钮上）导致 Float Search 等基于焦点监控的弹窗将自身判定为失焦进而自动清理关闭
-                // searchInput.focus();
+                searchInput.focus();
 
                 // [临时注释掉 Escape 派发以免触发 Float Search 的异常关闭]
-                // if (!containerEl.closest('.modal-container') && !containerEl.closest('.modal')) {
-                //     searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                // }
+                if (!containerEl.closest('.modal-container') && !containerEl.closest('.modal')) {
+                    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                }
             }
         });
     }
@@ -450,9 +450,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchRowDel
 
         // 兼容 float search 或其它未知容器
         if (!searchInput) {
-            const container = Array.from(document.querySelectorAll('.search-params')).find(el => el.contains(uiContainer))?.parentElement;
+            const container = uiContainer.closest('.workspace-leaf-content, .view-content, .search-view, .float-search-container, .modal-container') as HTMLElement;
             if (container) {
-                searchInput = container.querySelector('.search-input-container > input') as HTMLInputElement;
+                searchInput = container.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
+            }
+            
+            // 兜底再次向上查找如果 DOM 结构变形
+            if (!searchInput && uiContainer.parentElement) {
+                searchInput = uiContainer.parentElement.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
             }
         }
 
