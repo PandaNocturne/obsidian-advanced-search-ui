@@ -61,7 +61,7 @@
 
   /* 下拉选择框样式，采用自定义右侧箭头以适配原生感 */
   select {
-    // background-color: var(--background-secondary);
+    background-color: var(--background-modifier-form-field);
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
     color: var(--text-normal);
@@ -73,15 +73,20 @@
     /* 为右侧的自定义箭头留出空间 */
     appearance: none;
     -webkit-appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%23777777%22%20d%3D%22M0%200l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E');
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%23999999%22%20d%3D%22M0%200l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E');
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 8px auto;
+
+    option {
+      background-color: var(--background-primary);
+      color: var(--text-normal);
+    }
   }
 
   /* 下拉框悬停高亮 */
   select:hover {
-    background-color: var(--background-modifier-hover-emphasis);
+    background-color: var(--background-modifier-hover);
     border-color: var(--text-muted);
   }
 
@@ -159,6 +164,8 @@
   /* 右侧不需要圆角，用来紧贴附带的图标按钮 */
   box-shadow: none !important;
   border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
 }
 
 /* 智能填充/推荐图标按钮（在输入框右边） */
@@ -290,22 +297,22 @@
 
 /* 蓝色的导入按钮定制 */
 .import-button {
-  border-color: #17a2b8 !important;
-  color: #17a2b8 !important;
+  border-color: var(--text-accent) !important;
+  color: var(--text-accent) !important;
 }
 
 .import-button:hover {
-  background-color: rgba(23, 162, 184, 0.1) !important;
+  background-color: var(--background-modifier-hover) !important;
 }
 
-/* 紫色的复制按钮定制 */
+/* 紫色的复制按钮定制 - 改为使用主题色以适配深色模式 */
 .copy-button {
-  border-color: #6f42c1 !important;
-  color: #6f42c1 !important;
+  border-color: var(--text-accent) !important;
+  color: var(--text-accent) !important;
 }
 
 .copy-button:hover {
-  background-color: rgba(111, 66, 193, 0.1) !important;
+  background-color: var(--background-modifier-hover) !important;
 }
 
 /* 紫色的主动作按钮（图谱与检索），采用主题交互色 */
@@ -340,22 +347,25 @@
 
 /* 绿色的添加条件按钮 (+) */
 .form-row .add-row {
-  border-color: #28a745 !important;
-  color: #28a745 !important;
+  border-color: var(--text-success) !important;
+  color: var(--text-success) !important;
 }
 
 .form-row .add-row:hover {
-  background-color: rgba(40, 167, 69, 0.1) !important;
+  background-color: var(--background-modifier-success) !important;
+  color: var(--text-on-accent) !important;
 }
 
 /* 红色的移除条件按钮 (-) */
 .form-row .remove-row {
-  border-color: #dc3545 !important;
-  color: #dc3545 !important;
+  border-color: var(--text-error) !important;
+  color: var(--text-error) !important;
 }
 
+/* 移除悬停状态改用 OB 原生 error 样式 */
 .form-row .remove-row:hover {
-  background-color: rgba(220, 53, 69, 0.1) !important;
+  background-color: var(--background-modifier-error) !important;
+  color: var(--text-on-accent) !important;
 }
 
 /* ==== 检索结果容器（如有） ==== */
