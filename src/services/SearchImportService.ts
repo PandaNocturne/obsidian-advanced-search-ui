@@ -135,7 +135,7 @@ export class SearchImportService {
             let groups = this.getGroupsForContainer(uiContainer);
             let targetGroup = groups[groups.length - 1] || null;
 
-            if (!targetGroup) {
+            if (!targetGroup && !isMultiGroupImport) {
                 targetGroup = new SearchGroup(this.app, section, this.delegate);
                 this.updateGroupDragState(targetGroup);
                 targetGroup.setData({
@@ -207,8 +207,14 @@ export class SearchImportService {
                 }
             });
 
-            groups = groups.filter(group => group.hasMeaningfulRows() || groups.length === 1);
-            this.setGroupsForContainer(uiContainer, groups);
+            const meaningfulGroups = groups.filter(group => group.hasMeaningfulRows());
+            if (!meaningfulGroups.length) {
+                this.clearSearchForm(uiContainer, 1, 2);
+                return;
+            }
+
+            groups.filter(group => !meaningfulGroups.includes(group)).forEach(group => group.destroy());
+            this.setGroupsForContainer(uiContainer, meaningfulGroups);
         }
 
         if (settings.autoSearchAfterImport) {
