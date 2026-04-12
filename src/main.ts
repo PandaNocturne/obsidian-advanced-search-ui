@@ -786,21 +786,25 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private openGraphView(uiContainer: HTMLElement, forceOpen = false) {
         const queryValue = this.convertToObsidianQuery(uiContainer);
-        const graphLeaves = this.app.workspace.getLeavesOfType('graph');
+        let graphLeaves = this.app.workspace.getLeavesOfType('graph');
         if (graphLeaves.length === 0 && !forceOpen) return;
 
         if (forceOpen) {
-            if (graphLeaves.length === 0) {
-                const rightLeaf = this.app.workspace.getRightLeaf(false);
-                if (rightLeaf) {
-                    void rightLeaf.setViewState({ type: 'graph', active: true });
+            let targetLeaf = graphLeaves[0];
+
+            if (!targetLeaf) {
+                const workspaceLeaf = this.app.workspace.getLeaf(false);
+                if (workspaceLeaf) {
+                    void workspaceLeaf.setViewState({ type: 'graph', active: true });
+                    targetLeaf = workspaceLeaf;
                 }
             }
 
-            const targetLeaf = this.app.workspace.getLeavesOfType('graph')[0];
             if (targetLeaf) {
                 this.app.workspace.revealLeaf(targetLeaf);
             }
+
+            graphLeaves = this.app.workspace.getLeavesOfType('graph');
         }
 
         setTimeout(() => {
@@ -809,6 +813,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 if (graphSearch) {
                     graphSearch.value = queryValue;
                     graphSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                    graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                    graphSearch.blur();
                 }
             });
         }, 100);
