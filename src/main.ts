@@ -12,6 +12,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private containerGroups: Map<HTMLElement, SearchGroup[]> = new Map();
     private injectionInterval: number | null = null;
     private observer: MutationObserver | null = null;
+    private draggingGroup: SearchGroup | null = null;
 
     public refreshSearchUI() {
         document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
@@ -213,6 +214,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         container.addEventListener('keypress', e => e.stopPropagation());
     }
 
+    private updateGroupDragState(group: SearchGroup) {
+        const canDrag = this.settings.enableExperimentalGrouping && this.settings.enableExperimentalDragAndDrop;
+        group.setDragEnabled(canDrag);
+    }
+
     private findGroupByRow(currentRow: SearchRow): SearchGroup | null {
         const groupEl = currentRow.container.closest('.asui-search-group') as HTMLElement | null;
         if (!groupEl) return null;
@@ -271,6 +277,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const newGroup = new SearchGroup(this.app, section, this);
         currentGroup.container.parentNode?.insertBefore(newGroup.container, currentGroup.container.nextSibling);
         groups.splice(index + 1, 0, newGroup);
+        this.updateGroupDragState(newGroup);
 
         newGroup.setData({
             operator: currentGroup.operatorSelect.value as 'AND' | 'OR' | 'NOT',
@@ -297,6 +304,33 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         if (!this.settings.autoSearchOnOperatorChange) return;
         const container = this.findContainerByGroup(currentGroup);
         if (container) this.executeSearch(container);
+    }
+
+    onGroupDragStart(currentGroup: SearchGroup) {
+        if (!this.settings.enableExperimentalGrouping || !this.settings.enableExperimentalDragAndDrop) return;
+        this.draggingGroup = currentGroup;
+    }
+
+    onGroupDragEnter(currentGroup: SearchGroup) {
+        if (!this.draggingGroup || this.draggingGroup === currentGroup) return;
+        const container = this.findContainerByGroup(currentGroup);
+        if (!container) return;
+        const groups = this.containerGroups.get(container);
+        const section = container.querySelector('.search-section') as HTMLElement;
+        if (!groups || !section) return;
+
+        const fromIndex = groups.indexOf(this.draggingGroup);
+        const toIndex = groups.indexOf(currentGroup);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+        groups.splice(fromIndex, 1);
+        groups.splice(toIndex, 0, this.draggingGroup);
+        section.insertBefore(this.draggingGroup.container, currentGroup.container);
+    }
+
+    onGroupDragEnd() {
+        this.draggingGroup = null;
+        document.querySelectorAll('.asui-search-group.is-dragging').forEach(el => el.classList.remove('is-dragging'));
     }
 
     private executeSearch(uiContainer?: HTMLElement) {
@@ -476,6 +510,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             if (!uniqueRows.length) return;
 
             const group = new SearchGroup(this.app, section, this);
+            this.updateGroupDragState(group);
             group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
             groups.push(group);
         });
@@ -522,6 +557,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         for (let i = 0; i < effectiveGroupCount; i++) {
             const group = new SearchGroup(this.app, section, this);
+            this.updateGroupDragState(group);
             group.setData({
                 operator: 'AND',
                 rows: Array.from({ length: rowsPerGroup }, () => ({
@@ -554,7 +590,17 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         if (graphLeaves.length === 0 && !forceOpen) return;
 
         if (forceOpen) {
-            (this.app as unknown as { commands: { executeCommandById(id: string): void } }).commands.executeCommandById('graph:open');
+            if (graphLeaves.length === 0) {
+                const rightLeaf = this.app.workspace.getRightLeaf(false);
+                if (rightLeaf) {
+                    void rightLeaf.setViewState({ type: 'graph', active: true });
+                }
+            }
+
+            const targetLeaf = this.app.workspace.getLeavesOfType('graph')[0];
+            if (targetLeaf) {
+                this.app.workspace.revealLeaf(targetLeaf);
+            }
         }
 
         setTimeout(() => {
@@ -563,16 +609,18 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 if (graphSearch) {
                     graphSearch.value = queryValue;
                     graphSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                    graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
                 }
             });
-        }, 250);
+        }, 100);
     }
 
     private async copySearchQuery(uiContainer: HTMLElement) {
-        const queryValue = this.convertToObsidianQuery(uiContainer, true);
-        const formattedQuery = `\`\`\`query\n${queryValue}\n\`\`\``;
-        await navigator.clipboard.writeText(formattedQuery);
-        new Notice(t('COPIED_TO_CLIPBOARD'));
+        const query = this.convertToObsidianQuery(uiContainer, true);
+        try {
+            await navigator.clipboard.writeText(query);
+            new Notice(t('COPIED_TO_CLIPBOARD'));
+        } catch {
+            new Notice(t('FAILED_TO_COPY'));
+        }
     }
 }

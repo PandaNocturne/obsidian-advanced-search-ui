@@ -7,6 +7,10 @@ export interface SearchRowDelegate {
     onRemoveRow(currentRow: SearchRow): void;
     onExecuteSearch(): void;
     onOperatorChange(currentRow: SearchRow): void;
+    onRowDragStart(currentRow: SearchRow): void;
+    onRowDragEnter(currentRow: SearchRow, event: DragEvent): void;
+    onRowDragOver(currentRow: SearchRow, event: DragEvent): void;
+    onRowDragEnd(): void;
 }
 
 export class SearchRow {
@@ -17,6 +21,7 @@ export class SearchRow {
     public caseInput: HTMLInputElement;
     public regexInput: HTMLInputElement;
     private iconButton: HTMLButtonElement;
+    private dragHandle: HTMLButtonElement;
 
     private app: App;
     private delegate: SearchRowDelegate;
@@ -39,6 +44,7 @@ export class SearchRow {
     private render(parent: HTMLElement) {
         this.container = parent.createDiv({ cls: 'asui-form-row' });
 
+        this.dragHandle = this.container.createEl('button', { cls: 'asui-row-drag-handle', attr: { type: 'button', 'aria-label': 'Drag row' } });
         this.operatorSelect = this.container.createEl('select', { cls: 'asui-operator' });
         ['AND', 'OR', 'NOT'].forEach(op => this.operatorSelect.createEl('option', { text: op, value: op }));
 
@@ -78,10 +84,39 @@ export class SearchRow {
         this.typeSelect.onchange = updateIcon;
         updateIcon();
 
+        SearchRow.setIconForEl(this.dragHandle, 'grip-vertical');
         SearchRow.setIconForEl(this.container.querySelector('.asui-icon-case-sensitive') as HTMLElement, 'case-sensitive');
         SearchRow.setIconForEl(this.container.querySelector('.asui-icon-regex') as HTMLElement, 'regex');
         SearchRow.setIconForEl(this.container.querySelector('.asui-remove-row') as HTMLElement, 'minus');
         SearchRow.setIconForEl(this.container.querySelector('.asui-add-row') as HTMLElement, 'plus');
+
+        this.dragHandle.draggable = true;
+        this.dragHandle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        this.dragHandle.addEventListener('dragstart', (e) => {
+            this.container.classList.add('is-dragging');
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', 'asui-search-row');
+            }
+            this.delegate.onRowDragStart(this);
+        });
+        this.dragHandle.addEventListener('dragend', () => {
+            this.container.classList.remove('is-dragging');
+            this.delegate.onRowDragEnd();
+        });
+
+        this.container.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            this.delegate.onRowDragEnter(this, e);
+        });
+        this.container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            this.delegate.onRowDragOver(this, e);
+        });
 
         this.iconButton.onclick = (e) => {
             e.preventDefault();
@@ -171,6 +206,17 @@ export class SearchRow {
         if (el && !el.hasChildNodes()) {
             setIcon(el, iconName);
         }
+    }
+
+    public setDragEnabled(enabled: boolean) {
+        this.dragHandle.draggable = enabled;
+        this.container.classList.toggle('is-draggable', enabled);
+        this.dragHandle.style.display = enabled ? '' : 'none';
+    }
+
+    public setDropIndicator(position: 'before' | 'after' | null) {
+        this.container.classList.toggle('is-drop-before', position === 'before');
+        this.container.classList.toggle('is-drop-after', position === 'after');
     }
 
     public setData(data: { operator?: string; type?: string; value?: string; caseSensitive?: boolean; regex?: boolean }) {

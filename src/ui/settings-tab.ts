@@ -130,5 +130,16 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.refreshSearchUI();
                 }));
+
+        new Setting(experimentalGroup)
+            .setName(t('ENABLE_EXPERIMENTAL_DRAG_AND_DROP') || 'Drag and drop')
+            .setDesc(t('ENABLE_EXPERIMENTAL_DRAG_AND_DROP_DESC') || 'Enable reordering groups by dragging their headers.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableExperimentalDragAndDrop)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableExperimentalDragAndDrop = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshSearchUI();
+                }));
     }
 }

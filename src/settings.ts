@@ -6,6 +6,7 @@ export interface AdvancedSearchSettings {
     autoSearchAfterImport: boolean;
     autoSearchOnOperatorChange: boolean;
     enableExperimentalGrouping: boolean;
+    enableExperimentalDragAndDrop: boolean;
     importMode: 'append' | 'replace';
 }
 
@@ -17,5 +18,6 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     autoSearchAfterImport: true,
     autoSearchOnOperatorChange: false,
     enableExperimentalGrouping: false,
+    enableExperimentalDragAndDrop: false,
     importMode: 'append'
 };

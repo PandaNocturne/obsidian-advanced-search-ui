@@ -28,6 +28,23 @@
   position: relative;
   display: flex;
   flex-direction: column;
+
+  &.is-draggable .asui-search-group-handle {
+    cursor: grab;
+  }
+
+  &.is-draggable .asui-search-group-handle:active {
+    cursor: grabbing;
+  }
+
+  &.is-draggable .asui-search-group-header button,
+  &.is-draggable .asui-search-group-header select {
+    cursor: pointer;
+  }
+
+  &.is-dragging {
+    opacity: 0.6;
+  }
 }
 
 .asui-search-form-container .asui-search-group-header {
@@ -53,11 +70,22 @@
     margin-right: 4px;
   }
 
+  .asui-search-group-handle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 4px;
+    border-radius: 4px;
+    user-select: none;
+  }
+
   .asui-search-group-divider {
     position: relative;
     flex: 1 1 auto;
-    height: 16px;
-    cursor: pointer;
+    height: 100%;
 
     &::before {
       content: '';
@@ -71,10 +99,10 @@
       opacity: 0.8;
       transition: background-color 0.15s ease, opacity 0.15s ease;
     }
+  }
 
-    &:hover::before {
-      opacity: 1;
-    }
+  .asui-search-group-handle:hover .asui-search-group-divider::before {
+    opacity: 1;
   }
 
   .asui-search-group-actions {
@@ -95,8 +123,8 @@
 //   order: 1;
 // }
 
-// .asui-search-group:first-child:not(:last-child) .asui-search-group-header {
-//   display: none;
+// .asui-search-group:first-child:not(:last-child) .asui-search-group-header .asui-group-operator {
+//   visibility: hidden;
 // }
 
 .asui-search-form-container {

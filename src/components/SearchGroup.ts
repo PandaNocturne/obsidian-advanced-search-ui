@@ -16,6 +16,9 @@ export interface SearchGroupDelegate extends SearchRowDelegate {
     onAddGroup(currentGroup: SearchGroup): void;
     onRemoveGroup(currentGroup: SearchGroup): void;
     onGroupOperatorChange(currentGroup: SearchGroup): void;
+    onGroupDragStart(currentGroup: SearchGroup): void;
+    onGroupDragEnter(currentGroup: SearchGroup): void;
+    onGroupDragEnd(): void;
 }
 
 export class SearchGroup {
@@ -27,6 +30,8 @@ export class SearchGroup {
     private app: App;
     private delegate: SearchGroupDelegate;
     private collapsed = false;
+    private collapsedBeforeDrag: boolean | null = null;
+    private rowDragEnabled = false;
 
     constructor(app: App, parent: HTMLElement, delegate: SearchGroupDelegate) {
         this.app = app;
@@ -46,7 +51,8 @@ export class SearchGroup {
         setIcon(removeGroupBtn, 'minus-square');
         setIcon(addGroupBtn, 'plus-square');
 
-        header.createDiv({ cls: 'asui-search-group-divider' });
+        const handle = header.createDiv({ cls: 'asui-search-group-handle' });
+        handle.createDiv({ cls: 'asui-search-group-divider' });
 
         this.operatorSelect = header.createEl('select', { cls: 'asui-operator asui-group-operator' });
         ['AND', 'OR', 'NOT'].forEach(op => this.operatorSelect.createEl('option', { text: op, value: op }));
@@ -71,21 +77,101 @@ export class SearchGroup {
             this.delegate.onRemoveGroup(this);
         });
 
-        this.container.querySelector('.asui-search-group-divider')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.toggleCollapsed();
-        });
+        const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
+        if (handle) {
+            handle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleCollapsed();
+            });
+
+            handle.draggable = true;
+            handle.addEventListener('dragstart', (e) => {
+                this.container.classList.add('is-dragging');
+                this.collapsedBeforeDrag = this.collapsed;
+                this.setCollapsed(true);
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', 'asui-search-group');
+                }
+                this.delegate.onGroupDragStart(this);
+            });
+            handle.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                this.delegate.onGroupDragEnter(this);
+            });
+            handle.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            });
+            handle.addEventListener('dragend', () => {
+                this.container.classList.remove('is-dragging');
+                if (this.collapsedBeforeDrag !== null) {
+                    this.setCollapsed(this.collapsedBeforeDrag);
+                    this.collapsedBeforeDrag = null;
+                }
+                this.delegate.onGroupDragEnd();
+            });
+        }
     }
 
     private toggleCollapsed() {
-        this.collapsed = !this.collapsed;
+        this.setCollapsed(!this.collapsed);
+    }
+
+    private setCollapsed(collapsed: boolean) {
+        this.collapsed = collapsed;
         this.rowsContainer.style.display = this.collapsed ? 'none' : '';
         this.container.classList.toggle('is-collapsed', this.collapsed);
     }
 
+    public setDragEnabled(enabled: boolean) {
+        const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
+        if (!handle) return;
+        handle.draggable = enabled;
+        this.rowDragEnabled = enabled;
+        this.rows.forEach(row => row.setDragEnabled(enabled));
+        this.container.classList.toggle('is-draggable', enabled);
+    }
+
+    public setDropTarget(active: boolean) {
+        this.container.classList.toggle('is-row-drop-target', active);
+    }
+
+    public clearDropIndicators() {
+        this.rows.forEach(row => row.setDropIndicator(null));
+        this.setDropTarget(false);
+    }
+
+    public insertRowAt(row: SearchRow, targetIndex: number) {
+        const clampedIndex = Math.max(0, Math.min(targetIndex, this.rows.length));
+        const referenceRow = this.rows[clampedIndex];
+        if (referenceRow) {
+            this.rowsContainer.insertBefore(row.container, referenceRow.container);
+        } else {
+            this.rowsContainer.appendChild(row.container);
+        }
+        this.rows.splice(clampedIndex, 0, row);
+        row.setDragEnabled(this.rowDragEnabled);
+    }
+
+    public detachRow(row: SearchRow) {
+        const index = this.rows.indexOf(row);
+        if (index >= 0) {
+            this.rows.splice(index, 1);
+        }
+    }
+
+    public ensurePlaceholderRow() {
+        if (this.rows.length === 0) {
+            const row = this.addRow();
+            row.setData({ operator: 'AND' });
+        }
+    }
+
     public addRow(afterRow?: SearchRow): SearchRow {
         const newRow = new SearchRow(this.app, this.rowsContainer, this.delegate);
+        newRow.setDragEnabled(this.rowDragEnabled);
         if (!afterRow) {
             this.rows.push(newRow);
             return newRow;
