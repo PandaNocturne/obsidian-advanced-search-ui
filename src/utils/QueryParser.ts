@@ -1,6 +1,3 @@
-/**
- * 搜索行的数据结构定义
- */
 export interface ParsedRow {
     operator: 'AND' | 'OR' | 'NOT';
     type: string;
@@ -9,56 +6,86 @@ export interface ParsedRow {
     isRegex: boolean;
 }
 
-/**
- * 健壮的查询解析器，负责将 Obsidian 原生搜索字符串解析为可视化行结构
- */
+export interface ParsedGroup {
+    operator: 'AND' | 'OR' | 'NOT';
+    rows: ParsedRow[];
+}
+
 export class QueryParser {
-    /**
-     * 将查询字符串拆分为各个部分的行
-     */
     static parse(query: string): ParsedRow[] {
+        return this.parseGroups(query).flatMap(group => group.rows.map((row, index) => ({
+            ...row,
+            operator: index === 0 ? group.operator : row.operator
+        })));
+    }
+
+    static parseGroups(query: string): ParsedGroup[] {
         if (!query.trim()) return [];
 
-        const tokens = this.tokenize(query.trim());
-        const rows: ParsedRow[] = [];
+        const groupTokens = this.tokenizeTopLevel(query.trim());
+        const groups: ParsedGroup[] = [];
 
-        let i = 0;
-        while (i < tokens.length) {
-            const token = tokens[i];
-            if (token === undefined) break;
+        let pendingOperator: 'AND' | 'OR' | 'NOT' = 'AND';
 
-            let currentToken = token;
-            let operator: 'AND' | 'OR' | 'NOT' = 'AND';
-
-            // 1. 识别操作符
-            if (currentToken === 'OR') {
-                operator = 'OR';
-                i++;
-                if (i < tokens.length) {
-                    currentToken = tokens[i]!;
-                } else {
-                    break; // 忽略末尾孤立的 OR
-                }
-            } else if (currentToken.startsWith('OR ')) {
-                operator = 'OR';
-                currentToken = currentToken.slice(3);
-            } else if (currentToken.startsWith('-')) {
-                operator = 'NOT';
-                currentToken = currentToken.slice(1);
+        for (const token of groupTokens) {
+            if (token === 'OR') {
+                pendingOperator = 'OR';
+                continue;
             }
 
-            // 2. 解析核心内容
-            rows.push(this.parsePart(currentToken, operator));
-            i++;
+            if (token.startsWith('-(') && token.endsWith(')')) {
+                groups.push({
+                    operator: 'NOT',
+                    rows: this.parseGroupContent(token.slice(2, -1).trim())
+                });
+                pendingOperator = 'AND';
+                continue;
+            }
+
+            if (token.startsWith('(') && token.endsWith(')') && this.isGroupedExpression(token)) {
+                groups.push({
+                    operator: pendingOperator,
+                    rows: this.parseGroupContent(token.slice(1, -1).trim())
+                });
+                pendingOperator = 'AND';
+                continue;
+            }
+
+            groups.push({
+                operator: pendingOperator,
+                rows: [this.parsePart(token, 'AND')]
+            });
+            pendingOperator = 'AND';
+        }
+
+        return groups;
+    }
+
+    private static parseGroupContent(content: string): ParsedRow[] {
+        const tokens = this.tokenizeTopLevel(content);
+        const rows: ParsedRow[] = [];
+        let pendingOperator: 'AND' | 'OR' | 'NOT' = 'AND';
+
+        for (const token of tokens) {
+            if (token === 'OR') {
+                pendingOperator = 'OR';
+                continue;
+            }
+
+            if (token.startsWith('-')) {
+                rows.push(this.parsePart(token.slice(1), 'NOT'));
+                pendingOperator = 'AND';
+                continue;
+            }
+
+            rows.push(this.parsePart(token, pendingOperator));
+            pendingOperator = 'AND';
         }
 
         return rows;
     }
 
-    /**
-     * 按空格拆分字符串，但忽略括号和引号内的空格
-     */
-    private static tokenize(query: string): string[] {
+    private static tokenizeTopLevel(query: string): string[] {
         const tokens: string[] = [];
         let current = '';
         let inQuotes = false;
@@ -69,67 +96,69 @@ export class QueryParser {
             if (char === '"') {
                 inQuotes = !inQuotes;
                 current += char;
-            } else if (char === '(' && !inQuotes) {
-                parenLevel++;
-                current += char;
-            } else if (char === ')' && !inQuotes) {
-                parenLevel--;
-                current += char;
-            } else if (char === ' ' && !inQuotes && parenLevel === 0) {
-                if (current.trim()) {
-                    tokens.push(current.trim());
-                }
-                current = '';
-            } else {
-                current += char;
+                continue;
             }
+
+            if (!inQuotes) {
+                if (char === '(') {
+                    parenLevel++;
+                    current += char;
+                    continue;
+                }
+                if (char === ')') {
+                    parenLevel--;
+                    current += char;
+                    continue;
+                }
+                if (char === ' ' && parenLevel === 0) {
+                    if (current.trim()) tokens.push(current.trim());
+                    current = '';
+                    continue;
+                }
+            }
+
+            current += char;
         }
-        if (current.trim()) {
-            tokens.push(current.trim());
-        }
+
+        if (current.trim()) tokens.push(current.trim());
         return tokens;
     }
 
-    /**
-     * 解析单个查询片段（例如 "match-case:/(term)/" 或 "tag:#work"）
-     */
+    private static isGroupedExpression(token: string): boolean {
+        const inner = token.slice(1, -1);
+        const tokens = this.tokenizeTopLevel(inner);
+        return tokens.length > 1;
+    }
+
     private static parsePart(part: string, operator: 'AND' | 'OR' | 'NOT'): ParsedRow {
-        // 去掉最外层包裹的括号
         let content = part.replace(/^\(|\)$/g, '').trim();
-        
+
         let caseSensitive = false;
         let isRegex = false;
         let type = 'all';
 
-        // 识别内置类型前缀 (file:, tag:, path: 等)
         const typeMatch = content.match(/^(file|tag|path|content|line|block|section|task|task-todo|tasks-done):/);
-        if (typeMatch && typeMatch[1]) {
+        if (typeMatch?.[1]) {
             type = typeMatch[1];
             content = content.slice(typeMatch[0].length).trim();
-            // 再剥掉一层括号，因为 convertToObsidianQuery 会生成 (type:(value)) 或针对 match-case 导致内部括号
             content = content.replace(/^\(|\)$/g, '').trim();
         }
 
-        // 识别 match-case:
         if (content.startsWith('match-case:')) {
             caseSensitive = true;
             content = content.slice(11).trim();
-            // 剥掉可能存在的括号
             content = content.replace(/^\(|\)$/g, '').trim();
         }
 
-        // 识别正则表达式 /.../
         if (content.startsWith('/') && content.endsWith('/')) {
             isRegex = true;
             content = content.slice(1, -1);
         }
 
-        // 特殊处理标签，去掉 # 符号（UI 内部不显示 #，而是靠类型下拉框决定）
         if (type === 'tag') {
             content = content.replace(/#/g, '');
         }
 
-        // 终极清理：再次剥掉可能存在的残余括号
         content = content.replace(/^\(|\)$/g, '').trim();
 
         return {

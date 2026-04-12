@@ -18,6 +18,8 @@ export default {
     "SETTING_GROUP_SEARCH_DESC": "Controls import, logical operator changes, and graph-linked search behavior.",
     "SETTING_GROUP_UI": "UI & compatibility",
     "SETTING_GROUP_UI_DESC": "Controls panel presentation, compatibility modes, and responsive UI scaling.",
+    "SETTING_GROUP_EXPERIMENTAL": "Experimental features",
+    "SETTING_GROUP_EXPERIMENTAL_DESC": "The following features are experimental and disabled by default.",
 
     // Settings
     "SEARCH_ALSO_GRAPH": "Update graph on search",
@@ -30,6 +32,8 @@ export default {
     "AUTO_SEARCH_AFTER_IMPORT_DESC": "Automatically execute a search immediately after importing query conditions.",
     "AUTO_SEARCH_ON_OPERATOR_CHANGE": "Auto search on AND/OR/NOT change",
     "AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC": "Automatically execute search when switching AND / OR / NOT.",
+    "ENABLE_EXPERIMENTAL_GROUPING": "Grouping",
+    "ENABLE_EXPERIMENTAL_GROUPING_DESC": "Enable grouped search controls.",
     "DEFAULT_COLLAPSED": "Default collapsed",
     "DEFAULT_COLLAPSED_DESC": "If enabled, the advanced search UI panel will be collapsed by default.",
     "ADAPT_FLOAT_SEARCH": "Adapt to float search",

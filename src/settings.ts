@@ -5,6 +5,7 @@ export interface AdvancedSearchSettings {
     autoScaleUI: boolean; // 窄屏自动缩放UI
     autoSearchAfterImport: boolean;
     autoSearchOnOperatorChange: boolean;
+    enableExperimentalGrouping: boolean;
     importMode: 'append' | 'replace';
 }
 
@@ -15,5 +16,6 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     autoScaleUI: false,
     autoSearchAfterImport: true,
     autoSearchOnOperatorChange: false,
+    enableExperimentalGrouping: false,
     importMode: 'append'
 };

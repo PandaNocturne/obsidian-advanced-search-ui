@@ -113,5 +113,22 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                         document.body.classList.remove('advanced-search-auto-scale');
                     }
                 }));
+
+        const experimentalGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_EXPERIMENTAL') || 'Experimental features',
+            t('SETTING_GROUP_EXPERIMENTAL_DESC') || 'The following features are experimental and disabled by default.'
+        );
+
+        new Setting(experimentalGroup)
+            .setName(t('ENABLE_EXPERIMENTAL_GROUPING') || 'Grouping')
+            .setDesc(t('ENABLE_EXPERIMENTAL_GROUPING_DESC') || 'Enable grouped search controls.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableExperimentalGrouping)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableExperimentalGrouping = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshSearchUI();
+                }));
     }
 }

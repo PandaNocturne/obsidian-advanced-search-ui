@@ -18,6 +18,8 @@ export default {
     "SETTING_GROUP_SEARCH_DESC": "控制导入、逻辑切换以及图谱联动等搜索相关行为。",
     "SETTING_GROUP_UI": "界面与兼容性",
     "SETTING_GROUP_UI_DESC": "控制高级搜索面板的展示方式、兼容模式和界面缩放。",
+    "SETTING_GROUP_EXPERIMENTAL": "实验性功能",
+    "SETTING_GROUP_EXPERIMENTAL_DESC": "以下功能仍处于实验阶段，默认关闭。",
 
     // Settings
     "SEARCH_ALSO_GRAPH": "搜索连带图谱搜索",
@@ -30,6 +32,8 @@ export default {
     "AUTO_SEARCH_AFTER_IMPORT_DESC": "开启后，在导入查询条件后会自动立即执行一次搜索",
     "AUTO_SEARCH_ON_OPERATOR_CHANGE": "切换 AND/OR/NOT 后自动搜索",
     "AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC": "开启后，在切换条件逻辑符 AND / OR / NOT 时会自动立即执行一次搜索",
+    "ENABLE_EXPERIMENTAL_GROUPING": "分组功能",
+    "ENABLE_EXPERIMENTAL_GROUPING_DESC": "开启后可使用搜索分组能力。",
     "DEFAULT_COLLAPSED": "默认折叠面板",
     "DEFAULT_COLLAPSED_DESC": "开启后，在使用高级检索时，默认会折叠高级搜索选项面板",
     "ADAPT_FLOAT_SEARCH": "适配 Float Search",
