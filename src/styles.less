@@ -37,7 +37,11 @@
   }
 
   &.is-dragging {
-    opacity: 0.6;
+    opacity: 1;
+  }
+
+  &.is-drag-dimmed {
+    opacity: 0.8;
   }
 
   &.is-row-drop-target {
@@ -211,7 +215,7 @@
   padding: 0;
   display: none;
   align-items: center;
-  justify-content:flex-end;
+  justify-content: flex-end;
   cursor: grab;
   border: none !important;
   background: transparent !important;
@@ -464,22 +468,22 @@
 .workspace-leaf-content[data-type="search"] {
   display: flex;
   flex-flow: column nowrap;
+}
 
-  .search-row {
-    order: -3;
-  }
+.workspace-leaf-content[data-type="search"] .search-row {
+  order: -3;
+}
 
-  .asui-search-form-container {
-    order: -2;
-  }
+.workspace-leaf-content[data-type="search"] .asui-search-form-container {
+  order: -2;
+}
 
-  .search-params {
-    order: -1;
-  }
+.workspace-leaf-content[data-type="search"] .search-params {
+  order: -1;
+}
 
-  .search-info-container {
-    order: 0;
-  }
+.workspace-leaf-content[data-type="search"] .search-info-container {
+  order: 0;
 }
 
 .advanced-search-ui-toggle-wrapper {
@@ -487,26 +491,25 @@
   align-items: center;
   justify-content: center;
   padding: 6px 4px;
-
-  .advanced-search-toggle {
-    transition: all 0.15s ease;
-    border-radius: var(--radius-s);
-
-    &.is-active {
-      color: var(--icon-color-active);
-      background-color: var(--background-modifier-active-hover);
-    }
-  }
 }
 
-.advanced-search-auto-scale {
-  .asui-search-form-container {
-    container-type: inline-size;
-    container-name: searchform;
-  }
+.advanced-search-ui-toggle-wrapper .advanced-search-toggle {
+  transition: all 0.15s ease;
+  border-radius: var(--radius-s);
+}
+
+.advanced-search-ui-toggle-wrapper .advanced-search-toggle.is-active {
+  color: var(--icon-color-active);
+  background-color: var(--background-modifier-active-hover);
+}
+
+.advanced-search-auto-scale .asui-search-form-container {
+  container-type: inline-size;
+  container-name: searchform;
 }
 
 @container searchform (max-width: 600px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.8;
@@ -518,6 +521,7 @@
 }
 
 @container searchform (max-width: 500px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.75;
@@ -529,6 +533,7 @@
 }
 
 @container searchform (max-width: 400px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.7;

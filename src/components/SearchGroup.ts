@@ -18,6 +18,7 @@ export interface SearchGroupDelegate extends SearchRowDelegate {
     onGroupOperatorChange(currentGroup: SearchGroup): void;
     onGroupDragStart(currentGroup: SearchGroup): void;
     onGroupDragEnter(currentGroup: SearchGroup): void;
+    onGroupDragOver(currentGroup: SearchGroup, event: DragEvent): void;
     onGroupDragEnd(): void;
 }
 
@@ -103,6 +104,7 @@ export class SearchGroup {
             handle.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                this.delegate.onGroupDragOver(this, e);
             });
             handle.addEventListener('dragend', () => {
                 this.container.classList.remove('is-dragging');

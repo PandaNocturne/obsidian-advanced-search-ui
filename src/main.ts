@@ -449,9 +449,17 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     onGroupDragStart(currentGroup: SearchGroup) {
         if (!this.isGroupDragEnabled()) return;
         this.draggingGroup = currentGroup;
+        document.querySelectorAll('.asui-search-group').forEach(el => {
+            el.classList.toggle('is-drag-dimmed', el !== currentGroup.container);
+        });
     }
 
     onGroupDragEnter(currentGroup: SearchGroup) {
+        if (!this.draggingGroup || this.draggingGroup === currentGroup || this.draggingRow) return;
+        this.onGroupDragOver(currentGroup);
+    }
+
+    onGroupDragOver(currentGroup: SearchGroup, event?: DragEvent) {
         if (!this.draggingGroup || this.draggingGroup === currentGroup || this.draggingRow) return;
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;
@@ -460,17 +468,36 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         if (!groups || !section) return;
 
         const fromIndex = groups.indexOf(this.draggingGroup);
-        const toIndex = groups.indexOf(currentGroup);
-        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+        const currentIndex = groups.indexOf(currentGroup);
+        if (fromIndex < 0 || currentIndex < 0) return;
+
+        let insertIndex = currentIndex;
+        if (event) {
+            const rect = currentGroup.container.getBoundingClientRect();
+            const insertAfter = event.clientY > rect.top + rect.height / 2;
+            insertIndex = currentIndex + (insertAfter ? 1 : 0);
+        }
+
+        if (fromIndex < insertIndex) {
+            insertIndex -= 1;
+        }
+
+        if (insertIndex === fromIndex) return;
 
         groups.splice(fromIndex, 1);
-        groups.splice(toIndex, 0, this.draggingGroup);
-        section.insertBefore(this.draggingGroup.container, currentGroup.container);
+        groups.splice(insertIndex, 0, this.draggingGroup);
+
+        const referenceGroup = groups[insertIndex + 1];
+        if (referenceGroup) {
+            section.insertBefore(this.draggingGroup.container, referenceGroup.container);
+        } else {
+            section.appendChild(this.draggingGroup.container);
+        }
     }
 
     onGroupDragEnd() {
         this.draggingGroup = null;
-        document.querySelectorAll('.asui-search-group.is-dragging').forEach(el => el.classList.remove('is-dragging'));
+        document.querySelectorAll('.asui-search-group').forEach(el => el.classList.remove('is-drag-dimmed', 'is-dragging'));
     }
 
     private clearSearchForm(uiContainer: HTMLElement, groupCount = 1, rowsPerGroup = 2) {
