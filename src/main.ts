@@ -3,8 +3,10 @@ import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { SearchRow } from './components/SearchRow';
-import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
-import { QueryParser } from './utils/QueryParser';
+import { SearchGroup, SearchGroupDelegate } from './components/SearchGroup';
+import { SearchQueryBuilder } from './services/SearchQueryBuilder';
+import { SearchExecutionService } from './services/SearchExecutionService';
+import { SearchImportService } from './services/SearchImportService';
 
 type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
@@ -20,6 +22,25 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private draggingRow: SearchRow | null = null;
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
+    private queryBuilder = new SearchQueryBuilder();
+    private searchExecution = new SearchExecutionService(
+        this.app,
+        this.queryBuilder,
+        container => this.containerGroups.get(container) || [],
+        () => this.settings.searchAlsoGraph,
+        () => this.settings.adaptToFloatSearch
+    );
+    private searchImport = new SearchImportService(
+        this.app,
+        this,
+        () => this.settings,
+        container => this.containerGroups.get(container) || [],
+        (container, groups) => this.containerGroups.set(container, groups),
+        group => this.updateGroupDragState(group),
+        (container, groupCount, rowsPerGroup) => this.clearSearchForm(container, groupCount, rowsPerGroup),
+        group => this.normalizeGroupRows(group),
+        container => this.searchExecution.executeSearch(container)
+    );
 
     public refreshSearchUI() {
         document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
@@ -144,15 +165,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 queryControlsContainer.createDiv({ cls: 'search-section' });
 
                 const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
-                this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.importFromSearchBox(queryControlsContainer));
-                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => { void this.copySearchQuery(queryControlsContainer); });
+                this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
+                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => { void this.searchExecution.copySearchQuery(queryControlsContainer); });
 
                 const isModal = searchContainer.closest('.modal-container') || searchContainer.closest('.modal');
                 if (!isModal) {
-                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => this.openGraphView(queryControlsContainer, true));
+                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => this.searchExecution.openGraphView(queryControlsContainer, true));
                 }
 
-                this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.executeSearch(queryControlsContainer));
+                this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
                 this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => this.clearSearchForm(queryControlsContainer));
 
                 this.containerGroups.set(queryControlsContainer, []);
@@ -300,14 +321,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     onExecuteSearch() {
-        this.executeSearch();
+        this.searchExecution.executeSearch();
     }
 
     onOperatorChange(currentRow: SearchRow) {
         if (!this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForRow(currentRow)) return;
         const group = this.findGroupByRow(currentRow);
         const container = group ? this.findContainerByGroup(group) : null;
-        if (container) this.executeSearch(container);
+        if (container) this.searchExecution.executeSearch(container);
     }
 
     onRowDragStart(currentRow: SearchRow) {
@@ -400,7 +421,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         newGroup.setData({
             operator: currentGroup.operatorSelect.value as 'AND' | 'OR' | 'NOT',
-            rows: [{ operator: 'AND', type: currentGroup.rows[0]?.typeSelect.value || 'all', value: '', caseSensitive: false, regex: false }]
+            rows: [{ operator: 'AND', type: 'all', value: '', caseSensitive: false, regex: false }]
         });
     }
 
@@ -422,7 +443,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     onGroupOperatorChange(currentGroup: SearchGroup) {
         if (!this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForGroup(currentGroup)) return;
         const container = this.findContainerByGroup(currentGroup);
-        if (container) this.executeSearch(container);
+        if (container) this.searchExecution.executeSearch(container);
     }
 
     onGroupDragStart(currentGroup: SearchGroup) {
@@ -450,303 +471,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     onGroupDragEnd() {
         this.draggingGroup = null;
         document.querySelectorAll('.asui-search-group.is-dragging').forEach(el => el.classList.remove('is-dragging'));
-    }
-
-    private executeSearch(uiContainer?: HTMLElement) {
-        const containers = this.settings.adaptToFloatSearch
-            ? Array.from(document.querySelectorAll('.search-params')).map(el => el.parentElement).filter(el => el)
-            : this.app.workspace.getLeavesOfType('search').map(leaf => leaf.view.containerEl);
-
-        const uniqueContainers = Array.from(new Set(containers as HTMLElement[]));
-        uniqueContainers.forEach(containerEl => {
-            const currentUI = containerEl.querySelector('.asui-search-form-container') as HTMLElement;
-            if (!currentUI) return;
-            if (uiContainer && currentUI !== uiContainer) return;
-
-            const queryValue = this.convertToObsidianQuery(currentUI);
-            const isModal = containerEl.closest('.modal-container') || containerEl.closest('.modal');
-            if (this.settings.searchAlsoGraph && !isModal) {
-                this.openGraphView(currentUI, false);
-            }
-
-            const searchInput = containerEl.querySelector('.search-input-container > input') as HTMLInputElement;
-            if (searchInput) {
-                searchInput.value = queryValue;
-                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                searchInput.focus();
-                if (!containerEl.closest('.modal-container') && !containerEl.closest('.modal')) {
-                    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                }
-            }
-        });
-    }
-
-    private buildRowQuery(row: SearchRow): string {
-        const value = row.getValue();
-        if (!value) return '';
-
-        const typePrefix = row.typeSelect.value === 'all' ? '' : `${row.typeSelect.value}:`;
-        let searchTerm = value;
-        if (row.regexInput.checked) {
-            searchTerm = `/${searchTerm}/`;
-        } else if (row.typeSelect.value === 'tag') {
-            searchTerm = searchTerm.split(' ').map(tag => (tag.startsWith('#') ? tag : `#${tag}`)).join(' ');
-        } else {
-            searchTerm = `(${searchTerm})`;
-        }
-
-        if (row.caseInput.checked) {
-            searchTerm = `match-case:${searchTerm}`;
-        }
-
-        return `(${typePrefix}${searchTerm})`;
-    }
-
-    private convertToObsidianQuery(container: HTMLElement, lineBreak = false): string {
-        const groups = this.containerGroups.get(container) || [];
-        const queryParts: string[] = [];
-        let hasEffectiveGroup = false;
-
-        groups.forEach(group => {
-            const rowParts: string[] = [];
-            let hasEffectiveRow = false;
-
-            group.rows.forEach(row => {
-                const rowQuery = this.buildRowQuery(row);
-                if (!rowQuery) return;
-
-                const rowOperator = row.operatorSelect.value;
-                let part = '';
-                if (!hasEffectiveRow) {
-                    part = rowOperator === 'NOT' ? `-${rowQuery}` : rowQuery;
-                } else {
-                    switch (rowOperator) {
-                        case 'AND': part = rowQuery; break;
-                        case 'OR': part = `OR ${rowQuery}`; break;
-                        case 'NOT': part = `-${rowQuery}`; break;
-                    }
-                }
-                rowParts.push(part);
-                hasEffectiveRow = true;
-            });
-
-            if (!rowParts.length) return;
-
-            const grouped = rowParts.length === 1 ? rowParts[0]! : `(${rowParts.join(' ')})`;
-            let groupPart: string;
-            if (!hasEffectiveGroup) {
-                groupPart = group.operatorSelect.value === 'NOT' ? `-${grouped}` : grouped;
-            } else {
-                switch (group.operatorSelect.value) {
-                    case 'AND': groupPart = grouped; break;
-                    case 'OR': groupPart = `OR ${grouped}`; break;
-                    case 'NOT': groupPart = `-${grouped}`; break;
-                    default: groupPart = grouped; break;
-                }
-            }
-
-            queryParts.push(groupPart);
-            hasEffectiveGroup = true;
-        });
-
-        return lineBreak ? queryParts.join('\n') : queryParts.join(' ');
-    }
-
-    private importFromSearchBox(uiContainer: HTMLElement) {
-        let searchInput: HTMLInputElement | null = null;
-        const leaf = this.app.workspace.getLeavesOfType('search').find(item => item.view.containerEl.contains(uiContainer));
-        if (leaf) {
-            searchInput = leaf.view.containerEl.querySelector('.search-input-container > input') as HTMLInputElement;
-        }
-
-        if (!searchInput) {
-            const container = uiContainer.closest('.workspace-leaf-content, .view-content, .search-view, .float-search-container, .modal-container') as HTMLElement;
-            if (container) searchInput = container.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
-            if (!searchInput && uiContainer.parentElement) {
-                searchInput = uiContainer.parentElement.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
-            }
-        }
-
-        if (!searchInput || !searchInput.value.trim()) {
-            new Notice(t('NO_QUERY_TO_IMPORT'));
-            return;
-        }
-
-        const parsedGroups = QueryParser.parseGroups(searchInput.value.trim());
-        if (!parsedGroups.length) {
-            new Notice(t('NO_QUERY_TO_IMPORT'));
-            return;
-        }
-
-        const section = uiContainer.querySelector('.search-section') as HTMLElement;
-        if (!section) return;
-
-        const existingGroups = this.containerGroups.get(uiContainer) || [];
-        const shouldReplace = this.settings.importMode === 'replace';
-        const hasMeaningfulExistingGroups = existingGroups.some(group => group.hasMeaningfulRows());
-        const shouldStartFresh = shouldReplace || !hasMeaningfulExistingGroups;
-
-        if (!this.settings.enableExperimentalGrouping) {
-            const groups = shouldStartFresh ? [] : [...existingGroups];
-            const dedupeKeys = new Set(
-                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
-                    groupOperator: group.operatorSelect.value,
-                    operator: row.operatorSelect.value,
-                    type: row.typeSelect.value,
-                    value: row.getValue(),
-                    caseSensitive: row.caseInput.checked,
-                    regex: row.regexInput.checked
-                })))
-            );
-
-            if (shouldStartFresh) {
-                existingGroups.forEach(group => group.destroy());
-                section.innerHTML = '';
-            }
-
-            parsedGroups.forEach(groupData => {
-                const normalizedRows = groupData.rows.filter(row => !!row.value.trim());
-                if (!normalizedRows.length) return;
-
-                const uniqueRows = normalizedRows.filter(row => {
-                    const dedupeKey = JSON.stringify({
-                        groupOperator: groupData.operator,
-                        operator: row.operator,
-                        type: row.type,
-                        value: row.value.trim(),
-                        caseSensitive: row.caseSensitive,
-                        regex: row.isRegex
-                    });
-                    if (dedupeKeys.has(dedupeKey)) return false;
-                    dedupeKeys.add(dedupeKey);
-                    return true;
-                }).map(row => ({
-                    operator: row.operator,
-                    type: row.type,
-                    value: row.value,
-                    caseSensitive: row.caseSensitive,
-                    regex: row.isRegex
-                }));
-
-                if (!uniqueRows.length) return;
-
-                const group = new SearchGroup(this.app, section, this);
-                this.updateGroupDragState(group);
-                group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
-                groups.push(group);
-            });
-
-            if (!groups.length) {
-                this.clearSearchForm(uiContainer, 1, 2);
-                return;
-            }
-
-            this.containerGroups.set(uiContainer, groups);
-
-            const mergedRows = groups.flatMap(group => group.rows.map(row => ({
-                operator: row.operatorSelect.value as 'AND' | 'OR' | 'NOT',
-                type: row.typeSelect.value,
-                value: row.getValue(),
-                caseSensitive: row.caseInput.checked,
-                regex: row.regexInput.checked
-            })));
-
-            this.clearSearchForm(uiContainer, 1, Math.max(mergedRows.length || 2, 2));
-            this.containerGroups.get(uiContainer)?.[0]?.setData({
-                operator: 'AND',
-                rows: mergedRows
-            });
-        } else {
-            const isMultiGroupImport = parsedGroups.length > 1;
-
-            if (shouldStartFresh) {
-                existingGroups.forEach(group => group.destroy());
-                section.innerHTML = '';
-                this.containerGroups.set(uiContainer, []);
-            }
-
-            let groups = this.containerGroups.get(uiContainer) || [];
-            let targetGroup = groups[groups.length - 1] || null;
-
-            if (!targetGroup) {
-                targetGroup = new SearchGroup(this.app, section, this);
-                this.updateGroupDragState(targetGroup);
-                targetGroup.setData({
-                    operator: 'AND',
-                    rows: [{ operator: 'AND', type: 'all', value: '', caseSensitive: false, regex: false }]
-                });
-                groups.push(targetGroup);
-                this.containerGroups.set(uiContainer, groups);
-            }
-
-            const dedupeKeys = new Set(
-                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
-                    groupOperator: group.operatorSelect.value,
-                    operator: row.operatorSelect.value,
-                    type: row.typeSelect.value,
-                    value: row.getValue(),
-                    caseSensitive: row.caseInput.checked,
-                    regex: row.regexInput.checked
-                })))
-            );
-
-            parsedGroups.forEach(groupData => {
-                const normalizedRows = groupData.rows.filter(row => !!row.value.trim());
-                if (!normalizedRows.length) return;
-
-                const uniqueRows = normalizedRows.filter(row => {
-                    const targetOperator = isMultiGroupImport ? groupData.operator : (targetGroup?.operatorSelect.value as 'AND' | 'OR' | 'NOT');
-                    const dedupeKey = JSON.stringify({
-                        groupOperator: targetOperator,
-                        operator: row.operator,
-                        type: row.type,
-                        value: row.value.trim(),
-                        caseSensitive: row.caseSensitive,
-                        regex: row.isRegex
-                    });
-                    if (dedupeKeys.has(dedupeKey)) return false;
-                    dedupeKeys.add(dedupeKey);
-                    return true;
-                }).map(row => ({
-                    operator: row.operator,
-                    type: row.type,
-                    value: row.value,
-                    caseSensitive: row.caseSensitive,
-                    regex: row.isRegex
-                }));
-
-                if (!uniqueRows.length) return;
-
-                if (isMultiGroupImport) {
-                    const group = new SearchGroup(this.app, section, this);
-                    this.updateGroupDragState(group);
-                    group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
-                    groups.push(group);
-                } else if (targetGroup) {
-                    const meaningfulRows = targetGroup.rows.filter(row => !!row.getValue());
-                    if (meaningfulRows.length === 0 && targetGroup.rows.length > 0) {
-                        targetGroup.rows[0]?.setData(uniqueRows[0]!);
-                        uniqueRows.slice(1).forEach(rowData => {
-                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
-                            newRow.setData(rowData);
-                        });
-                    } else {
-                        uniqueRows.forEach(rowData => {
-                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
-                            newRow.setData(rowData);
-                        });
-                    }
-                    this.normalizeGroupRows(targetGroup);
-                }
-            });
-
-            groups = groups.filter(group => group.hasMeaningfulRows() || groups.length === 1);
-            this.containerGroups.set(uiContainer, groups);
-        }
-
-        if (this.settings.autoSearchAfterImport) {
-            this.executeSearch(uiContainer);
-        }
     }
 
     private clearSearchForm(uiContainer: HTMLElement, groupCount = 1, rowsPerGroup = 2) {
@@ -790,51 +514,5 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             newGroups.push(group);
         }
         this.containerGroups.set(uiContainer, newGroups);
-    }
-
-    private openGraphView(uiContainer: HTMLElement, forceOpen = false) {
-        const queryValue = this.convertToObsidianQuery(uiContainer);
-        let graphLeaves = this.app.workspace.getLeavesOfType('graph');
-        if (graphLeaves.length === 0 && !forceOpen) return;
-
-        if (forceOpen) {
-            let targetLeaf = graphLeaves[0];
-
-            if (!targetLeaf) {
-                const workspaceLeaf = this.app.workspace.getLeaf(false);
-                if (workspaceLeaf) {
-                    void workspaceLeaf.setViewState({ type: 'graph', active: true });
-                    targetLeaf = workspaceLeaf;
-                }
-            }
-
-            if (targetLeaf) {
-                this.app.workspace.revealLeaf(targetLeaf);
-            }
-
-            graphLeaves = this.app.workspace.getLeavesOfType('graph');
-        }
-
-        setTimeout(() => {
-            this.app.workspace.getLeavesOfType('graph').forEach(leaf => {
-                const graphSearch = leaf.view.containerEl.querySelector('.graph-control-section .search-input-container input') as HTMLInputElement;
-                if (graphSearch) {
-                    graphSearch.value = queryValue;
-                    graphSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                    graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                    graphSearch.blur();
-                }
-            });
-        }, 100);
-    }
-
-    private async copySearchQuery(uiContainer: HTMLElement) {
-        const query = this.convertToObsidianQuery(uiContainer, true);
-        try {
-            await navigator.clipboard.writeText(query);
-            new Notice(t('COPIED_TO_CLIPBOARD'));
-        } catch {
-            new Notice(t('FAILED_TO_COPY'));
-        }
     }
 }
