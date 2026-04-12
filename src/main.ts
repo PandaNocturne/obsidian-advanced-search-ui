@@ -274,6 +274,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 
+    private shouldAutoSearchForRow(currentRow: SearchRow) {
+        return !!currentRow.getValue();
+    }
+
+    private shouldAutoSearchForGroup(currentGroup: SearchGroup) {
+        return currentGroup.rows.some(row => !!row.getValue());
+    }
+
     onAddRow(currentRow: SearchRow) {
         const group = this.findGroupByRow(currentRow);
         if (!group) return;
@@ -296,7 +304,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     onOperatorChange(currentRow: SearchRow) {
-        if (!this.settings.autoSearchOnOperatorChange) return;
+        if (!this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForRow(currentRow)) return;
         const group = this.findGroupByRow(currentRow);
         const container = group ? this.findContainerByGroup(group) : null;
         if (container) this.executeSearch(container);
@@ -412,7 +420,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     onGroupOperatorChange(currentGroup: SearchGroup) {
-        if (!this.settings.autoSearchOnOperatorChange) return;
+        if (!this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForGroup(currentGroup)) return;
         const container = this.findContainerByGroup(currentGroup);
         if (container) this.executeSearch(container);
     }
