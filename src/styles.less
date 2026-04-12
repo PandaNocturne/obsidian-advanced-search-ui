@@ -18,12 +18,6 @@
   }
 }
 
-// .asui-search-group+.asui-search-group {
-//   border-top: 2px solid var(--background-modifier-border);
-//   margin-top: 8px;
-//   padding-top: 8px;
-// }
-
 .asui-search-group {
   position: relative;
   display: flex;
@@ -44,6 +38,11 @@
 
   &.is-dragging {
     opacity: 0.6;
+  }
+
+  &.is-row-drop-target {
+    background-color: var(--background-modifier-hover);
+    border-radius: 6px;
   }
 }
 
@@ -119,14 +118,6 @@
   opacity: 1;
 }
 
-// .asui-search-group:only-child .asui-search-group-header {
-//   order: 1;
-// }
-
-// .asui-search-group:first-child:not(:last-child) .asui-search-group-header .asui-group-operator {
-//   visibility: hidden;
-// }
-
 .asui-search-form-container {
   width: auto;
   max-width: 100%;
@@ -189,11 +180,19 @@
   }
 }
 
-// 限制检索区域高度，仅让搜索内容滚动，不压缩底部按钮
 .asui-search-form-container .search-section {
   max-height: 40vh;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.asui-form-row {
+  position: relative;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .asui-form-row select,
@@ -202,9 +201,48 @@
 .asui-form-row .asui-input-group .asui-icon-button,
 .asui-form-row .asui-remove-row,
 .asui-form-row .asui-add-row,
-.asui-form-row .asui-toggle-label {
+.asui-form-row .asui-toggle-label,
+.asui-form-row .asui-row-drag-handle {
   height: 28px !important;
   box-sizing: border-box;
+}
+
+.asui-form-row .asui-row-drag-handle {
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content:flex-start;
+  cursor: grab;
+  border: none !important;
+  background: transparent !important;
+  opacity: 0.6;
+}
+
+.asui-form-row.is-draggable .asui-row-drag-handle {
+  display: inline-flex;
+}
+
+.asui-form-row.is-dragging {
+  opacity: 0.55;
+}
+
+.asui-form-row.is-drop-before::before,
+.asui-form-row.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--interactive-accent);
+  border-radius: 999px;
+}
+
+.asui-form-row.is-drop-before::before {
+  top: -4px;
+}
+
+.asui-form-row.is-drop-after::after {
+  bottom: 4px;
 }
 
 .asui-form-row select {
@@ -215,14 +253,6 @@
 
 .asui-form-row:first-child .asui-operator {
   display: none;
-}
-
-.asui-form-row {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
 }
 
 .asui-form-row input[type="search"] {
@@ -325,13 +355,11 @@
   border-radius: 3px;
 }
 
-// 导航按钮样式
 .navigation-buttons {
   width: 100%;
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  // margin-top: 15px;
 }
 
 .navigation-buttons button {
@@ -479,7 +507,6 @@
 }
 
 @container searchform (max-width: 600px) {
-
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.8;
@@ -491,7 +518,6 @@
 }
 
 @container searchform (max-width: 500px) {
-
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.75;
@@ -503,7 +529,6 @@
 }
 
 @container searchform (max-width: 400px) {
-
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.7;

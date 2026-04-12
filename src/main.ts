@@ -6,6 +6,10 @@ import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
 import { QueryParser } from './utils/QueryParser';
 
+type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
+    enableExperimentalDragAndDrop?: boolean;
+};
+
 export default class AdvancedSearchPlugin extends Plugin implements SearchGroupDelegate {
     public settings: AdvancedSearchSettings;
 
@@ -13,6 +17,9 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private injectionInterval: number | null = null;
     private observer: MutationObserver | null = null;
     private draggingGroup: SearchGroup | null = null;
+    private draggingRow: SearchRow | null = null;
+    private rowDropGroup: SearchGroup | null = null;
+    private rowDropIndex: number | null = null;
 
     public refreshSearchUI() {
         document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
@@ -81,7 +88,17 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData() as Partial<AdvancedSearchSettings>));
+        const rawSettings = ((await this.loadData()) as LegacyAdvancedSearchSettings | null) || {};
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, rawSettings);
+
+        if (rawSettings.enableExperimentalDragAndDrop !== undefined) {
+            if (rawSettings.enableExperimentalGroupDragAndDrop === undefined) {
+                this.settings.enableExperimentalGroupDragAndDrop = rawSettings.enableExperimentalDragAndDrop;
+            }
+            if (rawSettings.enableExperimentalRowDragAndDrop === undefined) {
+                this.settings.enableExperimentalRowDragAndDrop = false;
+            }
+        }
     }
 
     async saveSettings() {
@@ -214,9 +231,22 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         container.addEventListener('keypress', e => e.stopPropagation());
     }
 
+    private isGroupDragEnabled() {
+        return this.settings.enableExperimentalGrouping && this.settings.enableExperimentalGroupDragAndDrop;
+    }
+
+    private isRowDragEnabled() {
+        return this.settings.enableExperimentalRowDragAndDrop;
+    }
+
     private updateGroupDragState(group: SearchGroup) {
-        const canDrag = this.settings.enableExperimentalGrouping && this.settings.enableExperimentalDragAndDrop;
-        group.setDragEnabled(canDrag);
+        group.setDragEnabled(this.isGroupDragEnabled(), this.isRowDragEnabled());
+    }
+
+    private clearAllRowDropIndicators() {
+        for (const groups of this.containerGroups.values()) {
+            groups.forEach(group => group.clearDropIndicators());
+        }
     }
 
     private findGroupByRow(currentRow: SearchRow): SearchGroup | null {
@@ -234,6 +264,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             if (groups.includes(currentGroup)) return container;
         }
         return null;
+    }
+
+    private normalizeGroupRows(group: SearchGroup) {
+        group.rows.forEach((row, index) => {
+            if (index === 0) {
+                row.operatorSelect.value = 'AND';
+            }
+        });
     }
 
     onAddRow(currentRow: SearchRow) {
@@ -262,6 +300,79 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const group = this.findGroupByRow(currentRow);
         const container = group ? this.findContainerByGroup(group) : null;
         if (container) this.executeSearch(container);
+    }
+
+    onRowDragStart(currentRow: SearchRow) {
+        if (!this.isRowDragEnabled()) return;
+        this.draggingRow = currentRow;
+        this.rowDropGroup = null;
+        this.rowDropIndex = null;
+    }
+
+    onRowDragEnter(currentRow: SearchRow, event: DragEvent) {
+        this.onRowDragOver(currentRow, event);
+    }
+
+    onRowDragOver(currentRow: SearchRow, event: DragEvent) {
+        if (!this.draggingRow || this.draggingGroup) return;
+        const targetGroup = this.findGroupByRow(currentRow);
+        if (!targetGroup) return;
+
+        const rect = currentRow.container.getBoundingClientRect();
+        const insertAfter = event.clientY > rect.top + rect.height / 2;
+        const currentIndex = targetGroup.rows.indexOf(currentRow);
+        if (currentIndex < 0) return;
+
+        this.clearAllRowDropIndicators();
+        this.rowDropGroup = targetGroup;
+        this.rowDropIndex = currentIndex + (insertAfter ? 1 : 0);
+        targetGroup.setDropTarget(true);
+        currentRow.setDropIndicator(insertAfter ? 'after' : 'before');
+    }
+
+    onRowDragEnd() {
+        const draggingRow = this.draggingRow;
+        const targetGroup = this.rowDropGroup;
+        const targetIndex = this.rowDropIndex;
+
+        this.clearAllRowDropIndicators();
+        this.draggingRow = null;
+        this.rowDropGroup = null;
+        this.rowDropIndex = null;
+
+        if (!draggingRow || !targetGroup || targetIndex === null) return;
+
+        const sourceGroup = this.findGroupByRow(draggingRow);
+        if (!sourceGroup) return;
+
+        const sourceIndex = sourceGroup.rows.indexOf(draggingRow);
+        if (sourceIndex < 0) return;
+
+        let finalIndex = targetIndex;
+        if (sourceGroup === targetGroup && sourceIndex < finalIndex) {
+            finalIndex -= 1;
+        }
+
+        if (sourceGroup === targetGroup && sourceIndex === finalIndex) return;
+
+        sourceGroup.detachRow(draggingRow);
+        targetGroup.insertRowAt(draggingRow, finalIndex);
+
+        this.normalizeGroupRows(sourceGroup);
+        this.normalizeGroupRows(targetGroup);
+
+        if (sourceGroup.rows.length === 0) {
+            const sourceContainer = this.findContainerByGroup(sourceGroup);
+            const groups = sourceContainer ? this.containerGroups.get(sourceContainer) : null;
+            if (groups && groups.length > 1) {
+                const groupIndex = groups.indexOf(sourceGroup);
+                if (groupIndex >= 0) groups.splice(groupIndex, 1);
+                sourceGroup.destroy();
+            } else {
+                sourceGroup.ensurePlaceholderRow();
+                this.normalizeGroupRows(sourceGroup);
+            }
+        }
     }
 
     onAddGroup(currentGroup: SearchGroup) {
@@ -307,12 +418,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     onGroupDragStart(currentGroup: SearchGroup) {
-        if (!this.settings.enableExperimentalGrouping || !this.settings.enableExperimentalDragAndDrop) return;
+        if (!this.isGroupDragEnabled()) return;
         this.draggingGroup = currentGroup;
     }
 
     onGroupDragEnter(currentGroup: SearchGroup) {
-        if (!this.draggingGroup || this.draggingGroup === currentGroup) return;
+        if (!this.draggingGroup || this.draggingGroup === currentGroup || this.draggingRow) return;
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;
         const groups = this.containerGroups.get(container);
@@ -466,63 +577,64 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const shouldReplace = this.settings.importMode === 'replace';
         const hasMeaningfulExistingGroups = existingGroups.some(group => group.hasMeaningfulRows());
         const shouldStartFresh = shouldReplace || !hasMeaningfulExistingGroups;
-        const groups = shouldStartFresh ? [] : [...existingGroups];
-        const dedupeKeys = new Set(
-            groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
-                groupOperator: group.operatorSelect.value,
-                operator: row.operatorSelect.value,
-                type: row.typeSelect.value,
-                value: row.getValue(),
-                caseSensitive: row.caseInput.checked,
-                regex: row.regexInput.checked
-            })))
-        );
-
-        if (shouldStartFresh) {
-            existingGroups.forEach(group => group.destroy());
-            section.innerHTML = '';
-        }
-
-        parsedGroups.forEach(groupData => {
-            const normalizedRows = groupData.rows.filter(row => !!row.value.trim());
-            if (!normalizedRows.length) return;
-
-            const uniqueRows = normalizedRows.filter(row => {
-                const dedupeKey = JSON.stringify({
-                    groupOperator: groupData.operator,
-                    operator: row.operator,
-                    type: row.type,
-                    value: row.value.trim(),
-                    caseSensitive: row.caseSensitive,
-                    regex: row.isRegex
-                });
-                if (dedupeKeys.has(dedupeKey)) return false;
-                dedupeKeys.add(dedupeKey);
-                return true;
-            }).map(row => ({
-                operator: row.operator,
-                type: row.type,
-                value: row.value,
-                caseSensitive: row.caseSensitive,
-                regex: row.isRegex
-            }));
-
-            if (!uniqueRows.length) return;
-
-            const group = new SearchGroup(this.app, section, this);
-            this.updateGroupDragState(group);
-            group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
-            groups.push(group);
-        });
-
-        if (!groups.length) {
-            this.clearSearchForm(uiContainer, 1, 2);
-            return;
-        }
-
-        this.containerGroups.set(uiContainer, groups);
 
         if (!this.settings.enableExperimentalGrouping) {
+            const groups = shouldStartFresh ? [] : [...existingGroups];
+            const dedupeKeys = new Set(
+                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
+                    groupOperator: group.operatorSelect.value,
+                    operator: row.operatorSelect.value,
+                    type: row.typeSelect.value,
+                    value: row.getValue(),
+                    caseSensitive: row.caseInput.checked,
+                    regex: row.regexInput.checked
+                })))
+            );
+
+            if (shouldStartFresh) {
+                existingGroups.forEach(group => group.destroy());
+                section.innerHTML = '';
+            }
+
+            parsedGroups.forEach(groupData => {
+                const normalizedRows = groupData.rows.filter(row => !!row.value.trim());
+                if (!normalizedRows.length) return;
+
+                const uniqueRows = normalizedRows.filter(row => {
+                    const dedupeKey = JSON.stringify({
+                        groupOperator: groupData.operator,
+                        operator: row.operator,
+                        type: row.type,
+                        value: row.value.trim(),
+                        caseSensitive: row.caseSensitive,
+                        regex: row.isRegex
+                    });
+                    if (dedupeKeys.has(dedupeKey)) return false;
+                    dedupeKeys.add(dedupeKey);
+                    return true;
+                }).map(row => ({
+                    operator: row.operator,
+                    type: row.type,
+                    value: row.value,
+                    caseSensitive: row.caseSensitive,
+                    regex: row.isRegex
+                }));
+
+                if (!uniqueRows.length) return;
+
+                const group = new SearchGroup(this.app, section, this);
+                this.updateGroupDragState(group);
+                group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
+                groups.push(group);
+            });
+
+            if (!groups.length) {
+                this.clearSearchForm(uiContainer, 1, 2);
+                return;
+            }
+
+            this.containerGroups.set(uiContainer, groups);
+
             const mergedRows = groups.flatMap(group => group.rows.map(row => ({
                 operator: row.operatorSelect.value as 'AND' | 'OR' | 'NOT',
                 type: row.typeSelect.value,
@@ -536,6 +648,92 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 operator: 'AND',
                 rows: mergedRows
             });
+        } else {
+            const isMultiGroupImport = parsedGroups.length > 1;
+
+            if (shouldStartFresh) {
+                existingGroups.forEach(group => group.destroy());
+                section.innerHTML = '';
+                this.containerGroups.set(uiContainer, []);
+            }
+
+            let groups = this.containerGroups.get(uiContainer) || [];
+            let targetGroup = groups[groups.length - 1] || null;
+
+            if (!targetGroup) {
+                targetGroup = new SearchGroup(this.app, section, this);
+                this.updateGroupDragState(targetGroup);
+                targetGroup.setData({
+                    operator: 'AND',
+                    rows: [{ operator: 'AND', type: 'all', value: '', caseSensitive: false, regex: false }]
+                });
+                groups.push(targetGroup);
+                this.containerGroups.set(uiContainer, groups);
+            }
+
+            const dedupeKeys = new Set(
+                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
+                    groupOperator: group.operatorSelect.value,
+                    operator: row.operatorSelect.value,
+                    type: row.typeSelect.value,
+                    value: row.getValue(),
+                    caseSensitive: row.caseInput.checked,
+                    regex: row.regexInput.checked
+                })))
+            );
+
+            parsedGroups.forEach(groupData => {
+                const normalizedRows = groupData.rows.filter(row => !!row.value.trim());
+                if (!normalizedRows.length) return;
+
+                const uniqueRows = normalizedRows.filter(row => {
+                    const targetOperator = isMultiGroupImport ? groupData.operator : (targetGroup?.operatorSelect.value as 'AND' | 'OR' | 'NOT');
+                    const dedupeKey = JSON.stringify({
+                        groupOperator: targetOperator,
+                        operator: row.operator,
+                        type: row.type,
+                        value: row.value.trim(),
+                        caseSensitive: row.caseSensitive,
+                        regex: row.isRegex
+                    });
+                    if (dedupeKeys.has(dedupeKey)) return false;
+                    dedupeKeys.add(dedupeKey);
+                    return true;
+                }).map(row => ({
+                    operator: row.operator,
+                    type: row.type,
+                    value: row.value,
+                    caseSensitive: row.caseSensitive,
+                    regex: row.isRegex
+                }));
+
+                if (!uniqueRows.length) return;
+
+                if (isMultiGroupImport) {
+                    const group = new SearchGroup(this.app, section, this);
+                    this.updateGroupDragState(group);
+                    group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
+                    groups.push(group);
+                } else if (targetGroup) {
+                    const meaningfulRows = targetGroup.rows.filter(row => !!row.getValue());
+                    if (meaningfulRows.length === 0 && targetGroup.rows.length > 0) {
+                        targetGroup.rows[0]?.setData(uniqueRows[0]!);
+                        uniqueRows.slice(1).forEach(rowData => {
+                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
+                            newRow.setData(rowData);
+                        });
+                    } else {
+                        uniqueRows.forEach(rowData => {
+                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
+                            newRow.setData(rowData);
+                        });
+                    }
+                    this.normalizeGroupRows(targetGroup);
+                }
+            });
+
+            groups = groups.filter(group => group.hasMeaningfulRows() || groups.length === 1);
+            this.containerGroups.set(uiContainer, groups);
         }
 
         if (this.settings.autoSearchAfterImport) {
@@ -572,9 +770,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             if (!this.settings.enableExperimentalGrouping) {
                 group.container.classList.add('asui-grouping-disabled');
                 const groupActions = group.container.querySelector('.asui-search-group-actions') as HTMLElement | null;
+                const groupHandle = group.container.querySelector('.asui-search-group-handle') as HTMLElement | null;
                 const groupDivider = group.container.querySelector('.asui-search-group-divider') as HTMLElement | null;
                 const groupOperator = group.container.querySelector('.asui-group-operator') as HTMLSelectElement | null;
                 if (groupActions) groupActions.style.display = 'none';
+                if (groupHandle) groupHandle.style.display = 'none';
                 if (groupDivider) groupDivider.style.display = 'none';
                 if (groupOperator) groupOperator.style.display = 'none';
             }

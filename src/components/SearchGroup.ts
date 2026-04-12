@@ -125,13 +125,13 @@ export class SearchGroup {
         this.container.classList.toggle('is-collapsed', this.collapsed);
     }
 
-    public setDragEnabled(enabled: boolean) {
+    public setDragEnabled(groupDragEnabled: boolean, rowDragEnabled = false) {
         const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
         if (!handle) return;
-        handle.draggable = enabled;
-        this.rowDragEnabled = enabled;
-        this.rows.forEach(row => row.setDragEnabled(enabled));
-        this.container.classList.toggle('is-draggable', enabled);
+        handle.draggable = groupDragEnabled;
+        this.rowDragEnabled = rowDragEnabled;
+        this.rows.forEach(row => row.setDragEnabled(rowDragEnabled));
+        this.container.classList.toggle('is-draggable', groupDragEnabled);
     }
 
     public setDropTarget(active: boolean) {
