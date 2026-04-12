@@ -1,9 +1,9 @@
-import { Notice, Plugin, setIcon } from 'obsidian';
+import { Plugin, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { SearchRow } from './components/SearchRow';
-import { SearchGroup, SearchGroupDelegate } from './components/SearchGroup';
+import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
 import { SearchQueryBuilder } from './services/SearchQueryBuilder';
 import { SearchExecutionService } from './services/SearchExecutionService';
 import { SearchImportService } from './services/SearchImportService';
@@ -70,7 +70,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             }
 
             if (!this.observer) {
-                this.observer = new MutationObserver((mutations) => {
+                this.observer = new MutationObserver(mutations => {
                     let shouldInject = false;
                     for (const mutation of mutations) {
                         if (mutation.addedNodes.length > 0) {
@@ -155,8 +155,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
 
         searchContainers.forEach(searchContainer => {
-            const searchParams = searchContainer.querySelector('.search-params') as HTMLElement;
-            if (!searchParams) return;
+            const searchParams = searchContainer.querySelector('.search-params');
+            if (!(searchParams instanceof HTMLElement)) return;
 
             if (!searchContainer.querySelector('.asui-search-form-container')) {
                 const queryControlsContainer = searchParams.createDiv({ cls: 'asui-search-form-container' });
@@ -166,11 +166,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
                 const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
                 this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
-                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => { void this.searchExecution.copySearchQuery(queryControlsContainer); });
+                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => {
+                    void this.searchExecution.copySearchQuery(queryControlsContainer);
+                });
 
                 const isModal = searchContainer.closest('.modal-container') || searchContainer.closest('.modal');
                 if (!isModal) {
-                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => this.searchExecution.openGraphView(queryControlsContainer, true));
+                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => {
+                        void this.searchExecution.openGraphView(queryControlsContainer, true);
+                    });
                 }
 
                 this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
@@ -179,15 +183,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 this.containerGroups.set(queryControlsContainer, []);
                 this.handleKeyboardEvents(queryControlsContainer);
 
-                const searchRowEl = searchContainer.querySelector('.search-row') as HTMLElement;
-                if (searchRowEl) searchRowEl.insertAdjacentElement('afterend', queryControlsContainer);
+                const searchRowEl = searchContainer.querySelector('.search-row');
+                if (searchRowEl instanceof HTMLElement) searchRowEl.insertAdjacentElement('afterend', queryControlsContainer);
                 else searchParams.prepend(queryControlsContainer);
 
                 this.clearSearchForm(queryControlsContainer, 1, 2);
             }
 
-            const searchRow = searchContainer.querySelector('.search-row') as HTMLElement;
-            if (searchRow && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
+            const searchRow = searchContainer.querySelector('.search-row');
+            if (searchRow instanceof HTMLElement && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
                 const switchWrapper = searchRow.createDiv({ cls: 'advanced-search-ui-toggle-wrapper' });
                 const toggleBtn = switchWrapper.createEl('div', {
                     cls: 'clickable-icon advanced-search-toggle',
@@ -197,11 +201,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 if (!this.settings.defaultCollapsed) toggleBtn.classList.add('is-active');
                 setIcon(toggleBtn, 'list-filter');
 
-                toggleBtn.onclick = (e) => {
+                toggleBtn.onclick = e => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const queryControlsContainer = searchContainer.querySelector('.asui-search-form-container') as HTMLElement;
-                    if (!queryControlsContainer) return;
+                    const queryControlsContainer = searchContainer.querySelector('.asui-search-form-container');
+                    if (!(queryControlsContainer instanceof HTMLElement)) return;
                     const isHidden = queryControlsContainer.classList.toggle('is-hidden');
                     toggleBtn.classList.toggle('is-active', !isHidden);
                 };
@@ -211,7 +215,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private createNavButton(parent: HTMLElement, text: string, cls: string, clickHandler: () => void) {
         const btn = parent.createEl('button', { text, cls, attr: { type: 'button' } });
-        btn.onclick = (e) => {
+        btn.onclick = e => {
             e.preventDefault();
             e.stopPropagation();
             clickHandler();
@@ -222,16 +226,18 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private handleKeyboardEvents(container: HTMLElement) {
         const handleKeydown = (e: KeyboardEvent) => {
             e.stopPropagation();
-            const active = document.activeElement as HTMLElement;
-            if (!active) return;
+            const active = document.activeElement;
+            if (!(active instanceof HTMLElement)) return;
 
             if (['INPUT', 'SELECT', 'BUTTON'].includes(active.tagName) && e.key === 'Tab') {
                 e.preventDefault();
-                const focusableElements = Array.from(container.querySelectorAll('input, select, button')).filter((el: Element) => {
-                    const htmlEl = el as HTMLElement;
-                    const style = window.getComputedStyle(htmlEl);
-                    return style.display !== 'none' && style.visibility !== 'hidden' && !htmlEl.hasAttribute('disabled');
-                });
+                const focusableElements = Array.from(container.querySelectorAll('input, select, button')).filter(
+                    (el): el is HTMLElement => {
+                        if (!(el instanceof HTMLElement)) return false;
+                        const style = window.getComputedStyle(el);
+                        return style.display !== 'none' && style.visibility !== 'hidden' && !el.hasAttribute('disabled');
+                    }
+                );
 
                 if (focusableElements.length > 0) {
                     const index = focusableElements.indexOf(active);
@@ -243,11 +249,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     } else if (e.shiftKey) {
                         nextIndex = focusableElements.length - 1;
                     }
-                    (focusableElements[nextIndex] as HTMLElement).focus();
+                    focusableElements[nextIndex]?.focus();
                 }
             }
         };
-        container.addEventListener('keydown', handleKeydown as EventListener);
+        container.addEventListener('keydown', handleKeydown);
         container.addEventListener('keyup', e => e.stopPropagation());
         container.addEventListener('keypress', e => e.stopPropagation());
     }
@@ -271,8 +277,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private findGroupByRow(currentRow: SearchRow): SearchGroup | null {
-        const groupEl = currentRow.container.closest('.asui-search-group') as HTMLElement | null;
-        if (!groupEl) return null;
+        const groupEl = currentRow.container.closest('.asui-search-group');
+        if (!(groupEl instanceof HTMLElement)) return null;
         for (const groups of this.containerGroups.values()) {
             const group = groups.find(item => item.container === groupEl);
             if (group) return group;
@@ -402,161 +408,179 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 this.normalizeGroupRows(sourceGroup);
             }
         }
+
+        const targetContainer = this.findContainerByGroup(targetGroup);
+        if (targetContainer && this.shouldAutoSearchForGroup(targetGroup)) {
+            this.searchExecution.executeSearch(targetContainer);
+        }
     }
 
     onAddGroup(currentGroup: SearchGroup) {
-        if (!this.settings.enableExperimentalGrouping) return;
-
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;
-        const groups = this.containerGroups.get(container);
-        const section = container.querySelector('.search-section') as HTMLElement;
-        if (!groups || !section) return;
 
-        const index = groups.indexOf(currentGroup);
-        const newGroup = new SearchGroup(this.app, section, this);
-        currentGroup.container.parentNode?.insertBefore(newGroup.container, currentGroup.container.nextSibling);
-        groups.splice(index + 1, 0, newGroup);
+        const groups = this.containerGroups.get(container) || [];
+        const groupIndex = groups.indexOf(currentGroup);
+        const newGroup = new SearchGroup(this.app, currentGroup.container.parentElement || container, this);
         this.updateGroupDragState(newGroup);
-
         newGroup.setData({
             operator: currentGroup.operatorSelect.value as 'AND' | 'OR' | 'NOT',
             rows: [{ operator: 'AND', type: 'all', value: '', caseSensitive: false, regex: false }]
         });
+
+        currentGroup.container.insertAdjacentElement('afterend', newGroup.container);
+        groups.splice(groupIndex + 1, 0, newGroup);
+        this.containerGroups.set(container, groups);
     }
 
     onDuplicateGroup(currentGroup: SearchGroup) {
-        if (!this.settings.enableExperimentalGrouping) return;
-
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;
-        const groups = this.containerGroups.get(container);
-        const section = container.querySelector('.search-section') as HTMLElement;
-        if (!groups || !section) return;
 
-        const index = groups.indexOf(currentGroup);
-        const newGroup = new SearchGroup(this.app, section, this);
-        currentGroup.container.parentNode?.insertBefore(newGroup.container, currentGroup.container.nextSibling);
-        groups.splice(index + 1, 0, newGroup);
-        this.updateGroupDragState(newGroup);
-        newGroup.setData(currentGroup.getData());
+        const groups = this.containerGroups.get(container) || [];
+        const groupIndex = groups.indexOf(currentGroup);
+        const duplicateGroup = new SearchGroup(this.app, currentGroup.container.parentElement || container, this);
+        this.updateGroupDragState(duplicateGroup);
+        duplicateGroup.setData(currentGroup.getData());
+
+        currentGroup.container.insertAdjacentElement('afterend', duplicateGroup.container);
+        groups.splice(groupIndex + 1, 0, duplicateGroup);
+        this.containerGroups.set(container, groups);
     }
 
     onRemoveGroup(currentGroup: SearchGroup) {
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;
-        const groups = this.containerGroups.get(container);
-        if (!groups) return;
 
+        const groups = this.containerGroups.get(container) || [];
         if (groups.length > 1) {
-            const index = groups.indexOf(currentGroup);
-            groups.splice(index, 1);
-            currentGroup.destroy();
+            const groupIndex = groups.indexOf(currentGroup);
+            if (groupIndex >= 0) {
+                groups.splice(groupIndex, 1);
+                currentGroup.destroy();
+            }
         } else {
-            this.clearSearchForm(container, 1, 2);
+            currentGroup.clearRows();
+            const row = currentGroup.addRow();
+            row.setData({ operator: 'AND' });
         }
     }
 
     onGroupOperatorChange(currentGroup: SearchGroup) {
-        if (!this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForGroup(currentGroup)) return;
         const container = this.findContainerByGroup(currentGroup);
-        if (container) this.searchExecution.executeSearch(container);
+        if (!container || !this.settings.autoSearchOnOperatorChange || !this.shouldAutoSearchForGroup(currentGroup)) return;
+        this.searchExecution.executeSearch(container);
     }
 
     onGroupDragStart(currentGroup: SearchGroup) {
         if (!this.isGroupDragEnabled()) return;
         this.draggingGroup = currentGroup;
-        document.querySelectorAll('.asui-search-group').forEach(el => {
-            el.classList.toggle('is-drag-dimmed', el !== currentGroup.container);
-        });
+        for (const groups of this.containerGroups.values()) {
+            groups.forEach(group => group.container.classList.toggle('is-drag-dimmed', group !== currentGroup));
+        }
     }
 
     onGroupDragEnter(currentGroup: SearchGroup) {
-        if (!this.draggingGroup || this.draggingGroup === currentGroup || this.draggingRow) return;
-        this.onGroupDragOver(currentGroup);
+        if (!this.draggingGroup || this.draggingGroup === currentGroup) return;
+        currentGroup.container.classList.add('is-drop-target');
     }
 
-    onGroupDragOver(currentGroup: SearchGroup, event?: DragEvent) {
-        if (!this.draggingGroup || this.draggingGroup === currentGroup || this.draggingRow) return;
-        const container = this.findContainerByGroup(currentGroup);
-        if (!container) return;
-        const groups = this.containerGroups.get(container);
-        const section = container.querySelector('.search-section') as HTMLElement;
-        if (!groups || !section) return;
+    onGroupDragOver(currentGroup: SearchGroup, event: DragEvent) {
+        if (!this.draggingGroup || this.draggingGroup === currentGroup) return;
+        const currentContainer = this.findContainerByGroup(currentGroup);
+        const draggingContainer = this.findContainerByGroup(this.draggingGroup);
+        if (!currentContainer || !draggingContainer || currentContainer !== draggingContainer) return;
 
-        const fromIndex = groups.indexOf(this.draggingGroup);
-        const currentIndex = groups.indexOf(currentGroup);
-        if (fromIndex < 0 || currentIndex < 0) return;
-
-        let insertIndex = currentIndex;
-        if (event) {
-            const rect = currentGroup.container.getBoundingClientRect();
-            const insertAfter = event.clientY > rect.top + rect.height / 2;
-            insertIndex = currentIndex + (insertAfter ? 1 : 0);
-        }
-
-        if (fromIndex < insertIndex) {
-            insertIndex -= 1;
-        }
-
-        if (insertIndex === fromIndex) return;
-
-        groups.splice(fromIndex, 1);
-        groups.splice(insertIndex, 0, this.draggingGroup);
-
-        const referenceGroup = groups[insertIndex + 1];
-        if (referenceGroup) {
-            section.insertBefore(this.draggingGroup.container, referenceGroup.container);
-        } else {
-            section.appendChild(this.draggingGroup.container);
-        }
+        const rect = currentGroup.container.getBoundingClientRect();
+        const insertAfter = event.clientY > rect.top + rect.height / 2;
+        currentGroup.container.classList.toggle('is-drop-before', !insertAfter);
+        currentGroup.container.classList.toggle('is-drop-after', insertAfter);
     }
 
     onGroupDragEnd() {
+        const draggingGroup = this.draggingGroup;
         this.draggingGroup = null;
-        document.querySelectorAll('.asui-search-group').forEach(el => el.classList.remove('is-drag-dimmed', 'is-dragging'));
+
+        for (const groups of this.containerGroups.values()) {
+            groups.forEach(group => {
+                group.container.classList.remove('is-drag-dimmed', 'is-drop-target', 'is-drop-before', 'is-drop-after');
+            });
+        }
+
+        if (!draggingGroup) return;
+
+        const sourceContainer = this.findContainerByGroup(draggingGroup);
+        if (!sourceContainer) return;
+        const groups = this.containerGroups.get(sourceContainer);
+        if (!groups) return;
+
+        const targetGroup = groups.find(group => group.container.classList.contains('is-drop-before') || group.container.classList.contains('is-drop-after'));
+        if (!targetGroup || targetGroup === draggingGroup) return;
+
+        const sourceIndex = groups.indexOf(draggingGroup);
+        const targetIndex = groups.indexOf(targetGroup);
+        if (sourceIndex < 0 || targetIndex < 0) return;
+
+        const insertAfter = targetGroup.container.classList.contains('is-drop-after');
+        groups.splice(sourceIndex, 1);
+        let finalIndex = targetIndex;
+        if (sourceIndex < targetIndex) finalIndex -= 1;
+        if (insertAfter) finalIndex += 1;
+        groups.splice(finalIndex, 0, draggingGroup);
+
+        const referenceGroup = groups[finalIndex + 1];
+        if (referenceGroup) {
+            sourceContainer.querySelector('.search-section')?.insertBefore(draggingGroup.container, referenceGroup.container);
+        } else {
+            sourceContainer.querySelector('.search-section')?.appendChild(draggingGroup.container);
+        }
+
+        this.containerGroups.set(sourceContainer, groups);
     }
 
-    private clearSearchForm(uiContainer: HTMLElement, groupCount = 1, rowsPerGroup = 2) {
-        const section = uiContainer.querySelector('.search-section') as HTMLElement;
-        if (!section) return;
+    private clearSearchForm(uiContainer?: HTMLElement, groupCount = 1, rowsPerGroup = 2) {
+        const containers = uiContainer ? [uiContainer] : Array.from(this.containerGroups.keys());
 
-        const oldGroups = this.containerGroups.get(uiContainer) || [];
-        oldGroups.forEach(group => group.destroy());
+        containers.forEach(container => {
+            const groups = this.containerGroups.get(container) || [];
+            groups.forEach(group => group.destroy());
 
-        const newGroups: SearchGroup[] = [];
-        section.innerHTML = '';
+            const nextGroups: SearchGroup[] = [];
+            const section = container.querySelector('.search-section');
+            if (!(section instanceof HTMLElement)) return;
 
-        const effectiveGroupCount = this.settings.enableExperimentalGrouping ? groupCount : 1;
+            for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
+                const group = new SearchGroup(this.app, section, this);
+                this.updateGroupDragState(group);
 
-        for (let i = 0; i < effectiveGroupCount; i++) {
-            const group = new SearchGroup(this.app, section, this);
-            this.updateGroupDragState(group);
-            group.setData({
-                operator: 'AND',
-                rows: Array.from({ length: rowsPerGroup }, () => ({
+                const rows: SearchGroupData['rows'] = Array.from({ length: rowsPerGroup }, () => ({
                     operator: 'AND',
                     type: 'all',
                     value: '',
                     caseSensitive: false,
                     regex: false
-                }))
-            });
+                }));
 
-            if (!this.settings.enableExperimentalGrouping) {
-                group.container.classList.add('asui-grouping-disabled');
-                const groupActions = group.container.querySelector('.asui-search-group-actions') as HTMLElement | null;
-                const groupHandle = group.container.querySelector('.asui-search-group-handle') as HTMLElement | null;
-                const groupDivider = group.container.querySelector('.asui-search-group-divider') as HTMLElement | null;
-                const groupOperator = group.container.querySelector('.asui-group-operator') as HTMLSelectElement | null;
-                if (groupActions) groupActions.style.display = 'none';
-                if (groupHandle) groupHandle.style.display = 'none';
-                if (groupDivider) groupDivider.style.display = 'none';
-                if (groupOperator) groupOperator.style.display = 'none';
+                group.setData({
+                    operator: groupIndex === 0 ? 'AND' : 'OR',
+                    rows
+                });
+                nextGroups.push(group);
             }
 
-            newGroups.push(group);
-        }
-        this.containerGroups.set(uiContainer, newGroups);
+            this.containerGroups.set(container, nextGroups);
+
+            const searchInput = container.parentElement?.querySelector('.search-input-container input, input[type="search"]');
+            if (searchInput instanceof HTMLInputElement) searchInput.value = '';
+
+            const searchBtn = container.querySelector('.search-button');
+            const graphBtn = container.querySelector('.graph-button');
+            const copyBtn = container.querySelector('.copy-button');
+            const resetBtn = container.querySelector('.reset-button');
+            searchBtn?.classList.remove('is-hidden');
+            graphBtn?.classList.remove('is-hidden');
+            copyBtn?.classList.remove('is-hidden');
+            resetBtn?.classList.remove('is-hidden');
+        });
     }
 }

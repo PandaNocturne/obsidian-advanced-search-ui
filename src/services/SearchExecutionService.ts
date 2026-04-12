@@ -26,7 +26,7 @@ export class SearchExecutionService {
             const queryValue = this.queryBuilder.buildContainerQuery(this.getGroupsForContainer(currentUI));
             const isModal = containerEl.closest('.modal-container') || containerEl.closest('.modal');
             if (this.getSearchAlsoGraphEnabled() && !isModal) {
-                this.openGraphView(currentUI, false);
+                void this.openGraphView(currentUI, false);
             }
 
             const searchInput = containerEl.querySelector('.search-input-container > input') as HTMLInputElement;
@@ -41,7 +41,7 @@ export class SearchExecutionService {
         });
     }
 
-    public openGraphView(uiContainer: HTMLElement, forceOpen = false) {
+    public async openGraphView(uiContainer: HTMLElement, forceOpen = false) {
         const queryValue = this.queryBuilder.buildContainerQuery(this.getGroupsForContainer(uiContainer));
         let targetLeaf = this.getPreferredGraphLeaf();
         if (!targetLeaf && !forceOpen) return;
@@ -50,14 +50,14 @@ export class SearchExecutionService {
             if (!targetLeaf) {
                 const workspaceLeaf = this.app.workspace.getLeaf(false);
                 if (workspaceLeaf) {
-                    void workspaceLeaf.setViewState({ type: 'graph', active: true });
+                    await workspaceLeaf.setViewState({ type: 'graph', active: true });
                     targetLeaf = workspaceLeaf;
                 }
             }
 
             if (targetLeaf) {
-                this.app.workspace.setActiveLeaf(targetLeaf, true, true);
-                this.app.workspace.revealLeaf(targetLeaf);
+                this.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+                void this.app.workspace.revealLeaf(targetLeaf);
             }
         }
 

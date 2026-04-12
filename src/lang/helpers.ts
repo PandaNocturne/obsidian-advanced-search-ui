@@ -2,7 +2,7 @@ import { moment } from "obsidian";
 import en from "./locale/en";
 import zh from "./locale/zh";
 
-const lang = (window.localStorage.getItem('language') || moment.locale() || 'en').toLowerCase();
+const lang = (moment.locale() || 'en').toLowerCase();
 const locale = lang.startsWith('zh') ? zh : en;
 
 /**

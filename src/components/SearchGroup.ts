@@ -34,12 +34,10 @@ export class SearchGroup {
     private collapsed = false;
     private collapsedBeforeDrag: boolean | null = null;
     private rowDragEnabled = false;
-    private readonly collapsedStateKey: string;
 
     constructor(app: App, parent: HTMLElement, delegate: SearchGroupDelegate) {
         this.app = app;
         this.delegate = delegate;
-        this.collapsedStateKey = `asui-search-group-collapsed:${Date.now()}:${Math.random().toString(36).slice(2)}`;
         this.render(parent);
         this.initialize();
     }
@@ -67,8 +65,6 @@ export class SearchGroup {
     }
 
     private initialize() {
-        this.loadCollapsedState();
-
         this.operatorSelect.addEventListener('change', () => {
             this.delegate.onGroupOperatorChange(this);
         });
@@ -91,8 +87,8 @@ export class SearchGroup {
             this.delegate.onRemoveGroup(this);
         });
 
-        const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
-        if (handle) {
+        const handle = this.container.querySelector('.asui-search-group-handle');
+        if (handle instanceof HTMLDivElement) {
             handle.addEventListener('click', e => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -134,21 +130,9 @@ export class SearchGroup {
         this.setCollapsed(!this.collapsed);
     }
 
-    private saveCollapsedState() {
-        localStorage.setItem(this.collapsedStateKey, this.collapsed ? '1' : '0');
-    }
-
-    private loadCollapsedState() {
-        const saved = localStorage.getItem(this.collapsedStateKey);
-        if (saved === null) return;
-        this.setCollapsed(saved === '1', false);
-    }
-
-    private setCollapsed(collapsed: boolean, persist = true) {
+    private setCollapsed(collapsed: boolean, _persist = true) {
         this.collapsed = collapsed;
-        this.rowsContainer.style.display = this.collapsed ? 'none' : '';
         this.container.classList.toggle('is-collapsed', this.collapsed);
-        if (persist) this.saveCollapsedState();
     }
 
     public getData(): SearchGroupData {
@@ -165,8 +149,8 @@ export class SearchGroup {
     }
 
     public setDragEnabled(groupDragEnabled: boolean, rowDragEnabled = false) {
-        const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
-        if (!handle) return;
+        const handle = this.container.querySelector('.asui-search-group-handle');
+        if (!(handle instanceof HTMLDivElement)) return;
         handle.draggable = groupDragEnabled;
         this.rowDragEnabled = rowDragEnabled;
         this.rows.forEach(row => row.setDragEnabled(rowDragEnabled));

@@ -26,8 +26,8 @@ export class SearchImportService {
         }
 
         if (!searchInput) {
-            const container = uiContainer.closest('.workspace-leaf-content, .view-content, .search-view, .float-search-container, .modal-container') as HTMLElement;
-            if (container) searchInput = container.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
+            const container = uiContainer.closest('.workspace-leaf-content, .view-content, .search-view, .float-search-container, .modal-container');
+            if (container instanceof HTMLElement) searchInput = container.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
             if (!searchInput && uiContainer.parentElement) {
                 searchInput = uiContainer.parentElement.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
             }
@@ -44,8 +44,8 @@ export class SearchImportService {
             return;
         }
 
-        const section = uiContainer.querySelector('.search-section') as HTMLElement;
-        if (!section) return;
+        const section = uiContainer.querySelector('.search-section');
+        if (!(section instanceof HTMLElement)) return;
 
         const settings = this.getSettings();
         const existingGroups = this.getGroupsForContainer(uiContainer);
@@ -110,7 +110,7 @@ export class SearchImportService {
 
             this.setGroupsForContainer(uiContainer, groups);
 
-            const mergedRows = groups.flatMap(group => group.rows.map(row => ({
+            const mergedRows: SearchGroupData['rows'] = groups.flatMap(group => group.rows.map(row => ({
                 operator: row.operatorSelect.value as 'AND' | 'OR' | 'NOT',
                 type: row.typeSelect.value,
                 value: row.getValue(),
@@ -132,7 +132,7 @@ export class SearchImportService {
                 this.setGroupsForContainer(uiContainer, []);
             }
 
-            let groups = this.getGroupsForContainer(uiContainer);
+            const groups = this.getGroupsForContainer(uiContainer);
             let targetGroup = groups[groups.length - 1] || null;
 
             if (!targetGroup && !isMultiGroupImport) {
@@ -162,7 +162,7 @@ export class SearchImportService {
                 if (!normalizedRows.length) return;
 
                 const uniqueRows = normalizedRows.filter(row => {
-                    const targetOperator = isMultiGroupImport ? groupData.operator : (targetGroup?.operatorSelect.value as 'AND' | 'OR' | 'NOT');
+                    const targetOperator = isMultiGroupImport ? groupData.operator : (targetGroup?.operatorSelect.value ?? 'AND');
                     const dedupeKey = JSON.stringify({
                         groupOperator: targetOperator,
                         operator: row.operator,
@@ -194,12 +194,16 @@ export class SearchImportService {
                     if (meaningfulRows.length === 0 && targetGroup.rows.length > 0) {
                         targetGroup.rows[0]?.setData(uniqueRows[0]!);
                         uniqueRows.slice(1).forEach(rowData => {
-                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
+                            const anchorRow = targetGroup?.rows[targetGroup.rows.length - 1];
+                            if (!anchorRow || !targetGroup) return;
+                            const newRow = targetGroup.addRow(anchorRow);
                             newRow.setData(rowData);
                         });
                     } else {
                         uniqueRows.forEach(rowData => {
-                            const newRow = targetGroup!.addRow(targetGroup!.rows[targetGroup!.rows.length - 1]);
+                            const anchorRow = targetGroup?.rows[targetGroup.rows.length - 1];
+                            if (!anchorRow || !targetGroup) return;
+                            const newRow = targetGroup.addRow(anchorRow);
                             newRow.setData(rowData);
                         });
                     }
