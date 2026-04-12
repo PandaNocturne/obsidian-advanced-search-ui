@@ -33,10 +33,12 @@ export class SearchGroup {
     private collapsed = false;
     private collapsedBeforeDrag: boolean | null = null;
     private rowDragEnabled = false;
+    private readonly collapsedStateKey: string;
 
     constructor(app: App, parent: HTMLElement, delegate: SearchGroupDelegate) {
         this.app = app;
         this.delegate = delegate;
+        this.collapsedStateKey = `asui-search-group-collapsed:${Date.now()}:${Math.random().toString(36).slice(2)}`;
         this.render(parent);
         this.initialize();
     }
@@ -62,6 +64,8 @@ export class SearchGroup {
     }
 
     private initialize() {
+        this.loadCollapsedState();
+
         this.operatorSelect.addEventListener('change', () => {
             this.delegate.onGroupOperatorChange(this);
         });
@@ -90,7 +94,7 @@ export class SearchGroup {
             handle.addEventListener('dragstart', (e) => {
                 this.container.classList.add('is-dragging');
                 this.collapsedBeforeDrag = this.collapsed;
-                this.setCollapsed(true);
+                this.setCollapsed(true, false);
                 if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', 'asui-search-group');
@@ -109,7 +113,7 @@ export class SearchGroup {
             handle.addEventListener('dragend', () => {
                 this.container.classList.remove('is-dragging');
                 if (this.collapsedBeforeDrag !== null) {
-                    this.setCollapsed(this.collapsedBeforeDrag);
+                    this.setCollapsed(this.collapsedBeforeDrag, false);
                     this.collapsedBeforeDrag = null;
                 }
                 this.delegate.onGroupDragEnd();
@@ -121,10 +125,21 @@ export class SearchGroup {
         this.setCollapsed(!this.collapsed);
     }
 
-    private setCollapsed(collapsed: boolean) {
+    private saveCollapsedState() {
+        localStorage.setItem(this.collapsedStateKey, this.collapsed ? '1' : '0');
+    }
+
+    private loadCollapsedState() {
+        const saved = localStorage.getItem(this.collapsedStateKey);
+        if (saved === null) return;
+        this.setCollapsed(saved === '1', false);
+    }
+
+    private setCollapsed(collapsed: boolean, persist = true) {
         this.collapsed = collapsed;
         this.rowsContainer.style.display = this.collapsed ? 'none' : '';
         this.container.classList.toggle('is-collapsed', this.collapsed);
+        if (persist) this.saveCollapsedState();
     }
 
     public setDragEnabled(groupDragEnabled: boolean, rowDragEnabled = false) {
