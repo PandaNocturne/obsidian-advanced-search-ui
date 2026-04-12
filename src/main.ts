@@ -425,6 +425,23 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 
+    onDuplicateGroup(currentGroup: SearchGroup) {
+        if (!this.settings.enableExperimentalGrouping) return;
+
+        const container = this.findContainerByGroup(currentGroup);
+        if (!container) return;
+        const groups = this.containerGroups.get(container);
+        const section = container.querySelector('.search-section') as HTMLElement;
+        if (!groups || !section) return;
+
+        const index = groups.indexOf(currentGroup);
+        const newGroup = new SearchGroup(this.app, section, this);
+        currentGroup.container.parentNode?.insertBefore(newGroup.container, currentGroup.container.nextSibling);
+        groups.splice(index + 1, 0, newGroup);
+        this.updateGroupDragState(newGroup);
+        newGroup.setData(currentGroup.getData());
+    }
+
     onRemoveGroup(currentGroup: SearchGroup) {
         const container = this.findContainerByGroup(currentGroup);
         if (!container) return;

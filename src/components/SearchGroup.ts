@@ -14,6 +14,7 @@ export interface SearchGroupData {
 
 export interface SearchGroupDelegate extends SearchRowDelegate {
     onAddGroup(currentGroup: SearchGroup): void;
+    onDuplicateGroup(currentGroup: SearchGroup): void;
     onRemoveGroup(currentGroup: SearchGroup): void;
     onGroupOperatorChange(currentGroup: SearchGroup): void;
     onGroupDragStart(currentGroup: SearchGroup): void;
@@ -51,8 +52,10 @@ export class SearchGroup {
         const actions = header.createDiv({ cls: 'asui-search-group-actions' });
         const removeGroupBtn = actions.createEl('button', { cls: 'asui-remove-group', attr: { type: 'button', 'aria-label': 'Remove group' } });
         const addGroupBtn = actions.createEl('button', { cls: 'asui-add-group', attr: { type: 'button', 'aria-label': 'Add group' } });
+        const duplicateGroupBtn = actions.createEl('button', { cls: 'asui-duplicate-group', attr: { type: 'button', 'aria-label': 'Duplicate group' } });
         setIcon(removeGroupBtn, 'minus-square');
         setIcon(addGroupBtn, 'plus-square');
+        setIcon(duplicateGroupBtn, 'copy');
 
         const handle = header.createDiv({ cls: 'asui-search-group-handle' });
         handle.createDiv({ cls: 'asui-search-group-divider' });
@@ -70,13 +73,19 @@ export class SearchGroup {
             this.delegate.onGroupOperatorChange(this);
         });
 
-        this.container.querySelector('.asui-add-group')?.addEventListener('click', (e) => {
+        this.container.querySelector('.asui-add-group')?.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
             this.delegate.onAddGroup(this);
         });
 
-        this.container.querySelector('.asui-remove-group')?.addEventListener('click', (e) => {
+        this.container.querySelector('.asui-duplicate-group')?.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.delegate.onDuplicateGroup(this);
+        });
+
+        this.container.querySelector('.asui-remove-group')?.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
             this.delegate.onRemoveGroup(this);
@@ -84,14 +93,14 @@ export class SearchGroup {
 
         const handle = this.container.querySelector('.asui-search-group-handle') as HTMLDivElement | null;
         if (handle) {
-            handle.addEventListener('click', (e) => {
+            handle.addEventListener('click', e => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggleCollapsed();
             });
 
             handle.draggable = true;
-            handle.addEventListener('dragstart', (e) => {
+            handle.addEventListener('dragstart', e => {
                 this.container.classList.add('is-dragging');
                 this.collapsedBeforeDrag = this.collapsed;
                 this.setCollapsed(true, false);
@@ -101,11 +110,11 @@ export class SearchGroup {
                 }
                 this.delegate.onGroupDragStart(this);
             });
-            handle.addEventListener('dragenter', (e) => {
+            handle.addEventListener('dragenter', e => {
                 e.preventDefault();
                 this.delegate.onGroupDragEnter(this);
             });
-            handle.addEventListener('dragover', (e) => {
+            handle.addEventListener('dragover', e => {
                 e.preventDefault();
                 if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
                 this.delegate.onGroupDragOver(this, e);
@@ -140,6 +149,19 @@ export class SearchGroup {
         this.rowsContainer.style.display = this.collapsed ? 'none' : '';
         this.container.classList.toggle('is-collapsed', this.collapsed);
         if (persist) this.saveCollapsedState();
+    }
+
+    public getData(): SearchGroupData {
+        return {
+            operator: this.operatorSelect.value as 'AND' | 'OR' | 'NOT',
+            rows: this.rows.map(row => ({
+                operator: row.operatorSelect.value as 'AND' | 'OR' | 'NOT',
+                type: row.typeSelect.value,
+                value: row.getValue(),
+                caseSensitive: row.caseInput.checked,
+                regex: row.regexInput.checked
+            }))
+        };
     }
 
     public setDragEnabled(groupDragEnabled: boolean, rowDragEnabled = false) {
