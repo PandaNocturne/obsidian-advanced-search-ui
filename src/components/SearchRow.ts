@@ -9,6 +9,7 @@ export interface SearchRowDelegate {
     onAddRow(currentRow: SearchRow): void;
     onRemoveRow(currentRow: SearchRow): void;
     onExecuteSearch(): void;
+    onOperatorChange(currentRow: SearchRow): void;
 }
 
 /**
@@ -62,7 +63,7 @@ export class SearchRow {
         // 输入框组
         const inputGroup = this.container.createDiv({ cls: 'input-group' });
         this.input = inputGroup.createEl('input', { type: 'search', cls: 'search-input' });
-        this.input.placeholder = t('SEARCH_BUTTON'); // 设一个占位符或随便什么
+        this.input.placeholder = t('SEARCH_BUTTON');
         this.iconButton = inputGroup.createEl('button', { cls: 'icon-button', attr: { type: 'button' } });
         
         // 控制开关
@@ -97,24 +98,24 @@ export class SearchRow {
             this.iconButton.setAttribute('data-select-option', iconName ? selected : '');
         };
 
-        // 设置图标
         this.typeSelect.onchange = updateIcon;
         updateIcon();
 
-        // 为各个功能按钮设置图标
         SearchRow.setIconForEl(this.container.querySelector('.icon-case-sensitive') as HTMLElement, 'case-sensitive');
         SearchRow.setIconForEl(this.container.querySelector('.icon-regex') as HTMLElement, 'regex');
         SearchRow.setIconForEl(this.container.querySelector('.remove-row') as HTMLElement, 'minus');
         SearchRow.setIconForEl(this.container.querySelector('.add-row') as HTMLElement, 'plus');
 
-        // 按钮交互
         this.iconButton.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
             void this.handleIconClick();
         };
+
+        this.operatorSelect.addEventListener('change', () => {
+            this.delegate.onOperatorChange(this);
+        });
         
-        // Radio 逻辑：同一个组互斥，且允许取消选中
         const radios = [this.caseInput, this.regexInput];
         const rowId = `search-mode-${Math.random().toString(36).substring(2, 11)}`;
         radios.forEach(radio => {
@@ -129,14 +130,12 @@ export class SearchRow {
             };
         });
 
-        // 键盘回车执行检索
         this.input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.delegate.onExecuteSearch();
             }
         });
 
-        // 加减号按钮绑定
         this.container.querySelector('.remove-row')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -164,11 +163,9 @@ export class SearchRow {
 
             if (type === 'tag') {
                 newValue = choice.replace(/^#/, '');
-                // 标签允许多个组合，追加到现有内容后
                 this.input.value = currentValue ? `${currentValue} ${newValue}` : newValue;
             } else if (type === 'file' || type === 'path') {
                 newValue = `"${choice}"`;
-                // 文件和文件夹是单一目标，直接替换
                 this.input.value = newValue;
             } else {
                 this.input.value = currentValue ? `${currentValue} ${newValue}` : newValue;
@@ -212,7 +209,7 @@ export class SearchRow {
         if (data.operator !== undefined) this.operatorSelect.value = data.operator;
         if (data.type !== undefined) {
              this.typeSelect.value = data.type;
-             this.typeSelect.dispatchEvent(new Event('change')); // 触发图标更新
+             this.typeSelect.dispatchEvent(new Event('change'));
         }
         if (data.value !== undefined) this.input.value = data.value;
         if (data.caseSensitive !== undefined) this.caseInput.checked = data.caseSensitive;

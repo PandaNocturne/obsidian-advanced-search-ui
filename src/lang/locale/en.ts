@@ -13,9 +13,23 @@ export default {
     "COPIED_TO_CLIPBOARD": "Copied to clipboard",
     "FAILED_TO_COPY": "Failed to copy",
 
+    // Settings groups
+    "SETTING_GROUP_SEARCH": "Search behavior",
+    "SETTING_GROUP_SEARCH_DESC": "Controls import, logical operator changes, and graph-linked search behavior.",
+    "SETTING_GROUP_UI": "UI & compatibility",
+    "SETTING_GROUP_UI_DESC": "Controls panel presentation, compatibility modes, and responsive UI scaling.",
+
     // Settings
     "SEARCH_ALSO_GRAPH": "Update graph on search",
     "SEARCH_ALSO_GRAPH_DESC": "When enabled, graph view filters will be automatically updated when performing a search.",
+    "IMPORT_MODE": "Import mode",
+    "IMPORT_MODE_DESC": "Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.",
+    "IMPORT_MODE_APPEND": "Append",
+    "IMPORT_MODE_REPLACE": "Replace",
+    "AUTO_SEARCH_AFTER_IMPORT": "Auto search after import",
+    "AUTO_SEARCH_AFTER_IMPORT_DESC": "Automatically execute a search immediately after importing query conditions.",
+    "AUTO_SEARCH_ON_OPERATOR_CHANGE": "Auto search on AND/OR/NOT change",
+    "AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC": "Automatically execute search when switching AND / OR / NOT.",
     "DEFAULT_COLLAPSED": "Default collapsed",
     "DEFAULT_COLLAPSED_DESC": "If enabled, the advanced search UI panel will be collapsed by default.",
     "ADAPT_FLOAT_SEARCH": "Adapt to float search",

@@ -10,12 +10,27 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    private createSettingGroup(containerEl: HTMLElement, title: string, description: string): HTMLElement {
+        const group = containerEl.createDiv({ cls: 'setting-item setting-item-heading' });
+        const info = group.createDiv({ cls: 'setting-item-info' });
+        info.createDiv({ cls: 'setting-item-name', text: title });
+        info.createDiv({ cls: 'setting-item-description', text: description });
+
+        return containerEl.createDiv({ cls: 'advanced-search-settings-group' });
+    }
+
     display(): void {
         const { containerEl } = this;
 
         containerEl.empty();
 
-        new Setting(containerEl)
+        const searchGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_SEARCH') || 'Search behavior',
+            t('SETTING_GROUP_SEARCH_DESC') || 'Controls import, logical operator changes, and graph-linked search behavior.'
+        );
+
+        new Setting(searchGroup)
             .setName(t('SEARCH_ALSO_GRAPH') || 'SEARCH_ALSO_GRAPH')
             .setDesc(t('SEARCH_ALSO_GRAPH_DESC') || 'SEARCH_ALSO_GRAPH_DESC')
             .addToggle(toggle => toggle
@@ -25,7 +40,45 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(containerEl)
+        new Setting(searchGroup)
+            .setName(t('IMPORT_MODE') || 'Import mode')
+            .setDesc(t('IMPORT_MODE_DESC') || 'Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.')
+            .addDropdown(dropdown => dropdown
+                .addOption('append', t('IMPORT_MODE_APPEND') || 'Append')
+                .addOption('replace', t('IMPORT_MODE_REPLACE') || 'Replace')
+                .setValue(this.plugin.settings.importMode)
+                .onChange(async (value: 'append' | 'replace') => {
+                    this.plugin.settings.importMode = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(searchGroup)
+            .setName(t('AUTO_SEARCH_AFTER_IMPORT') || 'Auto search after import')
+            .setDesc(t('AUTO_SEARCH_AFTER_IMPORT_DESC') || 'Automatically execute search after importing query conditions.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoSearchAfterImport)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoSearchAfterImport = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(searchGroup)
+            .setName(t('AUTO_SEARCH_ON_OPERATOR_CHANGE') || 'Auto search on operator change')
+            .setDesc(t('AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC') || 'Automatically execute search when switching AND / OR / NOT.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoSearchOnOperatorChange)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoSearchOnOperatorChange = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        const uiGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_UI') || 'UI & compatibility',
+            t('SETTING_GROUP_UI_DESC') || 'Controls panel presentation, compatibility modes, and responsive UI scaling.'
+        );
+
+        new Setting(uiGroup)
             .setName(t('DEFAULT_COLLAPSED') || 'Default collapsed')
             .setDesc(t('DEFAULT_COLLAPSED_DESC') || 'Whether the advanced search UI is collapsed by default.')
             .addToggle(toggle => toggle
@@ -34,8 +87,8 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.defaultCollapsed = value;
                     await this.plugin.saveSettings();
                 }));
-                
-        new Setting(containerEl)
+
+        new Setting(uiGroup)
             .setName(t('ADAPT_FLOAT_SEARCH') || 'Adapt to Float Search plugin')
             .setDesc(t('ADAPT_FLOAT_SEARCH_DESC') || 'Enable compatibility with modal and other modes of Float Search plugin.')
             .addToggle(toggle => toggle
@@ -45,8 +98,8 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.updateInterval();
                 }));
-                
-        new Setting(containerEl)
+
+        new Setting(uiGroup)
             .setName(t('AUTO_SCALE_UI') || 'Auto scale UI')
             .setDesc(t('AUTO_SCALE_UI_DESC') || 'Auto scale UI elements when sidebar is narrow.')
             .addToggle(toggle => toggle
@@ -54,7 +107,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.autoScaleUI = value;
                     await this.plugin.saveSettings();
-                    // 立即应用或移除 class
                     if (value) {
                         document.body.classList.add('advanced-search-auto-scale');
                     } else {
