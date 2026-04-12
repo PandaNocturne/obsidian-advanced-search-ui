@@ -1,4 +1,4 @@
-import { App, Notice } from 'obsidian';
+import { App, Notice, WorkspaceLeaf } from 'obsidian';
 import { SearchGroup } from '../components/SearchGroup';
 import { t } from '../lang/helpers';
 import { SearchQueryBuilder } from './SearchQueryBuilder';
@@ -43,12 +43,10 @@ export class SearchExecutionService {
 
     public openGraphView(uiContainer: HTMLElement, forceOpen = false) {
         const queryValue = this.queryBuilder.buildContainerQuery(this.getGroupsForContainer(uiContainer));
-        let graphLeaves = this.app.workspace.getLeavesOfType('graph');
-        if (graphLeaves.length === 0 && !forceOpen) return;
+        let targetLeaf = this.getPreferredGraphLeaf();
+        if (!targetLeaf && !forceOpen) return;
 
         if (forceOpen) {
-            let targetLeaf = graphLeaves[0];
-
             if (!targetLeaf) {
                 const workspaceLeaf = this.app.workspace.getLeaf(false);
                 if (workspaceLeaf) {
@@ -58,22 +56,22 @@ export class SearchExecutionService {
             }
 
             if (targetLeaf) {
+                this.app.workspace.setActiveLeaf(targetLeaf, true, true);
                 this.app.workspace.revealLeaf(targetLeaf);
             }
-
-            graphLeaves = this.app.workspace.getLeavesOfType('graph');
         }
 
-        setTimeout(() => {
-            this.app.workspace.getLeavesOfType('graph').forEach(leaf => {
-                const graphSearch = leaf.view.containerEl.querySelector('.graph-control-section .search-input-container input') as HTMLInputElement;
-                if (graphSearch) {
-                    graphSearch.value = queryValue;
-                    graphSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                    graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                    graphSearch.blur();
-                }
-            });
+        window.setTimeout(() => {
+            const resolvedLeaf = targetLeaf || this.getPreferredGraphLeaf();
+            if (!resolvedLeaf) return;
+
+            const graphSearch = resolvedLeaf.view.containerEl.querySelector('.graph-control-section .search-input-container input') as HTMLInputElement;
+            if (graphSearch) {
+                graphSearch.value = queryValue;
+                graphSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                graphSearch.blur();
+            }
         }, 100);
     }
 
@@ -85,5 +83,17 @@ export class SearchExecutionService {
         } catch {
             new Notice(t('FAILED_TO_COPY'));
         }
+    }
+
+    private getPreferredGraphLeaf(): WorkspaceLeaf | null {
+        const graphLeaves = this.app.workspace.getLeavesOfType('graph');
+        if (!graphLeaves.length) return null;
+
+        const mostRecentLeaf = this.app.workspace.getMostRecentLeaf();
+        if (mostRecentLeaf && graphLeaves.includes(mostRecentLeaf)) {
+            return mostRecentLeaf;
+        }
+
+        return graphLeaves[0] ?? null;
     }
 }
