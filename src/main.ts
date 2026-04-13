@@ -491,51 +491,76 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const draggingContainer = this.findContainerByGroup(this.draggingGroup);
         if (!currentContainer || !draggingContainer || currentContainer !== draggingContainer) return;
 
+        const groups = this.containerGroups.get(currentContainer) || [];
+        groups.forEach(group => {
+            if (group !== currentGroup) {
+                group.container.classList.remove('is-drop-target', 'is-drop-before', 'is-drop-after');
+            }
+        });
+
         const rect = currentGroup.container.getBoundingClientRect();
         const insertAfter = event.clientY > rect.top + rect.height / 2;
+        currentGroup.container.classList.add('is-drop-target');
         currentGroup.container.classList.toggle('is-drop-before', !insertAfter);
         currentGroup.container.classList.toggle('is-drop-after', insertAfter);
     }
 
     onGroupDragEnd() {
         const draggingGroup = this.draggingGroup;
-        this.draggingGroup = null;
-
-        for (const groups of this.containerGroups.values()) {
-            groups.forEach(group => {
-                group.container.classList.remove('is-drag-dimmed', 'is-drop-target', 'is-drop-before', 'is-drop-after');
-            });
-        }
-
         if (!draggingGroup) return;
 
         const sourceContainer = this.findContainerByGroup(draggingGroup);
-        if (!sourceContainer) return;
-        const groups = this.containerGroups.get(sourceContainer);
-        if (!groups) return;
-
-        const targetGroup = groups.find(group => group.container.classList.contains('is-drop-before') || group.container.classList.contains('is-drop-after'));
-        if (!targetGroup || targetGroup === draggingGroup) return;
-
-        const sourceIndex = groups.indexOf(draggingGroup);
-        const targetIndex = groups.indexOf(targetGroup);
-        if (sourceIndex < 0 || targetIndex < 0) return;
-
-        const insertAfter = targetGroup.container.classList.contains('is-drop-after');
-        groups.splice(sourceIndex, 1);
-        let finalIndex = targetIndex;
-        if (sourceIndex < targetIndex) finalIndex -= 1;
-        if (insertAfter) finalIndex += 1;
-        groups.splice(finalIndex, 0, draggingGroup);
-
-        const referenceGroup = groups[finalIndex + 1];
-        if (referenceGroup) {
-            sourceContainer.querySelector('.search-section')?.insertBefore(draggingGroup.container, referenceGroup.container);
-        } else {
-            sourceContainer.querySelector('.search-section')?.appendChild(draggingGroup.container);
+        if (!sourceContainer) {
+            this.draggingGroup = null;
+            return;
         }
 
-        this.containerGroups.set(sourceContainer, groups);
+        const groups = this.containerGroups.get(sourceContainer);
+        if (!groups) {
+            this.draggingGroup = null;
+            return;
+        }
+
+        const targetGroup = groups.find(group => group.container.classList.contains('is-drop-before') || group.container.classList.contains('is-drop-after'));
+        const insertAfter = !!targetGroup?.container.classList.contains('is-drop-after');
+
+        this.draggingGroup = null;
+
+        if (targetGroup && targetGroup !== draggingGroup) {
+            const sourceIndex = groups.indexOf(draggingGroup);
+            const targetIndex = groups.indexOf(targetGroup);
+            if (sourceIndex >= 0 && targetIndex >= 0) {
+                groups.splice(sourceIndex, 1);
+
+                let insertIndex = groups.indexOf(targetGroup);
+                if (insertIndex >= 0 && insertAfter) {
+                    insertIndex += 1;
+                }
+                if (insertIndex < 0) {
+                    insertIndex = groups.length;
+                }
+
+                groups.splice(insertIndex, 0, draggingGroup);
+
+                const section = sourceContainer.querySelector('.search-section');
+                if (section instanceof HTMLElement) {
+                    const referenceGroup = groups[insertIndex + 1];
+                    if (referenceGroup) {
+                        section.insertBefore(draggingGroup.container, referenceGroup.container);
+                    } else {
+                        section.appendChild(draggingGroup.container);
+                    }
+                }
+
+                this.containerGroups.set(sourceContainer, groups);
+            }
+        }
+
+        for (const groupList of this.containerGroups.values()) {
+            groupList.forEach(group => {
+                group.container.classList.remove('is-drag-dimmed', 'is-drop-target', 'is-drop-before', 'is-drop-after');
+            });
+        }
     }
 
     private clearSearchForm(uiContainer?: HTMLElement, groupCount = 1, rowsPerGroup = 2) {

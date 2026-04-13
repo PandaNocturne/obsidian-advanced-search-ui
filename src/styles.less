@@ -149,15 +149,21 @@
   }
 
   &.is-collapsed {
+
     .asui-search-group-header {
       margin-bottom: 0;
+      .asui-search-group-divider::before {
+        background-color: var(--interactive-accent) !important;
+        opacity: 1;
+        height: 2px;
+    }
     }
 
-    .asui-search-group-divider::before {
-      background-color: var(--interactive-accent) !important;
-      opacity: 1;
-      height: 2px;
+    .asui-search-group-rows{
+      display:none;
     }
+
+
   }
 }
 
@@ -300,7 +306,7 @@
 }
 
 .asui-form-row:first-child .asui-operator {
-  display: none;
+  // display: none;
 }
 
 .asui-form-row input[type="search"] {

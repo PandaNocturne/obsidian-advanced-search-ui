@@ -32,8 +32,8 @@ export class SearchGroup {
     private app: App;
     private delegate: SearchGroupDelegate;
     private collapsed = false;
-    private collapsedBeforeDrag: boolean | null = null;
     private rowDragEnabled = false;
+    private dragStarted = false;
 
     constructor(app: App, parent: HTMLElement, delegate: SearchGroupDelegate) {
         this.app = app;
@@ -89,17 +89,24 @@ export class SearchGroup {
 
         const handle = this.container.querySelector('.asui-search-group-handle');
         if (handle instanceof HTMLDivElement) {
+            handle.addEventListener('pointerdown', () => {
+                this.dragStarted = false;
+            });
+
             handle.addEventListener('click', e => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (this.dragStarted) {
+                    this.dragStarted = false;
+                    return;
+                }
                 this.toggleCollapsed();
             });
 
             handle.draggable = true;
             handle.addEventListener('dragstart', e => {
+                this.dragStarted = true;
                 this.container.classList.add('is-dragging');
-                this.collapsedBeforeDrag = this.collapsed;
-                this.setCollapsed(true, false);
                 if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', 'asui-search-group');
@@ -117,10 +124,9 @@ export class SearchGroup {
             });
             handle.addEventListener('dragend', () => {
                 this.container.classList.remove('is-dragging');
-                if (this.collapsedBeforeDrag !== null) {
-                    this.setCollapsed(this.collapsedBeforeDrag, false);
-                    this.collapsedBeforeDrag = null;
-                }
+                window.setTimeout(() => {
+                    this.dragStarted = false;
+                }, 0);
                 this.delegate.onGroupDragEnd();
             });
         }
