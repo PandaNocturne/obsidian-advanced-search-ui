@@ -599,9 +599,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
             this.containerGroups.set(container, nextGroups);
 
-            const searchInput = container.parentElement?.querySelector('.search-input-container input, input[type="search"]');
-            if (searchInput instanceof HTMLInputElement) searchInput.value = '';
-
             const searchBtn = container.querySelector('.search-button');
             const graphBtn = container.querySelector('.graph-button');
             const copyBtn = container.querySelector('.copy-button');

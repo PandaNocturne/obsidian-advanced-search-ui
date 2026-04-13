@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     searchAlsoGraph: true,
     defaultCollapsed: false,
     adaptToFloatSearch: true,
-    autoScaleUI: false,
+    autoScaleUI: true,
     autoSearchAfterImport: true,
     autoSearchOnOperatorChange: false,
     enableExperimentalGrouping: false,
