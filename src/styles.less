@@ -100,6 +100,13 @@
   flex-direction: column;
   transition: opacity 0.12s ease, background-color 0.12s ease;
 
+  &.is-grouping-disabled {
+    .asui-search-group-rows {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
   &.is-draggable .asui-search-group-handle {
     cursor: grab;
   }

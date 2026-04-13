@@ -262,6 +262,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         return this.settings.enableExperimentalGrouping && this.settings.enableExperimentalGroupDragAndDrop;
     }
 
+    public isGroupingEnabled() {
+        return this.settings.enableExperimentalGrouping;
+    }
+
     private isRowDragEnabled() {
         return this.settings.enableExperimentalRowDragAndDrop;
     }

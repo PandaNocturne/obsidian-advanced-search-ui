@@ -31,6 +31,7 @@ export class SearchQueryBuilder {
         groups.forEach(group => {
             const rowParts: string[] = [];
             let hasEffectiveRow = false;
+            let hasAndOrCombination = false;
 
             group.rows.forEach(row => {
                 const rowQuery = this.buildRowQuery(row);
@@ -42,9 +43,17 @@ export class SearchQueryBuilder {
                     part = rowOperator === 'NOT' ? `-${rowQuery}` : rowQuery;
                 } else {
                     switch (rowOperator) {
-                        case 'AND': part = rowQuery; break;
-                        case 'OR': part = `OR ${rowQuery}`; break;
-                        case 'NOT': part = `-${rowQuery}`; break;
+                        case 'AND':
+                            part = rowQuery;
+                            hasAndOrCombination = true;
+                            break;
+                        case 'OR':
+                            part = `OR ${rowQuery}`;
+                            hasAndOrCombination = true;
+                            break;
+                        case 'NOT':
+                            part = `-${rowQuery}`;
+                            break;
                     }
                 }
                 rowParts.push(part);
@@ -53,16 +62,25 @@ export class SearchQueryBuilder {
 
             if (!rowParts.length) return;
 
-            const grouped = rowParts.length === 1 ? rowParts[0]! : `(${rowParts.join(' ')})`;
+            const combinedRows = rowParts.join(' ');
+            const grouped = hasAndOrCombination ? `(${combinedRows})` : combinedRows;
             let groupPart: string;
             if (!hasEffectiveGroup) {
                 groupPart = group.operatorSelect.value === 'NOT' ? `-${grouped}` : grouped;
             } else {
                 switch (group.operatorSelect.value) {
-                    case 'AND': groupPart = grouped; break;
-                    case 'OR': groupPart = `OR ${grouped}`; break;
-                    case 'NOT': groupPart = `-${grouped}`; break;
-                    default: groupPart = grouped; break;
+                    case 'AND':
+                        groupPart = grouped;
+                        break;
+                    case 'OR':
+                        groupPart = `OR ${grouped}`;
+                        break;
+                    case 'NOT':
+                        groupPart = `-${grouped}`;
+                        break;
+                    default:
+                        groupPart = grouped;
+                        break;
                 }
             }
 

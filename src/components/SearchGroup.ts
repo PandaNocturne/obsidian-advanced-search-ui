@@ -13,6 +13,7 @@ export interface SearchGroupData {
 }
 
 export interface SearchGroupDelegate extends SearchRowDelegate {
+    isGroupingEnabled(): boolean;
     onAddGroup(currentGroup: SearchGroup): void;
     onDuplicateGroup(currentGroup: SearchGroup): void;
     onRemoveGroup(currentGroup: SearchGroup): void;
@@ -155,12 +156,19 @@ export class SearchGroup {
     }
 
     public setDragEnabled(groupDragEnabled: boolean, rowDragEnabled = false) {
+        const isGroupingEnabled = this.delegate.isGroupingEnabled();
+        const header = this.container.querySelector('.asui-search-group-header');
+        if (header instanceof HTMLDivElement) {
+            header.classList.toggle('is-hidden', !isGroupingEnabled);
+        }
+        this.container.classList.toggle('is-grouping-disabled', !isGroupingEnabled);
+
         const handle = this.container.querySelector('.asui-search-group-handle');
         if (!(handle instanceof HTMLDivElement)) return;
-        handle.draggable = groupDragEnabled;
+        handle.draggable = isGroupingEnabled && groupDragEnabled;
         this.rowDragEnabled = rowDragEnabled;
         this.rows.forEach(row => row.setDragEnabled(rowDragEnabled));
-        this.container.classList.toggle('is-draggable', groupDragEnabled);
+        this.container.classList.toggle('is-draggable', isGroupingEnabled && groupDragEnabled);
     }
 
     public setDropTarget(active: boolean) {
