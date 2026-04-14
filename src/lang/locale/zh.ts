@@ -14,10 +14,12 @@ export default {
     "FAILED_TO_COPY": "复制失败",
     
     // Settings groups
-    "SETTING_GROUP_SEARCH": "搜索行为",
-    "SETTING_GROUP_SEARCH_DESC": "控制导入、逻辑切换以及图谱联动等搜索相关行为。",
-    "SETTING_GROUP_UI": "界面与兼容性",
-    "SETTING_GROUP_UI_DESC": "控制高级搜索面板的展示方式、兼容模式和界面缩放。",
+    "SETTING_GROUP_SEARCH": "导入与执行",
+    "SETTING_GROUP_SEARCH_DESC": "控制导入条件的合并方式，以及何时自动执行搜索。",
+    "SETTING_GROUP_UI": "面板行为",
+    "SETTING_GROUP_UI_DESC": "控制高级搜索面板在不同布局下的展示方式与适配行为。",
+    "SETTING_GROUP_GRAPH": "图谱联动",
+    "SETTING_GROUP_GRAPH_DESC": "控制搜索结果与图谱视图、图谱颜色组之间的联动方式。",
     "SETTING_GROUP_EXPERIMENTAL": "实验性功能",
     "SETTING_GROUP_EXPERIMENTAL_DESC": "以下功能仍处于实验阶段，默认关闭。",
 

@@ -14,10 +14,12 @@ export default {
     "FAILED_TO_COPY": "Failed to copy",
 
     // Settings groups
-    "SETTING_GROUP_SEARCH": "Search behavior",
-    "SETTING_GROUP_SEARCH_DESC": "Controls import, logical operator changes, and graph-linked search behavior.",
-    "SETTING_GROUP_UI": "UI & compatibility",
-    "SETTING_GROUP_UI_DESC": "Controls panel presentation, compatibility modes, and responsive UI scaling.",
+    "SETTING_GROUP_SEARCH": "Import and execution",
+    "SETTING_GROUP_SEARCH_DESC": "Controls how imported conditions are merged and when searches run automatically.",
+    "SETTING_GROUP_UI": "Panel behavior",
+    "SETTING_GROUP_UI_DESC": "Controls how the advanced search panel is displayed and adapted to different layouts.",
+    "SETTING_GROUP_GRAPH": "Graph integration",
+    "SETTING_GROUP_GRAPH_DESC": "Controls how search results interact with graph view and graph color groups.",
     "SETTING_GROUP_EXPERIMENTAL": "Experimental features",
     "SETTING_GROUP_EXPERIMENTAL_DESC": "The following features are experimental and disabled by default.",
 
