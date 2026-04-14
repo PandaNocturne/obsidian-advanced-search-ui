@@ -2,6 +2,7 @@
 .vscode 
 .history 
 .github  
+.specstory
 
 # Intellij
 *.iml
