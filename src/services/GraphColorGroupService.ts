@@ -210,13 +210,13 @@ export class GraphColorGroupService {
         return value && typeof value === 'object' ? value as Record<string, unknown> : null;
     }
 
-    private getFunction(source: unknown, key: string): Function | null {
+    private getFunction(source: unknown, key: string): (() => unknown) | null {
         if (!source || typeof source !== 'object') return null;
         const value = (source as Record<string, unknown>)[key];
-        return typeof value === 'function' ? value : null;
+        return typeof value === 'function' ? value as () => unknown : null;
     }
 
-    private safeCall<T>(fn: Function, context: unknown): T | null {
+    private safeCall<T>(fn: () => unknown, context: unknown): T | null {
         try {
             return fn.call(context) as T;
         } catch {

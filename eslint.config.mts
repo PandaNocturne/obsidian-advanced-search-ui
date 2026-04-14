@@ -26,6 +26,7 @@ export default tseslint.config(
 		"node_modules",
 		"dist",
 		".history",
+		".tmp",
 		"esbuild.config.mjs",
 		"eslint.config.js",
 		"version-bump.mjs",
