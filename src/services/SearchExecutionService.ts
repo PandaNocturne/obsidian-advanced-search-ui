@@ -12,8 +12,8 @@ export class SearchExecutionService {
         private getGroupsForContainer: (container: HTMLElement) => SearchGroup[],
         private getSearchAlsoGraphEnabled: () => boolean,
         private getAdaptToFloatSearchEnabled: () => boolean,
-        private getGraphColorGroupsEnabled: () => boolean,
-        private getGroupingEnabled: () => boolean
+        private getGroupingEnabled: () => boolean,
+        private getClearGraphColorGroupsOnResetEnabled: () => boolean
     ) {}
 
     public executeSearch(uiContainer?: HTMLElement) {
@@ -92,8 +92,17 @@ export class SearchExecutionService {
         }
     }
 
+    public clearGraphColorGroups() {
+        if (!this.getClearGraphColorGroupsOnResetEnabled()) return;
+
+        const targetLeaf = this.getPreferredGraphLeaf();
+        if (!targetLeaf) return;
+
+        this.graphColorGroupService.clearColorGroups(targetLeaf);
+    }
+
     private syncGraphColorGroups(targetLeaf: WorkspaceLeaf, groups: SearchGroup[]) {
-        if (!this.getGraphColorGroupsEnabled() || !this.getGroupingEnabled()) return;
+        if (!this.getGroupingEnabled()) return;
 
         const groupQueries = groups
             .map(group => this.queryBuilder.buildGroupQuery(group))

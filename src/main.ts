@@ -32,8 +32,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         container => this.containerGroups.get(container) || [],
         () => this.settings.searchAlsoGraph,
         () => this.settings.adaptToFloatSearch,
-        () => this.settings.graphColorGroupsEnabled,
-        () => this.settings.enableExperimentalGrouping
+        () => this.settings.enableExperimentalGrouping,
+        () => this.settings.clearGraphColorGroupsOnReset
     );
     private searchImport = new SearchImportService(
         this.app,
@@ -183,7 +183,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 }
 
                 this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
-                this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => this.clearSearchForm(queryControlsContainer));
+                this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => {
+                    this.searchExecution.clearGraphColorGroups();
+                    this.clearSearchForm(queryControlsContainer);
+                });
 
                 this.containerGroups.set(queryControlsContainer, []);
                 this.handleKeyboardEvents(queryControlsContainer);
