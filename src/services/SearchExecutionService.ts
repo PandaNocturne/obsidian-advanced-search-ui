@@ -1,15 +1,19 @@
 import { App, Notice, WorkspaceLeaf } from 'obsidian';
 import { SearchGroup } from '../components/SearchGroup';
 import { t } from '../lang/helpers';
+import { GraphColorGroupService } from './GraphColorGroupService';
 import { SearchQueryBuilder } from './SearchQueryBuilder';
 
 export class SearchExecutionService {
     constructor(
         private app: App,
         private queryBuilder: SearchQueryBuilder,
+        private graphColorGroupService: GraphColorGroupService,
         private getGroupsForContainer: (container: HTMLElement) => SearchGroup[],
         private getSearchAlsoGraphEnabled: () => boolean,
-        private getAdaptToFloatSearchEnabled: () => boolean
+        private getAdaptToFloatSearchEnabled: () => boolean,
+        private getGraphColorGroupsEnabled: () => boolean,
+        private getGroupingEnabled: () => boolean
     ) {}
 
     public executeSearch(uiContainer?: HTMLElement) {
@@ -42,7 +46,8 @@ export class SearchExecutionService {
     }
 
     public async openGraphView(uiContainer: HTMLElement, forceOpen = false) {
-        const queryValue = this.queryBuilder.buildContainerQuery(this.getGroupsForContainer(uiContainer));
+        const groups = this.getGroupsForContainer(uiContainer);
+        const queryValue = this.queryBuilder.buildContainerQuery(groups);
         let targetLeaf = this.getPreferredGraphLeaf();
         if (!targetLeaf && !forceOpen) return;
 
@@ -72,6 +77,8 @@ export class SearchExecutionService {
                 graphSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
                 graphSearch.blur();
             }
+
+            this.syncGraphColorGroups(resolvedLeaf, groups);
         }, 100);
     }
 
@@ -83,6 +90,18 @@ export class SearchExecutionService {
         } catch {
             new Notice(t('FAILED_TO_COPY'));
         }
+    }
+
+    private syncGraphColorGroups(targetLeaf: WorkspaceLeaf, groups: SearchGroup[]) {
+        if (!this.getGraphColorGroupsEnabled() || !this.getGroupingEnabled()) return;
+
+        const groupQueries = groups
+            .map(group => this.queryBuilder.buildGroupQuery(group))
+            .filter(query => query.length > 0);
+
+        if (groupQueries.length === 0) return;
+
+        this.graphColorGroupService.syncToLeaf(targetLeaf, groupQueries);
     }
 
     private getPreferredGraphLeaf(): WorkspaceLeaf | null {

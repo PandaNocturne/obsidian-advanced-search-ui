@@ -7,6 +7,7 @@ import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/
 import { SearchQueryBuilder } from './services/SearchQueryBuilder';
 import { SearchExecutionService } from './services/SearchExecutionService';
 import { SearchImportService } from './services/SearchImportService';
+import { GraphColorGroupService } from './services/GraphColorGroupService';
 
 type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
@@ -23,12 +24,16 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
     private queryBuilder = new SearchQueryBuilder();
+    private graphColorGroupService = new GraphColorGroupService();
     private searchExecution = new SearchExecutionService(
         this.app,
         this.queryBuilder,
+        this.graphColorGroupService,
         container => this.containerGroups.get(container) || [],
         () => this.settings.searchAlsoGraph,
-        () => this.settings.adaptToFloatSearch
+        () => this.settings.adaptToFloatSearch,
+        () => this.settings.graphColorGroupsEnabled,
+        () => this.settings.enableExperimentalGrouping
     );
     private searchImport = new SearchImportService(
         this.app,
