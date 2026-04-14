@@ -34,6 +34,10 @@
   border-radius: 6px;
   background-color: var(--background-primary);
 
+  .search-section{
+    margin-bottom: 8px;
+  }
+
   button {
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
@@ -84,7 +88,7 @@
 }
 
 .asui-search-form-container .search-section {
-  max-height: 40vh;
+  // max-height: 40vh;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -159,15 +163,16 @@
 
     .asui-search-group-header {
       margin-bottom: 0;
+
       .asui-search-group-divider::before {
         background-color: var(--interactive-accent) !important;
         opacity: 1;
         height: 2px;
-    }
+      }
     }
 
-    .asui-search-group-rows{
-      display:none;
+    .asui-search-group-rows {
+      display: none;
     }
 
 
@@ -398,7 +403,7 @@
   color: var(--text-normal);
 }
 
-.asui-toggle input:checked + .asui-toggle-label {
+.asui-toggle input:checked+.asui-toggle-label {
   border-color: var(--interactive-accent);
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
@@ -462,15 +467,25 @@
 }
 
 .search-button {
-  border: 1px solid var(--interactive-accent) !important;
-  background-color: var(--interactive-normal) !important;
-  color: var(--interactive-accent) !important;
+  border-color: var(--text-success) !important;
+  color: var(--text-success) !important;
 }
 
 .search-button:hover {
-  border-color: var(--interactive-accent-hover) !important;
-  background-color: var(--interactive-hover) !important;
-  color: var(--interactive-accent-hover) !important;
+  border-color: var(--text-success) !important;
+  background-color: var(--text-success) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.graph-button {
+  border-color: var(--interactive-accent) !important;
+  color: var(--interactive-accent) !important;
+}
+
+.graph-button:hover {
+  border-color: var(--interactive-accent) !important;
+  background-color: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
 }
 
 .reset-button {
@@ -573,6 +588,7 @@
 }
 
 @container searchform (max-width: 600px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.8;
@@ -584,6 +600,7 @@
 }
 
 @container searchform (max-width: 500px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.75;
@@ -595,6 +612,7 @@
 }
 
 @container searchform (max-width: 400px) {
+
   .asui-search-form-container .search-section,
   .asui-search-form-container .navigation-buttons {
     zoom: 0.7;
