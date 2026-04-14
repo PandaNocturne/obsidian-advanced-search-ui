@@ -41,6 +41,26 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(searchGroup)
+            .setName(t('GRAPH_COLOR_GROUPS') || 'Graph color groups')
+            .setDesc(t('GRAPH_COLOR_GROUPS_DESC') || 'When grouping is enabled, sync each non-empty group to a separate graph color group when opening graph view.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.graphColorGroupsEnabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.graphColorGroupsEnabled = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(searchGroup)
+            .setName(t('CLEAR_GRAPH_COLOR_GROUPS_ON_RESET') || 'Clear graph color groups on reset')
+            .setDesc(t('CLEAR_GRAPH_COLOR_GROUPS_ON_RESET_DESC') || 'When enabled, clicking Reset in the advanced search panel also clears color groups in the current graph view. Disabled by default.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.clearGraphColorGroupsOnReset)
+                .onChange(async (value) => {
+                    this.plugin.settings.clearGraphColorGroupsOnReset = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(searchGroup)
             .setName(t('IMPORT_MODE') || 'Import mode')
             .setDesc(t('IMPORT_MODE_DESC') || 'Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.')
             .addDropdown(dropdown => dropdown

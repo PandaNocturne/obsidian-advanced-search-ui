@@ -24,46 +24,53 @@ export class SearchQueryBuilder {
         return `(${typePrefix}${searchTerm})`;
     }
 
+    public buildGroupQuery(group: SearchGroup): string {
+        const rowParts: string[] = [];
+        let hasEffectiveRow = false;
+        let hasAndOrCombination = false;
+
+        group.rows.forEach(row => {
+            const rowQuery = this.buildRowQuery(row);
+            if (!rowQuery) return;
+
+            const rowOperator = row.operatorSelect.value;
+            let part = '';
+            if (!hasEffectiveRow) {
+                part = rowOperator === 'NOT' ? `-${rowQuery}` : rowQuery;
+            } else {
+                switch (rowOperator) {
+                    case 'AND':
+                        part = rowQuery;
+                        hasAndOrCombination = true;
+                        break;
+                    case 'OR':
+                        part = `OR ${rowQuery}`;
+                        hasAndOrCombination = true;
+                        break;
+                    case 'NOT':
+                        part = `-${rowQuery}`;
+                        break;
+                }
+            }
+
+            rowParts.push(part);
+            hasEffectiveRow = true;
+        });
+
+        if (!rowParts.length) return '';
+
+        const combinedRows = rowParts.join(' ');
+        return hasAndOrCombination ? `(${combinedRows})` : combinedRows;
+    }
+
     public buildContainerQuery(groups: SearchGroup[], lineBreak = false): string {
         const queryParts: string[] = [];
         let hasEffectiveGroup = false;
 
         groups.forEach(group => {
-            const rowParts: string[] = [];
-            let hasEffectiveRow = false;
-            let hasAndOrCombination = false;
+            const grouped = this.buildGroupQuery(group);
+            if (!grouped) return;
 
-            group.rows.forEach(row => {
-                const rowQuery = this.buildRowQuery(row);
-                if (!rowQuery) return;
-
-                const rowOperator = row.operatorSelect.value;
-                let part = '';
-                if (!hasEffectiveRow) {
-                    part = rowOperator === 'NOT' ? `-${rowQuery}` : rowQuery;
-                } else {
-                    switch (rowOperator) {
-                        case 'AND':
-                            part = rowQuery;
-                            hasAndOrCombination = true;
-                            break;
-                        case 'OR':
-                            part = `OR ${rowQuery}`;
-                            hasAndOrCombination = true;
-                            break;
-                        case 'NOT':
-                            part = `-${rowQuery}`;
-                            break;
-                    }
-                }
-                rowParts.push(part);
-                hasEffectiveRow = true;
-            });
-
-            if (!rowParts.length) return;
-
-            const combinedRows = rowParts.join(' ');
-            const grouped = hasAndOrCombination ? `(${combinedRows})` : combinedRows;
             let groupPart: string;
             if (!hasEffectiveGroup) {
                 groupPart = group.operatorSelect.value === 'NOT' ? `-${grouped}` : grouped;

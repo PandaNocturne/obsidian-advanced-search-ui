@@ -1,5 +1,8 @@
 export interface AdvancedSearchSettings {
     searchAlsoGraph: boolean;
+    graphColorGroupsEnabled: boolean;
+    clearGraphColorGroupsOnReset: boolean;
+    graphColorGroupPalette: string[];
     defaultCollapsed: boolean;
     adaptToFloatSearch: boolean;
     autoScaleUI: boolean; // 窄屏自动缩放UI
@@ -13,6 +16,9 @@ export interface AdvancedSearchSettings {
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     searchAlsoGraph: true,
+    graphColorGroupsEnabled: true,
+    clearGraphColorGroupsOnReset: false,
+    graphColorGroupPalette: ['#7C3AED', '#2563EB', '#0891B2', '#059669', '#65A30D', '#CA8A04', '#EA580C', '#DC2626'],
     defaultCollapsed: false,
     adaptToFloatSearch: true,
     autoScaleUI: true,

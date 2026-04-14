@@ -24,6 +24,10 @@ export default {
     // Settings
     "SEARCH_ALSO_GRAPH": "搜索连带图谱搜索",
     "SEARCH_ALSO_GRAPH_DESC": "开启后，在执行检索时会自动同步过滤图谱视图",
+    "GRAPH_COLOR_GROUPS": "启用图谱颜色组",
+    "GRAPH_COLOR_GROUPS_DESC": "开启分组功能后，点击图谱按钮时会将每个非空分组同步到图谱的不同颜色组。",
+    "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET": "重置时清空图谱颜色组",
+    "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET_DESC": "开启后，点击高级搜索面板的重置按钮时，会同时清空当前图谱视图中的颜色组。默认关闭。",
     "IMPORT_MODE": "导入模式",
     "IMPORT_MODE_DESC": "选择导入查询条件时，是追加到现有条件后面，还是先清空后覆盖导入。",
     "IMPORT_MODE_APPEND": "追加",

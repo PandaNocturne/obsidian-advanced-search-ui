@@ -24,6 +24,10 @@ export default {
     // Settings
     "SEARCH_ALSO_GRAPH": "Update graph on search",
     "SEARCH_ALSO_GRAPH_DESC": "When enabled, graph view filters will be automatically updated when performing a search.",
+    "GRAPH_COLOR_GROUPS": "Enable graph color groups",
+    "GRAPH_COLOR_GROUPS_DESC": "When grouping is enabled, clicking the graph button syncs each non-empty group into a separate graph color group.",
+    "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET": "Clear graph color groups on reset",
+    "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET_DESC": "When enabled, clicking Reset in the advanced search panel also clears color groups in the current graph view. Disabled by default.",
     "IMPORT_MODE": "Import mode",
     "IMPORT_MODE_DESC": "Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.",
     "IMPORT_MODE_APPEND": "Append",
