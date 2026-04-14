@@ -85,6 +85,7 @@ export class GraphColorGroupService {
         if (queryInput) {
             queryInput.value = payload.query;
             queryInput.dispatchEvent(new Event('input', { bubbles: true }));
+            queryInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
             queryInput.dispatchEvent(new Event('change', { bubbles: true }));
             queryInput.blur();
         }
