@@ -3,6 +3,7 @@ import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { FloatingSearchPanel } from './ui/FloatingSearchPanel';
+import { buildToggleContextMenu } from './ui/ToggleContextMenu';
 import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
 import { SearchQueryBuilder } from './services/SearchQueryBuilder';
@@ -276,25 +277,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private buildToggleMenu(menu: Menu) {
-        menu.addItem(item => {
-            item.setTitle(t('OPEN_PLUGIN_SETTINGS'));
-            item.setIcon('settings');
-            item.onClick(() => this.openPluginSettings());
-        });
-
-        menu.addSeparator();
-        menu.addItem(item => {
-            const isOpen = !!this.floatingSearchPanel;
-            item.setTitle(isOpen ? t('CLOSE_FLOATING_SEARCH_PANEL') : t('OPEN_FLOATING_SEARCH_PANEL'));
-            item.setIcon(isOpen ? 'panel-top-close' : 'panel-top-open');
-            item.onClick(() => {
-                if (isOpen) {
-                    this.closeFloatingSearchPanel();
-                    return;
-                }
-                this.openFloatingSearchPanel();
-            });
-        });
+        buildToggleContextMenu(
+            menu,
+            { isFloatingPanelOpen: !!this.floatingSearchPanel },
+            {
+                openPluginSettings: () => this.openPluginSettings(),
+                openFloatingSearchPanel: () => this.openFloatingSearchPanel(),
+                closeFloatingSearchPanel: () => this.closeFloatingSearchPanel()
+            }
+        );
     }
 
     private openFloatingSearchPanel() {
