@@ -1,7 +1,8 @@
 import { Menu, Notice, Plugin, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
-import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
+import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
+import { FloatingSearchPanel } from './ui/FloatingSearchPanel';
 import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
 import { SearchQueryBuilder } from './services/SearchQueryBuilder';
@@ -24,6 +25,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private draggingRow: SearchRow | null = null;
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
+    private floatingSearchPanel: FloatingSearchPanel | null = null;
+    private floatingSearchContainer: HTMLElement | null = null;
     private queryBuilder = new SearchQueryBuilder();
     private graphColorGroupService = new GraphColorGroupService();
     private searchExecution = new SearchExecutionService(
@@ -49,9 +52,20 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     );
 
     public refreshSearchUI() {
-        document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
+        document.querySelectorAll('.asui-search-form-container').forEach(container => {
+            this.containerGroups.delete(container as HTMLElement);
+            container.remove();
+        });
         document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
-        this.containerGroups.clear();
+
+        if (this.floatingSearchContainer?.isConnected) {
+            this.floatingSearchContainer.remove();
+            this.floatingSearchContainer = null;
+            if (this.floatingSearchPanel) {
+                this.mountFloatingSearchPanelContent(this.floatingSearchPanel);
+            }
+        }
+
         this.injectSearchUI();
     }
 
@@ -141,7 +155,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             this.injectionInterval = null;
         }
 
-        document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
+        this.closeFloatingSearchPanel();
+        document.querySelectorAll('.asui-search-form-container').forEach(container => {
+            this.containerGroups.delete(container as HTMLElement);
+            container.remove();
+        });
         document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
         this.containerGroups.clear();
     }
@@ -164,40 +182,13 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             const searchParams = searchContainer.querySelector('.search-params');
             if (!(searchParams instanceof HTMLElement)) return;
 
-            if (!searchContainer.querySelector('.asui-search-form-container')) {
-                const queryControlsContainer = searchParams.createDiv({ cls: 'asui-search-form-container' });
-                if (this.settings.defaultCollapsed) queryControlsContainer.classList.add('is-hidden');
-
-                queryControlsContainer.createDiv({ cls: 'search-section' });
-
-                const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
-                this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
-                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => {
-                    void this.searchExecution.copySearchQuery(queryControlsContainer);
-                });
-
-                const isModal = searchContainer.closest('.modal-container') || searchContainer.closest('.modal');
-                if (!isModal) {
-                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => {
-                        void this.searchExecution.openGraphView(queryControlsContainer, true);
-                    });
-                }
-
-                this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
-                this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => {
-                    this.searchExecution.clearGraphColorGroups();
-                    this.clearSearchForm(queryControlsContainer);
-                });
-
-                this.containerGroups.set(queryControlsContainer, []);
-                this.handleKeyboardEvents(queryControlsContainer);
-
-                const searchRowEl = searchContainer.querySelector('.search-row');
-                if (searchRowEl instanceof HTMLElement) searchRowEl.insertAdjacentElement('afterend', queryControlsContainer);
-                else searchParams.prepend(queryControlsContainer);
-
-                this.clearSearchForm(queryControlsContainer, 1, 2);
-            }
+            this.ensureSearchFormMounted({
+                host: searchContainer,
+                mountParent: searchParams,
+                insertAfter: searchContainer.querySelector('.search-row'),
+                collapsible: true,
+                allowGraph: !searchContainer.closest('.modal-container') && !searchContainer.closest('.modal')
+            });
 
             const searchRow = searchContainer.querySelector('.search-row');
             if (searchRow instanceof HTMLElement && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
@@ -228,6 +219,56 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 
+    private ensureSearchFormMounted(options: {
+        host: HTMLElement;
+        mountParent: HTMLElement;
+        insertAfter?: Element | null;
+        collapsible: boolean;
+        allowGraph: boolean;
+    }): HTMLElement {
+        const existing = options.host.querySelector(':scope > .asui-search-form-container');
+        if (existing instanceof HTMLElement) {
+            return existing;
+        }
+
+        const queryControlsContainer = options.mountParent.createDiv({ cls: 'asui-search-form-container' });
+        if (options.collapsible && this.settings.defaultCollapsed) {
+            queryControlsContainer.classList.add('is-hidden');
+        }
+
+        queryControlsContainer.createDiv({ cls: 'search-section' });
+
+        const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
+        this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
+        this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => {
+            void this.searchExecution.copySearchQuery(queryControlsContainer);
+        });
+
+        if (options.allowGraph) {
+            this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => {
+                void this.searchExecution.openGraphView(queryControlsContainer, true);
+            });
+        }
+
+        this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
+        this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => {
+            this.searchExecution.clearGraphColorGroups();
+            this.clearSearchForm(queryControlsContainer);
+        });
+
+        this.containerGroups.set(queryControlsContainer, []);
+        this.handleKeyboardEvents(queryControlsContainer);
+
+        if (options.insertAfter instanceof HTMLElement) {
+            options.insertAfter.insertAdjacentElement('afterend', queryControlsContainer);
+        } else {
+            options.mountParent.prepend(queryControlsContainer);
+        }
+
+        this.clearSearchForm(queryControlsContainer, 1, 2);
+        return queryControlsContainer;
+    }
+
     private openToggleMenu(event: MouseEvent) {
         const menu = new Menu();
         this.buildToggleMenu(menu);
@@ -240,6 +281,69 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             item.setIcon('settings');
             item.onClick(() => this.openPluginSettings());
         });
+
+        menu.addSeparator();
+        menu.addItem(item => {
+            const isOpen = !!this.floatingSearchPanel;
+            item.setTitle(isOpen ? t('CLOSE_FLOATING_SEARCH_PANEL') : t('OPEN_FLOATING_SEARCH_PANEL'));
+            item.setIcon(isOpen ? 'panel-top-close' : 'panel-top-open');
+            item.onClick(() => {
+                if (isOpen) {
+                    this.closeFloatingSearchPanel();
+                    return;
+                }
+                this.openFloatingSearchPanel();
+            });
+        });
+    }
+
+    private openFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.floatingSearchPanel.focus();
+            return;
+        }
+
+        const panel = new FloatingSearchPanel({
+            title: t('TOGGLE_ADVANCED_SEARCH') || 'Advanced search',
+            bounds: this.settings.floatingPanelBounds,
+            onClose: () => this.closeFloatingSearchPanel(),
+            onBoundsChange: bounds => this.updateFloatingPanelBounds(bounds)
+        });
+
+        this.floatingSearchPanel = panel;
+        this.mountFloatingSearchPanelContent(panel);
+        panel.focus();
+    }
+
+    private mountFloatingSearchPanelContent(panel: FloatingSearchPanel) {
+        panel.contentEl.empty();
+        const host = panel.contentEl.createDiv({ cls: 'asui-floating-panel-host' });
+        this.floatingSearchContainer = this.ensureSearchFormMounted({
+            host: panel.contentEl,
+            mountParent: host,
+            collapsible: false,
+            allowGraph: true
+        });
+    }
+
+    private updateFloatingPanelBounds(bounds: FloatingPanelBounds) {
+        this.settings.floatingPanelBounds = { ...bounds };
+        void this.saveSettings();
+    }
+
+    private closeFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.updateFloatingPanelBounds(this.floatingSearchPanel.getBounds());
+        }
+
+        if (this.floatingSearchContainer) {
+            this.containerGroups.delete(this.floatingSearchContainer);
+            this.floatingSearchContainer.remove();
+            this.floatingSearchContainer = null;
+        }
+
+        this.floatingSearchPanel?.destroy();
+        this.floatingSearchPanel = null;
     }
 
     private openPluginSettings() {
@@ -253,7 +357,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         const pluginSettingTabId = this.manifest.id;
         const communityPluginSettingTabId = `community-plugins:${this.manifest.id}`;
-
         if (typeof setting.openTabById === 'function') {
             setting.openTabById(communityPluginSettingTabId);
             if (setting.activeTab?.id === communityPluginSettingTabId) return;

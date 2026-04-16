@@ -645,6 +645,92 @@
    Utilities
    ========================================================================== */
 
+.asui-floating-panel-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.asui-floating-panel-window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, calc(100vw - 48px));
+  min-width: 420px;
+  min-height: 260px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  resize: both;
+  pointer-events: auto;
+}
+
+.asui-floating-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  cursor: move;
+  user-select: none;
+}
+
+.asui-floating-panel-title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asui-floating-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.asui-floating-panel-close:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.asui-floating-panel-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 12px;
+}
+
+.asui-floating-panel-host {
+  min-width: 100%;
+}
+
+.asui-floating-panel-host > .asui-search-form-container {
+  margin: 0;
+  max-width: none;
+}
+
+.asui-floating-panel-placeholder {
+  padding: 16px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .is-hidden {
   display: none !important;
 }
