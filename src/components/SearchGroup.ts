@@ -1,5 +1,6 @@
-import { App, setIcon } from 'obsidian';
+import { App, Menu, Notice, setIcon } from 'obsidian';
 import { SearchRow, SearchRowDelegate } from './SearchRow';
+import { t } from '../lang/helpers';
 
 export interface SearchGroupData {
     operator: 'AND' | 'OR' | 'NOT';
@@ -14,6 +15,8 @@ export interface SearchGroupData {
 
 export interface SearchGroupDelegate extends SearchRowDelegate {
     isGroupingEnabled(): boolean;
+    copyGroupQuery(currentGroup: SearchGroup): Promise<boolean>;
+    pasteGroupQuery(currentGroup: SearchGroup): Promise<boolean>;
     onAddGroup(currentGroup: SearchGroup): void;
     onDuplicateGroup(currentGroup: SearchGroup): void;
     onRemoveGroup(currentGroup: SearchGroup): void;
@@ -88,6 +91,15 @@ export class SearchGroup {
             this.delegate.onRemoveGroup(this);
         });
 
+        const header = this.container.querySelector('.asui-search-group-header');
+        if (header instanceof HTMLDivElement) {
+            header.addEventListener('contextmenu', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.openContextMenu(event);
+            });
+        }
+
         const handle = this.container.querySelector('.asui-search-group-handle');
         if (handle instanceof HTMLDivElement) {
             handle.addEventListener('pointerdown', () => {
@@ -131,6 +143,36 @@ export class SearchGroup {
                 this.delegate.onGroupDragEnd();
             });
         }
+    }
+
+    private openContextMenu(event: MouseEvent) {
+        const menu = new Menu();
+        menu.addItem(item => {
+            item
+                .setTitle(t('COPY_BUTTON'))
+                .setIcon('copy')
+                .onClick(() => {
+                    void this.delegate.copyGroupQuery(this);
+                });
+        });
+        menu.addItem(item => {
+            item
+                .setTitle(t('PASTE_BUTTON'))
+                .setIcon('clipboard-paste')
+                .onClick(() => {
+                    void this.handlePasteGroupQuery();
+                });
+        });
+        menu.showAtMouseEvent(event);
+    }
+
+    private async handlePasteGroupQuery() {
+        const pasted = await this.delegate.pasteGroupQuery(this);
+        if (!pasted) {
+            return;
+        }
+
+        new Notice(t('GROUP_QUERY_PASTED'));
     }
 
     private toggleCollapsed() {

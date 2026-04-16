@@ -28,13 +28,14 @@
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  margin: 0 5px 5px;
-  padding: 10px;
+  // margin: 0 5px 5px;
+  margin:0 var(--size-4-3) var(--size-4-2);
+  padding: 5px;
   border: none;
   border-radius: 6px;
   background-color: var(--background-primary);
 
-  .search-section{
+  .search-section {
     margin-bottom: 8px;
   }
 
@@ -54,14 +55,18 @@
   }
 
   select {
-    padding: 0 20px 0 8px;
+    padding: 0 28px 0 10px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
     background-color: var(--background-modifier-form-field);
-    // background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%23999999%22%20d%3D%22M0%200l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E');
-    background-position: right 8px center;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+      linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 12px) calc(50% - 1px),
+      calc(100% - 8px) calc(50% - 1px);
     background-repeat: no-repeat;
-    background-size: 8px auto;
+    background-size: 4px 4px, 4px 4px;
     color: var(--text-normal);
     cursor: pointer;
     appearance: none;
@@ -71,9 +76,15 @@
     transition: all 0.15s ease;
 
     option {
+      padding: 6px 10px;
       background-color: var(--background-primary);
       color: var(--text-normal);
     }
+  }
+
+  select:focus {
+    border-color: var(--interactive-accent);
+    // box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent) !important;
   }
 
   select:hover {
@@ -258,8 +269,9 @@
   flex-wrap: nowrap;
   align-items: center;
   gap: 5px;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
+
 
 .asui-form-row select,
 .asui-form-row .asui-input-group,
@@ -444,6 +456,8 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 10px;
 }
 
 .navigation-buttons button {
@@ -561,10 +575,10 @@
 }
 
 .advanced-search-ui-toggle-wrapper {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 4px;
 }
 
 .advanced-search-ui-toggle-wrapper .advanced-search-toggle {
@@ -597,29 +611,29 @@
   .asui-search-form-container .search-row-container {
     padding: 6px 2px;
   }
-}
 
-@container searchform (max-width: 500px) {
+  @container searchform (max-width: 500px) {
 
-  .asui-search-form-container .search-section,
-  .asui-search-form-container .navigation-buttons {
-    zoom: 0.75;
-  }
+    .asui-search-form-container .search-section,
+    .asui-search-form-container .navigation-buttons {
+      zoom: 0.7;
+    }
 
-  .asui-search-form-container .search-row-container {
-    padding: 5px 2px;
-  }
-}
+    .asui-search-form-container .search-row-container {
+      padding: 5px 2px;
+    }
 
-@container searchform (max-width: 400px) {
+    @container searchform (max-width: 400px) {
 
-  .asui-search-form-container .search-section,
-  .asui-search-form-container .navigation-buttons {
-    zoom: 0.7;
-  }
+      .asui-search-form-container .search-section,
+      .asui-search-form-container .navigation-buttons {
+        zoom: 0.6;
+      }
 
-  .asui-search-form-container .search-row-container {
-    padding: 4px 2px;
+      .asui-search-form-container .search-row-container {
+        padding: 4px 2px;
+      }
+    }
   }
 }
 

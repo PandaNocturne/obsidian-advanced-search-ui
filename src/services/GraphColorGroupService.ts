@@ -129,10 +129,10 @@ export class GraphColorGroupService {
             }
         }
 
-        const getViewState = this.getFunction(view, 'getViewState');
+        const getViewState = this.getFunction<() => unknown>(view, 'getViewState');
         const viewState = getViewState ? this.safeCall<Record<string, unknown>>(getViewState, view) : null;
-        if (this.setColorGroupsOnObject(viewState, payloads)) {
-            const setViewState = this.getFunction(view, 'setViewState');
+        if (viewState && this.setColorGroupsOnObject(viewState, payloads)) {
+            const setViewState = this.getFunction<(state: Record<string, unknown>, options?: unknown) => unknown>(view, 'setViewState');
             if (setViewState) {
                 try {
                     void setViewState.call(view, viewState, { focus: false });
@@ -153,7 +153,7 @@ export class GraphColorGroupService {
     private refreshView(view: Record<string, unknown>): void {
         const methodNames = ['updateOptions', 'update', 'render', 'redraw', 'onOptionsChange'];
         for (const methodName of methodNames) {
-            const method = this.getFunction(view, methodName);
+            const method = this.getFunction<() => unknown>(view, methodName);
             if (!method) continue;
             try {
                 method.call(view);
@@ -210,10 +210,10 @@ export class GraphColorGroupService {
         return value && typeof value === 'object' ? value as Record<string, unknown> : null;
     }
 
-    private getFunction(source: unknown, key: string): (() => unknown) | null {
+    private getFunction<T extends (...args: unknown[]) => unknown>(source: unknown, key: string): T | null {
         if (!source || typeof source !== 'object') return null;
         const value = (source as Record<string, unknown>)[key];
-        return typeof value === 'function' ? value as () => unknown : null;
+        return typeof value === 'function' ? value as T : null;
     }
 
     private safeCall<T>(fn: () => unknown, context: unknown): T | null {

@@ -9,9 +9,11 @@ export default {
     // UI elements
     "REMOVE_CRITERIA": "删除条件",
     "ADD_CRITERIA": "添加条件",
+    "PASTE_BUTTON": "粘贴",
     "NO_QUERY_TO_IMPORT": "没有可导入的查询",
     "COPIED_TO_CLIPBOARD": "已复制到剪贴板",
     "FAILED_TO_COPY": "复制失败",
+    "GROUP_QUERY_PASTED": "已粘贴分组查询",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",
