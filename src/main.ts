@@ -342,6 +342,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const panel = new FloatingSearchPanel({
             title: t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板',
             bounds: this.settings.floatingPanelBounds,
+            mountEl: this.app.workspace.containerEl,
             onClose: () => this.closeFloatingSearchPanel(),
             onOpenSettings: () => this.openPluginSettings(),
             onBoundsChange: bounds => this.updateFloatingPanelBounds(bounds),

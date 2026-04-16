@@ -4,6 +4,7 @@ import type { FloatingPanelBounds } from '../settings';
 export interface FloatingSearchPanelOptions {
     title: string;
     bounds?: FloatingPanelBounds | null;
+    mountEl?: HTMLElement;
     onClose: () => void;
     onOpenSettings?: () => void;
     onBoundsChange?: (bounds: FloatingPanelBounds) => void;
@@ -40,7 +41,9 @@ export class FloatingSearchPanel {
         this.onResize = options.onResize;
         this.onCollapsedChange = options.onCollapsedChange;
         this.onCompactChange = options.onCompactChange;
-        this.rootEl = document.body.createDiv({ cls: 'asui-floating-panel-root' });
+        // this.rootEl = document.body.createDiv({ cls: 'asui-floating-panel-root' });
+        const mountEl = options.mountEl ?? document.body;
+        this.rootEl = mountEl.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
 
         const defaultWidth = Math.min(720, window.innerWidth - 48);
