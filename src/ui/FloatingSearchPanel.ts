@@ -256,14 +256,15 @@ export class FloatingSearchPanel {
 
     private applyStretchBounds(mode: Exclude<PanelStretchMode, 'normal'>) {
         const margin = 12;
+        const topSafeInset = 44;
         const current = this.restoredBounds ?? this.getBounds();
         const fullWidth = Math.max(420, window.innerWidth - margin * 2);
-        const fullHeight = Math.max(260, window.innerHeight - margin * 2);
+        const fullHeight = Math.max(260, window.innerHeight - topSafeInset - margin);
 
         if (mode === 'fullscreen') {
             this.applyBounds({
                 left: margin,
-                top: margin,
+                top: topSafeInset,
                 width: fullWidth,
                 height: fullHeight
             }, false);
@@ -286,7 +287,7 @@ export class FloatingSearchPanel {
         const width = current.width;
         this.applyBounds({
             left: current.left,
-            top: margin,
+            top: topSafeInset,
             width,
             height: fullHeight
         }, false);
@@ -330,7 +331,7 @@ export class FloatingSearchPanel {
     private onPointerDown = (event: PointerEvent) => {
         if (!(event.target instanceof HTMLElement)) return;
         if (event.target.closest('button')) return;
-        if (this.stretchMode !== 'normal') return;
+        if (this.stretchMode === 'fullscreen') return;
 
         const rect = this.windowEl.getBoundingClientRect();
         this.isDragging = true;
@@ -346,8 +347,10 @@ export class FloatingSearchPanel {
 
         const maxLeft = Math.max(0, window.innerWidth - this.windowEl.offsetWidth);
         const maxTop = Math.max(0, window.innerHeight - this.windowEl.offsetHeight);
-        const nextLeft = Math.min(maxLeft, Math.max(0, event.clientX - this.dragOffsetX));
-        const nextTop = Math.min(maxTop, Math.max(0, event.clientY - this.dragOffsetY));
+        const rawLeft = Math.min(maxLeft, Math.max(0, event.clientX - this.dragOffsetX));
+        const rawTop = Math.min(maxTop, Math.max(0, event.clientY - this.dragOffsetY));
+        const nextLeft = this.stretchMode === 'horizontal' ? this.windowEl.offsetLeft : rawLeft;
+        const nextTop = this.stretchMode === 'vertical' ? this.windowEl.offsetTop : rawTop;
 
         this.windowEl.style.left = `${nextLeft}px`;
         this.windowEl.style.top = `${nextTop}px`;
