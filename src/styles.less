@@ -684,11 +684,12 @@
 .asui-floating-panel-root {
   position: fixed;
   inset: 0;
-  z-index: var(--layer-modal);
+  z-index: var(--layer-slides);
   pointer-events: none;
 }
 
 .asui-floating-panel-window {
+  z-index: var(--layer-modal);
   position: fixed;
   display: flex;
   flex-direction: column;
@@ -702,8 +703,87 @@
   border-radius: 12px;
   background: var(--background-primary);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  resize: both;
   pointer-events: auto;
+}
+
+.asui-floating-panel-resize-handle {
+  position: absolute;
+  z-index: 2;
+}
+
+.asui-floating-panel-resize-handle.is-n,
+.asui-floating-panel-resize-handle.is-s {
+  left: 12px;
+  right: 12px;
+  height: 10px;
+}
+
+.asui-floating-panel-resize-handle.is-e,
+.asui-floating-panel-resize-handle.is-w {
+  top: 12px;
+  bottom: 12px;
+  width: 10px;
+}
+
+.asui-floating-panel-resize-handle.is-n {
+  top: -5px;
+  cursor: ns-resize;
+}
+
+.asui-floating-panel-resize-handle.is-s {
+  bottom: -5px;
+  cursor: ns-resize;
+}
+
+.asui-floating-panel-resize-handle.is-e {
+  right: -5px;
+  cursor: ew-resize;
+}
+
+.asui-floating-panel-resize-handle.is-w {
+  left: -5px;
+  cursor: ew-resize;
+}
+
+.asui-floating-panel-resize-handle.is-ne,
+.asui-floating-panel-resize-handle.is-nw,
+.asui-floating-panel-resize-handle.is-se,
+.asui-floating-panel-resize-handle.is-sw {
+  width: 14px;
+  height: 14px;
+}
+
+.asui-floating-panel-resize-handle.is-ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.asui-floating-panel-resize-handle.is-nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.asui-floating-panel-resize-handle.is-se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+.asui-floating-panel-resize-handle.is-sw {
+  left: -5px;
+  bottom: -5px;
+  cursor: nesw-resize;
+}
+
+.asui-floating-panel-window.is-fullscreen .asui-floating-panel-resize-handle,
+.asui-floating-panel-window.is-collapsed .asui-floating-panel-resize-handle {
+  display: none;
+}
+
+.asui-floating-panel-window.is-fullscreen {
+  resize: none;
 }
 
 .asui-floating-panel-header {
@@ -718,6 +798,10 @@
   user-select: none;
 }
 
+.asui-floating-panel-window.is-fullscreen .asui-floating-panel-header {
+  cursor: default;
+}
+
 .asui-floating-panel-header:active {
   cursor: grabbing;
 }
@@ -729,6 +813,11 @@
   align-items: center;
   min-width: 0;
   gap: 8px;
+  width: 100%;
+}
+
+.asui-floating-panel-title {
+  width: 100%;
 }
 
 .asui-floating-panel-title-icon {
