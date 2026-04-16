@@ -182,7 +182,9 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.workspaceSetActiveLeafUninstall?.();
         this.workspaceRevealLeafUninstall?.();
 
-        const plugin = this;
+        const getRoutableFloatingSearchLeaf = () => this.getRoutableFloatingSearchLeaf();
+        const getSidebarSearchLeaf = () => this.getSidebarSearchLeaf();
+        const activateFloatingSearchLeaf = (options?: WorkspaceEnsureSideLeafOptions) => this.activateFloatingSearchLeaf(options);
 
         this.workspaceEnsureSideLeafUninstall = around(Workspace.prototype, {
             ensureSideLeaf: (oldEnsureSideLeaf: Workspace['ensureSideLeaf']) => {
@@ -192,12 +194,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     side: Parameters<Workspace['ensureSideLeaf']>[1],
                     options?: WorkspaceEnsureSideLeafOptions
                 ) {
-                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
+                    const floatingLeaf = getRoutableFloatingSearchLeaf();
                     if (type !== 'search' || !floatingLeaf) {
                         return oldEnsureSideLeaf.call(this, type, side, options);
                     }
 
-                    plugin.activateFloatingSearchLeaf(options);
+                    activateFloatingSearchLeaf(options);
                     return floatingLeaf;
                 };
             }
@@ -205,16 +207,20 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.workspaceSetActiveLeafUninstall = around(Workspace.prototype, {
             setActiveLeaf: (oldSetActiveLeaf: Workspace['setActiveLeaf']) => {
+                const getFloatingLeaf = () => getRoutableFloatingSearchLeaf();
+                const getSidebarLeaf = () => getSidebarSearchLeaf();
+                const activateFloatingLeaf = () => activateFloatingSearchLeaf({ active: true });
+
                 function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, params?: WorkspaceSetActiveLeafParams): void;
                 function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, pushHistory: boolean, focus: boolean): void;
                 function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, ...args: WorkspaceSetActiveLeafArgs) {
-                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
-                    const sidebarLeaf = plugin.getSidebarSearchLeaf();
+                    const floatingLeaf = getFloatingLeaf();
+                    const sidebarLeaf = getSidebarLeaf();
                     if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
                         return oldSetActiveLeaf.call(this, leaf, ...(args as [WorkspaceSetActiveLeafParams?] | [boolean, boolean]));
                     }
 
-                    plugin.activateFloatingSearchLeaf({ active: true });
+                    activateFloatingLeaf();
                     return;
                 }
 
@@ -225,13 +231,13 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.workspaceRevealLeafUninstall = around(Workspace.prototype, {
             revealLeaf: (oldRevealLeaf: Workspace['revealLeaf']) => {
                 return async function (this: Workspace, leaf: WorkspaceLeaf) {
-                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
-                    const sidebarLeaf = plugin.getSidebarSearchLeaf();
+                    const floatingLeaf = getRoutableFloatingSearchLeaf();
+                    const sidebarLeaf = getSidebarSearchLeaf();
                     if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
                         return oldRevealLeaf.call(this, leaf);
                     }
 
-                    plugin.activateFloatingSearchLeaf({ reveal: true });
+                    activateFloatingSearchLeaf({ reveal: true });
                 };
             }
         });

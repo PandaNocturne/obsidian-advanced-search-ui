@@ -260,10 +260,13 @@ export class FloatingSearchPanel {
     }
 
     private getTopSafeInset() {
-        const appContainerEl = document.body.querySelector('.app-container, .workspace-split') as HTMLElement | null;
-        const headerEl = this.windowEl.querySelector('.asui-floating-panel-header') as HTMLElement | null;
+        const appContainerCandidate = document.body.querySelector('.app-container, .workspace-split');
+        const appContainerEl = appContainerCandidate instanceof HTMLElement ? appContainerCandidate : null;
+        const headerCandidate = this.windowEl.querySelector('.asui-floating-panel-header');
+        const headerEl = headerCandidate instanceof HTMLElement ? headerCandidate : null;
         const titlebarHeight = Math.max(0, appContainerEl?.offsetTop ?? 0);
-        const headerBuffer = Math.max(12, Math.ceil((headerEl?.offsetHeight ?? 40) * 1));
+        const headerHeight = headerEl?.offsetHeight ?? 40;
+        const headerBuffer = Math.max(12, Math.ceil(headerHeight));
         return titlebarHeight + headerBuffer + 10;
     }
 
