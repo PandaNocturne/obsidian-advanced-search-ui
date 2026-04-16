@@ -304,24 +304,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             name: t('OPEN_FLOATING_SEARCH_PANEL') || '打开悬浮搜索面板',
             callback: () => this.openFloatingSearchPanel()
         });
-
-        this.addCommand({
-            id: 'close-floating-search-panel',
-            name: t('CLOSE_FLOATING_SEARCH_PANEL') || '关闭悬浮搜索面板',
-            checkCallback: checking => {
-                const isOpen = !!this.floatingSearchPanel;
-                if (!checking && isOpen) {
-                    this.closeFloatingSearchPanel();
-                }
-                return isOpen;
-            }
-        });
-
-        this.addCommand({
-            id: 'toggle-floating-search-panel',
-            name: t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板',
-            callback: () => this.toggleFloatingSearchPanel()
-        });
     }
 
     private toggleFloatingSearchPanel() {
