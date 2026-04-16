@@ -264,7 +264,7 @@ export class FloatingSearchPanel {
         const headerEl = this.windowEl.querySelector('.asui-floating-panel-header') as HTMLElement | null;
         const titlebarHeight = Math.max(0, appContainerEl?.offsetTop ?? 0);
         const headerBuffer = Math.max(12, Math.ceil((headerEl?.offsetHeight ?? 40) * 1));
-        return titlebarHeight + headerBuffer;
+        return titlebarHeight + headerBuffer +10;
     }
 
     private applyStretchBounds() {
