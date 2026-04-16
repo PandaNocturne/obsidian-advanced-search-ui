@@ -684,11 +684,12 @@
 .asui-floating-panel-root {
   position: fixed;
   inset: 0;
-  z-index: var(--layer-modal);
+  z-index: var(--layer-slides);
   pointer-events: none;
 }
 
 .asui-floating-panel-window {
+  z-index: var(--layer-modal);
   position: fixed;
   display: flex;
   flex-direction: column;
@@ -737,6 +738,10 @@
   align-items: center;
   min-width: 0;
   gap: 8px;
+  width: 100%;
+}
+
+.asui-floating-panel-title {
   width: 100%;
 }
 

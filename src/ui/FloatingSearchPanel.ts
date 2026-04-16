@@ -236,9 +236,17 @@ export class FloatingSearchPanel {
         this.restoredBounds = null;
     }
 
+    private getTopSafeInset() {
+        const appContainerEl = document.body.querySelector('.app-container, .workspace-split') as HTMLElement | null;
+        const headerEl = this.windowEl.querySelector('.asui-floating-panel-header') as HTMLElement | null;
+        const titlebarHeight = Math.max(0, appContainerEl?.offsetTop ?? 0);
+        const headerBuffer = Math.max(12, Math.ceil((headerEl?.offsetHeight ?? 40) * 1));
+        return titlebarHeight + headerBuffer;
+    }
+
     private applyStretchBounds() {
-        const margin = 12;
-        const topSafeInset = 44;
+        const margin = 56;
+        const topSafeInset = this.getTopSafeInset();
         const fullWidth = Math.max(420, window.innerWidth - margin * 2);
         const fullHeight = Math.max(260, window.innerHeight - topSafeInset - margin);
 
@@ -261,10 +269,11 @@ export class FloatingSearchPanel {
     private applyBounds(bounds: FloatingPanelBounds, emit = true) {
         const width = Math.max(420, Math.min(bounds.width, window.innerWidth - 24));
         const height = Math.max(260, Math.min(bounds.height, window.innerHeight - 24));
+        const topSafeInset = this.getTopSafeInset();
         const maxLeft = Math.max(0, window.innerWidth - width);
-        const maxTop = Math.max(0, window.innerHeight - height);
+        const maxTop = Math.max(topSafeInset, window.innerHeight - height);
         const left = Math.min(maxLeft, Math.max(0, bounds.left));
-        const top = Math.min(maxTop, Math.max(0, bounds.top));
+        const top = Math.min(maxTop, Math.max(topSafeInset, bounds.top));
 
         this.windowEl.style.width = `${width}px`;
         this.windowEl.style.height = `${height}px`;
@@ -306,10 +315,11 @@ export class FloatingSearchPanel {
     private onPointerMove = (event: PointerEvent) => {
         if (!this.isDragging || this.dragPointerId !== event.pointerId) return;
 
+        const topSafeInset = this.getTopSafeInset();
         const maxLeft = Math.max(0, window.innerWidth - this.windowEl.offsetWidth);
-        const maxTop = Math.max(0, window.innerHeight - this.windowEl.offsetHeight);
+        const maxTop = Math.max(topSafeInset, window.innerHeight - this.windowEl.offsetHeight);
         const nextLeft = Math.min(maxLeft, Math.max(0, event.clientX - this.dragOffsetX));
-        const nextTop = Math.min(maxTop, Math.max(0, event.clientY - this.dragOffsetY));
+        const nextTop = Math.min(maxTop, Math.max(topSafeInset, event.clientY - this.dragOffsetY));
 
         this.windowEl.style.left = `${nextLeft}px`;
         this.windowEl.style.top = `${nextTop}px`;
