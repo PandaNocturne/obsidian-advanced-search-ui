@@ -114,7 +114,7 @@ export default {
 
     "AUTO_SCALE_UI_DESC": "If enabled, the advanced search elements will scale down automatically when the sidebar is narrow (requires reload).",
 
-    "TOGGLE_ADVANCED_SEARCH": "Toggle advanced search UI",
+    "TOGGLE_ADVANCED_SEARCH": "Advanced search panel",
 
 };
 

@@ -1,3 +1,4 @@
+import { setIcon } from 'obsidian';
 import type { FloatingPanelBounds } from '../settings';
 
 export interface FloatingSearchPanelOptions {
@@ -5,6 +6,9 @@ export interface FloatingSearchPanelOptions {
     bounds?: FloatingPanelBounds | null;
     onClose: () => void;
     onBoundsChange?: (bounds: FloatingPanelBounds) => void;
+    onResize?: (bounds: FloatingPanelBounds) => void;
+    onCollapsedChange?: (collapsed: boolean) => void;
+    onCompactChange?: (compact: boolean) => void;
 }
 
 export class FloatingSearchPanel {
@@ -13,16 +17,27 @@ export class FloatingSearchPanel {
     public readonly titleEl: HTMLElement;
     public readonly contentEl: HTMLElement;
 
+    private readonly collapseBtn: HTMLButtonElement;
+    private readonly compactBtn: HTMLButtonElement;
     private readonly closeBtn: HTMLButtonElement;
     private readonly onBoundsChange?: (bounds: FloatingPanelBounds) => void;
+    private readonly onResize?: (bounds: FloatingPanelBounds) => void;
+    private readonly onCollapsedChange?: (collapsed: boolean) => void;
+    private readonly onCompactChange?: (compact: boolean) => void;
     private isDragging = false;
+    private isCollapsed = false;
+    private isCompact = false;
     private dragPointerId: number | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private resizeObserver: ResizeObserver | null = null;
+    private expandedHeight: number | null = null;
 
     constructor(options: FloatingSearchPanelOptions) {
         this.onBoundsChange = options.onBoundsChange;
+        this.onResize = options.onResize;
+        this.onCollapsedChange = options.onCollapsedChange;
+        this.onCompactChange = options.onCompactChange;
         this.rootEl = document.body.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
 
@@ -31,8 +46,8 @@ export class FloatingSearchPanel {
         const bounds = options.bounds;
         const initialWidth = bounds ? Math.min(bounds.width, window.innerWidth - 24) : defaultWidth;
         const initialHeight = bounds ? Math.min(bounds.height, window.innerHeight - 24) : defaultHeight;
-        const initialLeft = bounds ? bounds.left : Math.max(24, Math.round((window.innerWidth - initialWidth) / 2));
-        const initialTop = bounds ? bounds.top : Math.max(24, Math.round((window.innerHeight - initialHeight) / 2));
+        const initialLeft = Math.max(24, Math.round((window.innerWidth - initialWidth) / 2));
+        const initialTop = Math.max(24, Math.round((window.innerHeight - initialHeight) / 2));
 
         this.applyBounds({
             left: initialLeft,
@@ -40,15 +55,39 @@ export class FloatingSearchPanel {
             width: initialWidth,
             height: initialHeight
         }, false);
+        this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
         this.titleEl = headerEl.createDiv({ cls: 'asui-floating-panel-title', text: options.title });
+        const controlsEl = headerEl.createDiv({ cls: 'asui-floating-panel-controls' });
 
-        this.closeBtn = headerEl.createEl('button', {
-            cls: 'clickable-icon asui-floating-panel-close',
-            attr: { type: 'button', 'aria-label': options.title }
+        this.collapseBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
+            attr: { type: 'button', 'aria-label': '折叠面板', title: '折叠面板' }
         });
-        this.closeBtn.setText('×');
+        setIcon(this.collapseBtn, 'minus');
+        this.collapseBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.setCollapsed(!this.isCollapsed);
+        };
+
+        this.compactBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-compact',
+            attr: { type: 'button', 'aria-label': '简化控件', title: '简化控件' }
+        });
+        setIcon(this.compactBtn, 'hat-glasses');
+        this.compactBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.setCompact(!this.isCompact);
+        };
+
+        this.closeBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-close',
+            attr: { type: 'button', 'aria-label': options.title, title: '关闭面板' }
+        });
+        setIcon(this.closeBtn, 'x');
         this.closeBtn.onclick = event => {
             event.preventDefault();
             event.stopPropagation();
@@ -61,7 +100,7 @@ export class FloatingSearchPanel {
         window.addEventListener('pointermove', this.onPointerMove);
         window.addEventListener('pointerup', this.onPointerUp);
         window.addEventListener('pointercancel', this.onPointerUp);
-        this.resizeObserver = new ResizeObserver(() => this.emitBoundsChange());
+        this.resizeObserver = new ResizeObserver(() => this.emitResize());
         this.resizeObserver.observe(this.windowEl);
     }
 
@@ -88,6 +127,37 @@ export class FloatingSearchPanel {
         this.rootEl.remove();
     }
 
+    public setCompact(compact: boolean) {
+        this.isCompact = compact;
+        this.windowEl.classList.toggle('is-compact', compact);
+        this.compactBtn.classList.toggle('is-active', compact);
+        this.onCompactChange?.(compact);
+        this.emitResize();
+    }
+
+    public setCollapsed(collapsed: boolean) {
+        if (this.isCollapsed === collapsed) return;
+
+        if (collapsed) {
+            this.expandedHeight = this.windowEl.offsetHeight;
+        }
+
+        this.isCollapsed = collapsed;
+        this.windowEl.classList.toggle('is-collapsed', collapsed);
+        this.collapseBtn.classList.toggle('is-active', collapsed);
+        setIcon(this.collapseBtn, collapsed ? 'plus' : 'minus');
+
+        if (collapsed) {
+            const headerHeight = this.windowEl.querySelector('.asui-floating-panel-header')?.clientHeight ?? 48;
+            this.windowEl.style.height = `${headerHeight}px`;
+        } else if (this.expandedHeight) {
+            this.windowEl.style.height = `${this.expandedHeight}px`;
+        }
+
+        this.onCollapsedChange?.(collapsed);
+        this.emitResize();
+    }
+
     private applyBounds(bounds: FloatingPanelBounds, emit = true) {
         const width = Math.max(420, Math.min(bounds.width, window.innerWidth - 24));
         const height = Math.max(260, Math.min(bounds.height, window.innerHeight - 24));
@@ -108,6 +178,12 @@ export class FloatingSearchPanel {
 
     private emitBoundsChange() {
         this.onBoundsChange?.(this.getBounds());
+    }
+
+    private emitResize() {
+        const bounds = this.getBounds();
+        this.onBoundsChange?.(bounds);
+        this.onResize?.(bounds);
     }
 
     private onPointerDown = (event: PointerEvent) => {
