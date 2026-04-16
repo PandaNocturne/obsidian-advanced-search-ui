@@ -56,7 +56,6 @@ export class FloatingSearchPanel {
             width: initialWidth,
             height: initialHeight
         }, false);
-        this.windowEl.style.opacity = `${Math.max(0.2, Math.min(options.opacity ?? 1, 1))}`;
         this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
@@ -97,6 +96,7 @@ export class FloatingSearchPanel {
         };
 
         this.contentEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-content' });
+        this.setOpacity(options.opacity ?? 1);
 
         headerEl.addEventListener('pointerdown', this.onPointerDown);
         window.addEventListener('pointermove', this.onPointerMove);
@@ -127,6 +127,10 @@ export class FloatingSearchPanel {
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
         this.rootEl.remove();
+    }
+
+    public setOpacity(opacity: number) {
+        this.contentEl.style.opacity = `${Math.max(0.2, Math.min(opacity, 1))}`;
     }
 
     public setCompact(compact: boolean) {

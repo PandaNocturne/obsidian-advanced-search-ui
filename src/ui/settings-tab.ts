@@ -76,6 +76,7 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.floatingPanelOpacity = value / 100;
                     await this.plugin.saveSettings();
+                    this.plugin.updateFloatingPanelOpacity();
                 }));
 
         new Setting(panelGroup)

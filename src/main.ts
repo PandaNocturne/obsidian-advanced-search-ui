@@ -157,6 +157,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         await this.saveData(this.settings);
     }
 
+    public updateFloatingPanelOpacity() {
+        this.floatingSearchPanel?.setOpacity(this.settings.floatingPanelOpacity);
+    }
+
     onunload() {
         document.body.classList.remove('advanced-search-auto-scale');
         this.observer?.disconnect();
@@ -352,6 +356,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.floatingSearchPanel = panel;
         void this.mountFloatingSearchPanelContent(panel);
+        panel.setOpacity(this.settings.floatingPanelOpacity);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();
     }
