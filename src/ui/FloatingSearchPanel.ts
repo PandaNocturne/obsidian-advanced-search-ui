@@ -268,14 +268,15 @@ export class FloatingSearchPanel {
     }
 
     private applyStretchBounds() {
-        const margin = 56;
+        const horizontalMargin = (parseFloat(getComputedStyle(document.body).getPropertyValue('--ribbon-width')) || 0) + 10;
+        const bottomMargin = 10;
         const topSafeInset = this.getTopSafeInset();
-        const fullWidth = Math.max(MIN_PANEL_WIDTH, window.innerWidth - margin * 2);
-        const fullHeight = Math.max(MIN_PANEL_HEIGHT, window.innerHeight - topSafeInset - margin);
+        const fullWidth = Math.max(MIN_PANEL_WIDTH, window.innerWidth - horizontalMargin * 2);
+        const fullHeight = Math.max(MIN_PANEL_HEIGHT, window.innerHeight - topSafeInset - bottomMargin);
 
         this.applyBounds(
             {
-                left: margin,
+                left: horizontalMargin,
                 top: topSafeInset,
                 width: fullWidth,
                 height: fullHeight
