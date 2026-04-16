@@ -1,4 +1,5 @@
-import { Menu, Notice, Plugin, WorkspaceLeaf, setIcon } from 'obsidian';
+import { Menu, Notice, Plugin, Workspace, WorkspaceLeaf, setIcon } from 'obsidian';
+import { around } from 'monkey-around';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
@@ -22,9 +23,27 @@ type WorkspaceWithDetachedLeaf = Plugin['app']['workspace'] & {
     floatingSplit?: unknown;
 };
 
+type WorkspaceEnsureSideLeafOptions = {
+    active?: boolean;
+    split?: boolean;
+    reveal?: boolean;
+    state?: Record<string, unknown>;
+};
+
+type WorkspaceSetActiveLeafParams = {
+    focus?: boolean;
+};
+
+type WorkspaceSetActiveLeafArgs =
+    | [params?: WorkspaceSetActiveLeafParams]
+    | [pushHistory: boolean, focus: boolean];
+
 export default class AdvancedSearchPlugin extends Plugin implements SearchGroupDelegate {
     public settings: AdvancedSearchSettings;
 
+    private workspaceEnsureSideLeafUninstall: (() => void) | null = null;
+    private workspaceSetActiveLeafUninstall: (() => void) | null = null;
+    private workspaceRevealLeafUninstall: (() => void) | null = null;
     private containerGroups: Map<HTMLElement, SearchGroup[]> = new Map();
     private injectionInterval: number | null = null;
     private observer: MutationObserver | null = null;
@@ -85,6 +104,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.app.workspace.onLayoutReady(() => this.injectSearchUI());
         this.registerEvent(this.app.workspace.on('layout-change', () => this.injectSearchUI()));
+        this.patchWorkspaceSearchRouting();
         this.registerFloatingPanelCommands();
         this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板', () => {
             this.toggleFloatingSearchPanel();
@@ -155,6 +175,107 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+
+    private patchWorkspaceSearchRouting() {
+        this.workspaceEnsureSideLeafUninstall?.();
+        this.workspaceSetActiveLeafUninstall?.();
+        this.workspaceRevealLeafUninstall?.();
+
+        const plugin = this;
+
+        this.workspaceEnsureSideLeafUninstall = around(Workspace.prototype, {
+            ensureSideLeaf: (oldEnsureSideLeaf: Workspace['ensureSideLeaf']) => {
+                return async function (
+                    this: Workspace,
+                    type: string,
+                    side: Parameters<Workspace['ensureSideLeaf']>[1],
+                    options?: WorkspaceEnsureSideLeafOptions
+                ) {
+                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
+                    if (type !== 'search' || !floatingLeaf) {
+                        return oldEnsureSideLeaf.call(this, type, side, options);
+                    }
+
+                    plugin.activateFloatingSearchLeaf(options);
+                    return floatingLeaf;
+                };
+            }
+        });
+
+        this.workspaceSetActiveLeafUninstall = around(Workspace.prototype, {
+            setActiveLeaf: (oldSetActiveLeaf: Workspace['setActiveLeaf']) => {
+                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, params?: WorkspaceSetActiveLeafParams): void;
+                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, pushHistory: boolean, focus: boolean): void;
+                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, ...args: WorkspaceSetActiveLeafArgs) {
+                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
+                    const sidebarLeaf = plugin.getSidebarSearchLeaf();
+                    if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
+                        return oldSetActiveLeaf.call(this, leaf, ...(args as [WorkspaceSetActiveLeafParams?] | [boolean, boolean]));
+                    }
+
+                    plugin.activateFloatingSearchLeaf({ active: true });
+                    return;
+                }
+
+                return patchedSetActiveLeaf;
+            }
+        });
+
+        this.workspaceRevealLeafUninstall = around(Workspace.prototype, {
+            revealLeaf: (oldRevealLeaf: Workspace['revealLeaf']) => {
+                return async function (this: Workspace, leaf: WorkspaceLeaf) {
+                    const floatingLeaf = plugin.getRoutableFloatingSearchLeaf();
+                    const sidebarLeaf = plugin.getSidebarSearchLeaf();
+                    if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
+                        return oldRevealLeaf.call(this, leaf);
+                    }
+
+                    plugin.activateFloatingSearchLeaf({ reveal: true });
+                };
+            }
+        });
+
+        this.register(() => {
+            this.workspaceEnsureSideLeafUninstall?.();
+            this.workspaceEnsureSideLeafUninstall = null;
+            this.workspaceSetActiveLeafUninstall?.();
+            this.workspaceSetActiveLeafUninstall = null;
+            this.workspaceRevealLeafUninstall?.();
+            this.workspaceRevealLeafUninstall = null;
+        });
+    }
+
+    private getRoutableFloatingSearchLeaf(): WorkspaceLeaf | null {
+        if (!this.floatingSearchPanel || !this.floatingSearchLeaf) {
+            return null;
+        }
+
+        return this.floatingSearchLeaf;
+    }
+
+    private getSidebarSearchLeaf(): WorkspaceLeaf | null {
+        return this.app.workspace
+            .getLeavesOfType('search')
+            .find(leaf => leaf !== this.floatingSearchLeaf) ?? null;
+    }
+
+    private activateFloatingSearchLeaf(options?: WorkspaceEnsureSideLeafOptions) {
+        const floatingLeaf = this.getRoutableFloatingSearchLeaf();
+        if (!floatingLeaf) {
+            return;
+        }
+
+        if (options?.state) {
+            void floatingLeaf.setViewState({
+                type: 'search',
+                state: options.state,
+                active: options.active ?? true
+            });
+        }
+
+        this.floatingSearchPanel?.focus();
+        this.requestFloatingSearchLayout();
     }
 
     onunload() {
