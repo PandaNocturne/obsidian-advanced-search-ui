@@ -66,6 +66,16 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.updateInterval();
                 }));
 
+        new Setting(panelGroup)
+            .setName(t('FLOATING_PANEL_DEFAULT_COMPACT') || 'Default compact mode')
+            .setDesc(t('FLOATING_PANEL_DEFAULT_COMPACT_DESC') || 'When enabled, the floating search panel hides the search result area by default.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingPanelDefaultCompact)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingPanelDefaultCompact = value;
+                    await this.plugin.saveSettings();
+                }));
+
         const importGroup = this.createSettingGroup(
             containerEl,
             t('SETTING_GROUP_SEARCH'),

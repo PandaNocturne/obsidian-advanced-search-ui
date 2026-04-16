@@ -1,7 +1,9 @@
-import { Plugin, setIcon, Notice } from 'obsidian';
+import { Menu, Notice, Plugin, WorkspaceLeaf, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
-import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
+import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
+import { FloatingSearchPanel } from './ui/FloatingSearchPanel';
+import { buildToggleContextMenu } from './ui/ToggleContextMenu';
 import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
 import { SearchQueryBuilder } from './services/SearchQueryBuilder';
@@ -14,6 +16,12 @@ type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
 };
 
+type WorkspaceWithDetachedLeaf = Plugin['app']['workspace'] & {
+    createDetachedLeaf?: () => WorkspaceLeaf;
+    createLeafInParent?: (parent: unknown, index?: number) => WorkspaceLeaf;
+    floatingSplit?: unknown;
+};
+
 export default class AdvancedSearchPlugin extends Plugin implements SearchGroupDelegate {
     public settings: AdvancedSearchSettings;
 
@@ -24,6 +32,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private draggingRow: SearchRow | null = null;
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
+    private floatingSearchPanel: FloatingSearchPanel | null = null;
+    private floatingSearchContainer: HTMLElement | null = null;
+    private floatingSearchLeaf: WorkspaceLeaf | null = null;
+    private floatingSearchLeafHost: HTMLElement | null = null;
     private queryBuilder = new SearchQueryBuilder();
     private graphColorGroupService = new GraphColorGroupService();
     private searchExecution = new SearchExecutionService(
@@ -49,9 +61,18 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     );
 
     public refreshSearchUI() {
-        document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
+        document.querySelectorAll('.asui-search-form-container').forEach(container => {
+            this.containerGroups.delete(container as HTMLElement);
+            container.remove();
+        });
         document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
-        this.containerGroups.clear();
+
+        if (this.floatingSearchContainer?.isConnected) {
+            this.containerGroups.delete(this.floatingSearchContainer);
+            this.floatingSearchContainer.remove();
+            this.floatingSearchContainer = null;
+        }
+
         this.injectSearchUI();
     }
 
@@ -64,6 +85,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.app.workspace.onLayoutReady(() => this.injectSearchUI());
         this.registerEvent(this.app.workspace.on('layout-change', () => this.injectSearchUI()));
+        this.registerFloatingPanelCommands();
+        this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板', () => {
+            this.toggleFloatingSearchPanel();
+        });
         this.updateInterval();
         this.addSettingTab(new AdvancedSearchSettingTab(this.app, this));
     }
@@ -141,7 +166,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             this.injectionInterval = null;
         }
 
-        document.querySelectorAll('.asui-search-form-container').forEach(container => container.remove());
+        this.closeFloatingSearchPanel();
+        document.querySelectorAll('.asui-search-form-container').forEach(container => {
+            this.containerGroups.delete(container as HTMLElement);
+            container.remove();
+        });
         document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
         this.containerGroups.clear();
     }
@@ -164,51 +193,24 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             const searchParams = searchContainer.querySelector('.search-params');
             if (!(searchParams instanceof HTMLElement)) return;
 
-            if (!searchContainer.querySelector('.asui-search-form-container')) {
-                const queryControlsContainer = searchParams.createDiv({ cls: 'asui-search-form-container' });
-                if (this.settings.defaultCollapsed) queryControlsContainer.classList.add('is-hidden');
-
-                queryControlsContainer.createDiv({ cls: 'search-section' });
-
-                const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
-                this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
-                this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => {
-                    void this.searchExecution.copySearchQuery(queryControlsContainer);
-                });
-
-                const isModal = searchContainer.closest('.modal-container') || searchContainer.closest('.modal');
-                if (!isModal) {
-                    this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => {
-                        void this.searchExecution.openGraphView(queryControlsContainer, true);
-                    });
-                }
-
-                this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
-                this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => {
-                    this.searchExecution.clearGraphColorGroups();
-                    this.clearSearchForm(queryControlsContainer);
-                });
-
-                this.containerGroups.set(queryControlsContainer, []);
-                this.handleKeyboardEvents(queryControlsContainer);
-
-                const searchRowEl = searchContainer.querySelector('.search-row');
-                if (searchRowEl instanceof HTMLElement) searchRowEl.insertAdjacentElement('afterend', queryControlsContainer);
-                else searchParams.prepend(queryControlsContainer);
-
-                this.clearSearchForm(queryControlsContainer, 1, 2);
-            }
+            this.ensureSearchFormMounted({
+                host: searchContainer,
+                mountParent: searchParams,
+                insertAfter: searchContainer.querySelector('.search-row'),
+                collapsible: true,
+                allowGraph: !searchContainer.closest('.modal-container') && !searchContainer.closest('.modal')
+            });
 
             const searchRow = searchContainer.querySelector('.search-row');
             if (searchRow instanceof HTMLElement && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
                 const switchWrapper = searchRow.createDiv({ cls: 'advanced-search-ui-toggle-wrapper' });
                 const toggleBtn = switchWrapper.createEl('div', {
                     cls: 'clickable-icon advanced-search-toggle',
-                    attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') || 'Toggle advanced search' }
+                    attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板' }
                 });
 
                 if (!this.settings.defaultCollapsed) toggleBtn.classList.add('is-active');
-                setIcon(toggleBtn, 'list-filter');
+                setIcon(toggleBtn, 'text-search');
 
                 toggleBtn.onclick = e => {
                     e.preventDefault();
@@ -218,8 +220,264 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     const isHidden = queryControlsContainer.classList.toggle('is-hidden');
                     toggleBtn.classList.toggle('is-active', !isHidden);
                 };
+
+                toggleBtn.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.openToggleMenu(e);
+                });
             }
         });
+    }
+
+    private ensureSearchFormMounted(options: {
+        host: HTMLElement;
+        mountParent: HTMLElement;
+        insertAfter?: Element | null;
+        collapsible: boolean;
+        allowGraph: boolean;
+    }): HTMLElement {
+        const existing = options.host.querySelector(':scope > .asui-search-form-container');
+        if (existing instanceof HTMLElement) {
+            return existing;
+        }
+
+        const queryControlsContainer = options.mountParent.createDiv({ cls: 'asui-search-form-container' });
+        if (options.collapsible && this.settings.defaultCollapsed) {
+            queryControlsContainer.classList.add('is-hidden');
+        }
+
+        queryControlsContainer.createDiv({ cls: 'search-section' });
+
+        const navButtons = queryControlsContainer.createDiv({ cls: 'navigation-buttons' });
+        this.createNavButton(navButtons, t('IMPORT_BUTTON'), 'import-button', () => this.searchImport.importFromSearchBox(queryControlsContainer));
+        this.createNavButton(navButtons, t('COPY_BUTTON'), 'copy-button', () => {
+            void this.searchExecution.copySearchQuery(queryControlsContainer);
+        });
+
+        if (options.allowGraph) {
+            this.createNavButton(navButtons, t('GRAPH_BUTTON'), 'graph-button', () => {
+                void this.searchExecution.openGraphView(queryControlsContainer, true);
+            });
+        }
+
+        this.createNavButton(navButtons, t('SEARCH_BUTTON'), 'search-button', () => this.searchExecution.executeSearch(queryControlsContainer));
+        this.createNavButton(navButtons, t('RESET_BUTTON'), 'reset-button', () => {
+            this.searchExecution.clearGraphColorGroups();
+            this.clearSearchForm(queryControlsContainer);
+        });
+
+        this.containerGroups.set(queryControlsContainer, []);
+        this.handleKeyboardEvents(queryControlsContainer);
+
+        if (options.insertAfter instanceof HTMLElement) {
+            options.insertAfter.insertAdjacentElement('afterend', queryControlsContainer);
+        } else {
+            options.mountParent.prepend(queryControlsContainer);
+        }
+
+        this.clearSearchForm(queryControlsContainer, 1, 2);
+        return queryControlsContainer;
+    }
+
+    private openToggleMenu(event: MouseEvent) {
+        const menu = new Menu();
+        this.buildToggleMenu(menu);
+        menu.showAtMouseEvent(event);
+    }
+
+    private buildToggleMenu(menu: Menu) {
+        buildToggleContextMenu(
+            menu,
+            { isFloatingPanelOpen: !!this.floatingSearchPanel },
+            {
+                openPluginSettings: () => this.openPluginSettings(),
+                openFloatingSearchPanel: () => this.openFloatingSearchPanel(),
+                closeFloatingSearchPanel: () => this.closeFloatingSearchPanel()
+            }
+        );
+    }
+
+    private registerFloatingPanelCommands() {
+        this.addCommand({
+            id: 'open-floating-search-panel',
+            name: t('OPEN_FLOATING_SEARCH_PANEL') || '打开悬浮搜索面板',
+            callback: () => this.openFloatingSearchPanel()
+        });
+
+        this.addCommand({
+            id: 'close-floating-search-panel',
+            name: t('CLOSE_FLOATING_SEARCH_PANEL') || '关闭悬浮搜索面板',
+            checkCallback: checking => {
+                const isOpen = !!this.floatingSearchPanel;
+                if (!checking && isOpen) {
+                    this.closeFloatingSearchPanel();
+                }
+                return isOpen;
+            }
+        });
+
+        this.addCommand({
+            id: 'toggle-floating-search-panel',
+            name: t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板',
+            callback: () => this.toggleFloatingSearchPanel()
+        });
+    }
+
+    private toggleFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.closeFloatingSearchPanel();
+            return;
+        }
+
+        this.openFloatingSearchPanel();
+    }
+
+    private openFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.floatingSearchPanel.focus();
+            return;
+        }
+
+        const panel = new FloatingSearchPanel({
+            title: t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板',
+            bounds: this.settings.floatingPanelBounds,
+            onClose: () => this.closeFloatingSearchPanel(),
+            onOpenSettings: () => this.openPluginSettings(),
+            onBoundsChange: bounds => this.updateFloatingPanelBounds(bounds),
+            onResize: () => this.requestFloatingSearchLayout(),
+            onCollapsedChange: collapsed => this.toggleFloatingSearchCollapsed(collapsed),
+            onCompactChange: compact => this.toggleFloatingSearchCompact(compact)
+        });
+
+        this.floatingSearchPanel = panel;
+        void this.mountFloatingSearchPanelContent(panel);
+        panel.setCompact(this.settings.floatingPanelDefaultCompact);
+        panel.focus();
+    }
+
+    private createFloatingSearchLeaf(): WorkspaceLeaf | null {
+        const workspace = this.app.workspace as WorkspaceWithDetachedLeaf;
+
+        if (typeof workspace.createDetachedLeaf === 'function') {
+            return workspace.createDetachedLeaf();
+        }
+
+        if (typeof workspace.createLeafInParent === 'function' && workspace.floatingSplit) {
+            return workspace.createLeafInParent(workspace.floatingSplit, 0);
+        }
+
+        return this.app.workspace.getLeaf(false);
+    }
+
+    private async mountFloatingSearchPanelContent(panel: FloatingSearchPanel) {
+        panel.contentEl.empty();
+        const host = panel.contentEl.createDiv({ cls: 'asui-floating-panel-host' });
+        this.floatingSearchLeafHost = host;
+
+        const leaf = this.createFloatingSearchLeaf();
+        if (!leaf) {
+            new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
+            return;
+        }
+
+        this.floatingSearchLeaf = leaf;
+        await leaf.setViewState({ type: 'search', active: true });
+
+        const container = leaf.view.containerEl;
+        host.appendChild(container);
+        this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
+        this.toggleFloatingSearchCollapsed(panel.windowEl.classList.contains('is-collapsed'));
+        this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
+        this.requestFloatingSearchLayout();
+
+        window.setTimeout(() => {
+            this.injectSearchUI();
+            this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
+            this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
+            this.toggleFloatingSearchCollapsed(panel.windowEl.classList.contains('is-collapsed'));
+            this.requestFloatingSearchLayout();
+        }, 0);
+    }
+
+    private updateFloatingPanelBounds(bounds: FloatingPanelBounds) {
+        this.settings.floatingPanelBounds = { ...bounds };
+        void this.saveSettings();
+    }
+
+    private requestFloatingSearchLayout() {
+        const leaf = this.floatingSearchLeaf;
+        if (!leaf) return;
+
+        window.requestAnimationFrame(() => {
+            leaf.onResize?.();
+            leaf.view?.onResize?.();
+        });
+    }
+
+    private toggleFloatingSearchCollapsed(collapsed: boolean) {
+        this.floatingSearchLeafHost?.classList.toggle('is-collapsed', collapsed);
+    }
+
+    private toggleFloatingSearchCompact(compact: boolean) {
+        const searchRoot = this.floatingSearchLeaf?.view?.containerEl;
+        searchRoot?.classList.toggle('asui-floating-search-compact', compact);
+    }
+
+    private closeFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.updateFloatingPanelBounds(this.floatingSearchPanel.getBounds());
+        }
+
+        if (this.floatingSearchContainer) {
+            this.containerGroups.delete(this.floatingSearchContainer);
+            this.floatingSearchContainer.remove();
+            this.floatingSearchContainer = null;
+        }
+
+        if (this.floatingSearchLeaf) {
+            this.floatingSearchLeaf.detach();
+            this.floatingSearchLeaf = null;
+        }
+
+        this.floatingSearchLeafHost = null;
+        this.floatingSearchPanel?.destroy();
+        this.floatingSearchPanel = null;
+    }
+
+    private openPluginSettings() {
+        const setting = (this.app as AppWithInternalSettings).setting;
+        if (!setting) {
+            new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
+            return;
+        }
+
+        setting.open();
+
+        const pluginSettingTabId = this.manifest.id;
+        const communityPluginSettingTabId = `community-plugins:${this.manifest.id}`;
+        if (typeof setting.openTabById === 'function') {
+            setting.openTabById(communityPluginSettingTabId);
+            if (setting.activeTab?.id === communityPluginSettingTabId) return;
+
+            setting.openTabById(pluginSettingTabId);
+            if (setting.activeTab?.id === pluginSettingTabId) return;
+        }
+
+        const tabs = setting.tabContentContainer?.querySelectorAll('.vertical-tab-nav-item');
+        const pluginName = this.manifest.name;
+        const matchedTab = Array.from(tabs || []).find(tab => {
+            const tabId = tab.getAttribute('data-tab-id');
+            const title = tab.textContent?.trim();
+            return tabId === communityPluginSettingTabId || tabId === pluginSettingTabId || title === pluginName;
+        });
+
+        if (matchedTab instanceof HTMLElement) {
+            matchedTab.click();
+            return;
+        }
+
+        new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
     }
 
     private createNavButton(parent: HTMLElement, text: string, cls: string, clickHandler: () => void) {
@@ -688,3 +946,13 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 }
+
+type AppWithInternalSettings = Plugin['app'] & {
+    setting?: {
+        open: () => void;
+        openTabById?: (id: string) => void;
+        activeTab?: { id?: string };
+        tabContentContainer?: HTMLElement;
+        pluginTabs?: Record<string, { id: string }>;
+    };
+};

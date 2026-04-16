@@ -29,7 +29,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   // margin: 0 5px 5px;
-  margin:0 var(--size-4-3) var(--size-4-2);
+  margin: 0 var(--size-4-3) var(--size-4-2);
   padding: 5px;
   border: none;
   border-radius: 6px;
@@ -560,22 +560,41 @@
 .workspace-leaf-content[data-type="search"] {
   display: flex;
   flex-flow: column nowrap;
+  min-height: 0;
 }
 
 .workspace-leaf-content[data-type="search"] .search-row {
   order: -3;
+  flex: 0 0 auto;
 }
 
 .workspace-leaf-content[data-type="search"] .asui-search-form-container {
   order: -2;
+  flex: 0 0 auto;
 }
 
 .workspace-leaf-content[data-type="search"] .search-params {
   order: -1;
+  flex: 0 0 auto;
 }
 
 .workspace-leaf-content[data-type="search"] .search-info-container {
   order: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-leaf-content[data-type="search"] .search-result-container.mod-global-search,
+.workspace-leaf-content[data-type="search"] .search-result-container,
+.workspace-leaf-content[data-type="search"] .search-results-children {
+  min-height: 0;
+}
+
+.workspace-leaf-content[data-type="search"] .search-result-container.mod-global-search,
+.workspace-leaf-content[data-type="search"] .search-result-container {
+  flex: 1 1 auto;
+  overflow: auto;
 }
 
 .advanced-search-ui-toggle-wrapper {
@@ -644,6 +663,204 @@
 /* ============================================================================
    Utilities
    ========================================================================== */
+
+.asui-floating-panel-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal);
+  pointer-events: none;
+}
+
+.asui-floating-panel-window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, calc(100vw - 48px));
+  min-width: 420px;
+  min-height: 260px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  resize: both;
+  pointer-events: auto;
+}
+
+.asui-floating-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  cursor: move;
+  user-select: none;
+}
+
+.asui-floating-panel-header:active {
+  cursor: grabbing;
+}
+
+
+.asui-floating-panel-title-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.asui-floating-panel-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--icon-color);
+  flex: 0 0 auto;
+}
+
+.asui-floating-panel-title-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.asui-floating-panel-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.asui-floating-panel-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--icon-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.asui-floating-panel-control svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2px;
+}
+
+.asui-floating-panel-control:hover {
+  background: var(--background-modifier-hover);
+  color: var(--icon-color-hover, var(--text-normal));
+}
+
+.asui-floating-panel-control:active {
+  transform: scale(0.96);
+}
+
+.asui-floating-panel-control.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+.asui-floating-panel-close {
+  width: 30px;
+  height: 30px;
+}
+
+.asui-floating-panel-close:hover {
+  background: var(--background-modifier-error-hover, var(--background-modifier-error));
+  color: var(--text-on-accent);
+}
+
+.asui-floating-panel-close svg {
+  width: 17px;
+  height: 17px;
+}
+
+.asui-floating-panel-window.is-collapsed {
+  min-height: 0;
+  resize: horizontal;
+}
+
+.asui-floating-panel-window.is-collapsed .asui-floating-panel-content {
+  display: none;
+}
+
+.asui-floating-panel-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  // padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.asui-floating-panel-host {
+  min-width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.asui-floating-panel-host>.workspace-leaf,
+.asui-floating-panel-host>.workspace-leaf-content[data-type="search"],
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-info-container,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
+  min-height: 0;
+}
+
+.asui-floating-panel-host>.workspace-leaf,
+.asui-floating-panel-host>.workspace-leaf-content[data-type="search"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-info-container,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
+  overflow: auto;
+}
+
+.asui-floating-panel-host>.asui-search-form-container {
+  margin: 0;
+  max-width: none;
+  flex: 0 0 auto;
+}
+
+.workspace-leaf-content[data-type="search"].asui-floating-search-compact .search-result-container,
+.workspace-leaf-content[data-type="search"].asui-floating-search-compact .search-result-container.mod-global-search,
+.workspace-leaf-content[data-type="search"].asui-floating-search-compact .search-info-container {
+  display: none;
+}
+
+.asui-floating-panel-placeholder {
+  padding: 16px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
 
 .is-hidden {
   display: none !important;

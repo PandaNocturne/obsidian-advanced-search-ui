@@ -14,6 +14,13 @@ export default {
     "COPIED_TO_CLIPBOARD": "已复制到剪贴板",
     "FAILED_TO_COPY": "复制失败",
     "GROUP_QUERY_PASTED": "已粘贴分组查询",
+    "OPEN_PLUGIN_SETTINGS": "打开插件设置",
+    "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
+    "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",
+    "CLOSE_FLOATING_SEARCH_PANEL": "关闭悬浮搜索面板",
+    "TOGGLE_FLOATING_SEARCH_PANEL": "切换悬浮搜索面板",
+    "FLOATING_PANEL_DEFAULT_COMPACT": "默认简化模式",
+    "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "开启后，悬浮搜索面板默认隐藏检索结果区。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",
@@ -52,5 +59,5 @@ export default {
     "ADAPT_FLOAT_SEARCH_DESC": "开启后，将适配 Float Search 插件的模态框及其它检索工作区，否则将只向侧边栏的原生搜索窗注入高级检索面板。",
     "AUTO_SCALE_UI": "自动缩放UI",
     "AUTO_SCALE_UI_DESC": "开启后，当侧边栏宽度变窄时，高级检索面板的元素将会自动缩小以适应屏幕（需要重新加载插件生效）",
-    "TOGGLE_ADVANCED_SEARCH": "切换高级检索面板",
+    "TOGGLE_ADVANCED_SEARCH": "高级检索面板",
 };

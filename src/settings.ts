@@ -1,3 +1,10 @@
+export interface FloatingPanelBounds {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+}
+
 export interface AdvancedSearchSettings {
     searchAlsoGraph: boolean;
     graphColorGroupsEnabled: boolean;
@@ -12,6 +19,8 @@ export interface AdvancedSearchSettings {
     enableExperimentalGroupDragAndDrop: boolean;
     enableExperimentalRowDragAndDrop: boolean;
     importMode: 'append' | 'replace';
+    floatingPanelBounds: FloatingPanelBounds | null;
+    floatingPanelDefaultCompact: boolean;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -27,5 +36,7 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     enableExperimentalGrouping: false,
     enableExperimentalGroupDragAndDrop: true,
     enableExperimentalRowDragAndDrop: false,
-    importMode: 'append'
+    importMode: 'append',
+    floatingPanelBounds: null,
+    floatingPanelDefaultCompact: true
 };
