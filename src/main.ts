@@ -409,7 +409,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private closeFloatingSearchPanel() {
         if (this.floatingSearchPanel) {
-            this.updateFloatingPanelBounds(this.floatingSearchPanel.getBounds());
+            this.updateFloatingPanelBounds(this.floatingSearchPanel.getPersistedBounds());
         }
 
         if (this.floatingSearchContainer) {

@@ -155,6 +155,12 @@ export class FloatingSearchPanel {
         };
     }
 
+    public getPersistedBounds(): FloatingPanelBounds {
+        return this.stretchMode === 'fullscreen'
+            ? { ...(this.restoredBounds ?? this.getBounds()) }
+            : this.getBounds();
+    }
+
     public destroy() {
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
