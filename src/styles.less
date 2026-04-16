@@ -396,6 +396,10 @@
   display: none;
 }
 
+.asui-controls .asui-toggle.is-disabled {
+  cursor: not-allowed;
+}
+
 .asui-toggle-label {
   display: flex;
   align-items: center;
@@ -409,10 +413,23 @@
   transition: all 0.15s ease;
 }
 
+.asui-toggle.is-disabled .asui-toggle-label {
+  border-color: var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
 .asui-toggle-label:hover {
   border-color: var(--text-muted);
   background-color: var(--interactive-hover);
   color: var(--text-normal);
+}
+
+.asui-toggle.is-disabled .asui-toggle-label:hover {
+  border-color: var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  color: var(--text-faint);
 }
 
 .asui-toggle input:checked+.asui-toggle-label {
@@ -767,7 +784,7 @@
 }
 
 .asui-floating-panel-control.is-active {
-  background: var(--background-modifier-hover);
+  // background: var(--background-modifier-hover);
   color: var(--interactive-accent);
 }
 

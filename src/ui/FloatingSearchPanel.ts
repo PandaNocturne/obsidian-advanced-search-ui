@@ -125,7 +125,6 @@ export class FloatingSearchPanel {
 
     public focus() {
         this.rootEl.classList.add('is-active');
-        this.windowEl.style.zIndex = '1000';
     }
 
     public getBounds(): FloatingPanelBounds {

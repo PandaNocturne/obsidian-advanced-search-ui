@@ -26,6 +26,8 @@ export class SearchRow {
     public regexInput: HTMLInputElement;
     private iconButton: HTMLButtonElement;
     private dragHandle: HTMLButtonElement;
+    private caseLabel: HTMLLabelElement;
+    private regexLabel: HTMLLabelElement;
 
     private app: App;
     private delegate: SearchRowDelegate;
@@ -62,13 +64,13 @@ export class SearchRow {
 
         const controls = this.container.createDiv({ cls: 'asui-controls' });
 
-        const caseLabel = controls.createEl('label', { cls: 'asui-toggle' });
-        this.caseInput = caseLabel.createEl('input', { type: 'radio' });
-        caseLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-case-sensitive' });
+        this.caseLabel = controls.createEl('label', { cls: 'asui-toggle' });
+        this.caseInput = this.caseLabel.createEl('input', { type: 'radio' });
+        this.caseLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-case-sensitive' });
 
-        const regexLabel = controls.createEl('label', { cls: 'asui-toggle' });
-        this.regexInput = regexLabel.createEl('input', { type: 'radio' });
-        regexLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-regex' });
+        this.regexLabel = controls.createEl('label', { cls: 'asui-toggle' });
+        this.regexInput = this.regexLabel.createEl('input', { type: 'radio' });
+        this.regexLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-regex' });
 
         this.container.createEl('button', { cls: 'asui-remove-row', attr: { 'aria-label': t('REMOVE_CRITERIA'), type: 'button' } });
         this.container.createEl('button', { cls: 'asui-add-row', attr: { 'aria-label': t('ADD_CRITERIA'), type: 'button' } });
@@ -85,8 +87,18 @@ export class SearchRow {
             this.iconButton.setAttribute('data-select-option', iconName ? selected : '');
         };
 
-        this.typeSelect.onchange = updateIcon;
+        const updateTypeCapabilities = () => {
+            const disableAdvancedModes = this.typeSelect.value === 'tag';
+            this.setAdvancedModeDisabled(this.caseInput, this.caseLabel, disableAdvancedModes);
+            this.setAdvancedModeDisabled(this.regexInput, this.regexLabel, disableAdvancedModes);
+        };
+
+        this.typeSelect.onchange = () => {
+            updateIcon();
+            updateTypeCapabilities();
+        };
         updateIcon();
+        updateTypeCapabilities();
 
         SearchRow.setIconForEl(this.dragHandle, 'grip-vertical');
         SearchRow.setIconForEl(this.container.querySelector('.asui-icon-case-sensitive') as HTMLElement, 'case-sensitive');
@@ -139,7 +151,7 @@ export class SearchRow {
             let lastState = false;
             radio.onclick = e => {
                 const target = e.target;
-                if (!(target instanceof HTMLInputElement)) return;
+                if (!(target instanceof HTMLInputElement) || target.disabled) return;
                 if (target.checked && lastState) {
                     target.checked = false;
                 }
@@ -163,6 +175,14 @@ export class SearchRow {
             e.stopPropagation();
             this.delegate.onAddRow(this);
         });
+    }
+
+    private setAdvancedModeDisabled(input: HTMLInputElement, label: HTMLLabelElement, disabled: boolean) {
+        if (disabled) {
+            input.checked = false;
+        }
+        input.disabled = disabled;
+        label.classList.toggle('is-disabled', disabled);
     }
 
     private async handleIconClick() {
@@ -232,8 +252,8 @@ export class SearchRow {
             this.typeSelect.dispatchEvent(new Event('change'));
         }
         if (data.value !== undefined) this.input.value = data.value;
-        if (data.caseSensitive !== undefined) this.caseInput.checked = data.caseSensitive;
-        if (data.regex !== undefined) this.regexInput.checked = data.regex;
+        if (data.caseSensitive !== undefined) this.caseInput.checked = !this.caseInput.disabled && data.caseSensitive;
+        if (data.regex !== undefined) this.regexInput.checked = !this.regexInput.disabled && data.regex;
     }
 
     public getValue(): string {
