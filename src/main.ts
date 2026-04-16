@@ -376,11 +376,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             }))
         });
         this.normalizeGroupRows(currentGroup);
-
-        const container = this.findContainerByGroup(currentGroup);
-        if (container && this.shouldAutoSearchForGroup(currentGroup)) {
-            this.searchExecution.executeSearch(container);
-        }
         return true;
 
         function currentGroupFromParsed(group: ReturnType<typeof QueryParser.parseGroups>[number]): SearchGroup {
