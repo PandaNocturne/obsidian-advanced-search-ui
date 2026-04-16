@@ -1,126 +1,63 @@
 export default {
-
     // Navigation buttons
-
     "IMPORT_BUTTON": "Import",
-
     "COPY_BUTTON": "Copy",
-
     "GRAPH_BUTTON": "Graph",
-
     "SEARCH_BUTTON": "Search",
-
     "RESET_BUTTON": "Reset",
 
-
-
     // UI elements
-
     "REMOVE_CRITERIA": "Remove criteria",
-
     "ADD_CRITERIA": "Add criteria",
-
     "PASTE_BUTTON": "Paste",
-
     "NO_QUERY_TO_IMPORT": "No query to import",
-
     "COPIED_TO_CLIPBOARD": "Copied to clipboard",
-
     "FAILED_TO_COPY": "Failed to copy",
-
     "GROUP_QUERY_PASTED": "Group query pasted",
-
     "OPEN_PLUGIN_SETTINGS": "Open plugin settings",
-
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "Failed to open plugin settings",
-
     "OPEN_FLOATING_SEARCH_PANEL": "Open floating search panel",
-
     "CLOSE_FLOATING_SEARCH_PANEL": "Close floating search panel",
-
     "TOGGLE_FLOATING_SEARCH_PANEL": "Toggle floating search panel",
-
     "FLOATING_PANEL_DEFAULT_COMPACT": "Default compact mode",
-
     "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "When enabled, the floating search panel hides the search result area by default.",
 
-
-
     // Settings groups
-
     "SETTING_GROUP_SEARCH": "Import and execution",
-
     "SETTING_GROUP_SEARCH_DESC": "Controls how imported conditions are merged and when searches run automatically.",
-
     "SETTING_GROUP_UI": "Panel behavior",
-
     "SETTING_GROUP_UI_DESC": "Controls how the advanced search panel is displayed and adapted to different layouts.",
-
     "SETTING_GROUP_GRAPH": "Graph integration",
-
     "SETTING_GROUP_GRAPH_DESC": "Controls how search results interact with graph view and graph color groups.",
-
     "SETTING_GROUP_EXPERIMENTAL": "Experimental features",
-
     "SETTING_GROUP_EXPERIMENTAL_DESC": "The following features are experimental and disabled by default.",
 
-
-
     // Settings
-
     "SEARCH_ALSO_GRAPH": "Update graph on search",
-
     "SEARCH_ALSO_GRAPH_DESC": "When enabled, graph view filters will be automatically updated when performing a search.",
-
     "GRAPH_COLOR_GROUPS": "Enable graph color groups",
-
     "GRAPH_COLOR_GROUPS_DESC": "When grouping is enabled, clicking the graph button syncs each non-empty group into a separate graph color group.",
-
     "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET": "Clear graph color groups on reset",
-
     "CLEAR_GRAPH_COLOR_GROUPS_ON_RESET_DESC": "When enabled, clicking reset in the advanced search panel also clears color groups in the current graph view.",
-
     "IMPORT_MODE": "Import mode",
-
     "IMPORT_MODE_DESC": "Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.",
-
     "IMPORT_MODE_APPEND": "Append",
-
     "IMPORT_MODE_REPLACE": "Replace",
-
     "AUTO_SEARCH_AFTER_IMPORT": "Auto search after import",
-
     "AUTO_SEARCH_AFTER_IMPORT_DESC": "Automatically execute a search immediately after importing query conditions.",
-
     "AUTO_SEARCH_ON_OPERATOR_CHANGE": "Auto search on and/or/not change",
-
     "AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC": "Automatically execute search when switching and / or / not.",
-
     "ENABLE_EXPERIMENTAL_GROUPING": "Enable grouping",
-
     "ENABLE_EXPERIMENTAL_GROUPING_DESC": "Enable grouped search controls.",
-
     "ENABLE_EXPERIMENTAL_GROUP_DRAG_AND_DROP": "Group drag and drop",
-
     "ENABLE_EXPERIMENTAL_GROUP_DRAG_AND_DROP_DESC": "Enable reordering groups by dragging their headers.",
-
     "ENABLE_EXPERIMENTAL_ROW_DRAG_AND_DROP": "Row drag and drop",
-
     "ENABLE_EXPERIMENTAL_ROW_DRAG_AND_DROP_DESC": "Enable reordering and moving rows between existing groups by dragging row handles.",
-
     "DEFAULT_COLLAPSED": "Default collapsed",
-
     "DEFAULT_COLLAPSED_DESC": "If enabled, the advanced search UI panel will be collapsed by default.",
-
     "ADAPT_FLOAT_SEARCH": "Adapt to float search",
-
     "ADAPT_FLOAT_SEARCH_DESC": "If enabled, the UI will be injected into float search modal and other search views. Otherwise, it only targets the native sidebar search.",
-
     "AUTO_SCALE_UI": "Auto scale UI",
-
     "AUTO_SCALE_UI_DESC": "If enabled, the advanced search elements will scale down automatically when the sidebar is narrow (requires reload).",
-
     "TOGGLE_ADVANCED_SEARCH": "Advanced search panel",
-
 };
-
