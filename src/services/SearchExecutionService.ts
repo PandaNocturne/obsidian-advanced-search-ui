@@ -108,7 +108,7 @@ export class SearchExecutionService {
             .map(group => this.queryBuilder.buildGroupQuery(group))
             .filter(query => query.length > 0);
 
-        if (groupQueries.length === 0) return;
+        if (groupQueries.length < 2) return;
 
         this.graphColorGroupService.syncToLeaf(targetLeaf, groupQueries);
     }
