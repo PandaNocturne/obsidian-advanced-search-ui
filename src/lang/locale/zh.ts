@@ -14,6 +14,8 @@ export default {
     "COPIED_TO_CLIPBOARD": "已复制到剪贴板",
     "FAILED_TO_COPY": "复制失败",
     "GROUP_QUERY_PASTED": "已粘贴分组查询",
+    "OPEN_PLUGIN_SETTINGS": "打开插件设置",
+    "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

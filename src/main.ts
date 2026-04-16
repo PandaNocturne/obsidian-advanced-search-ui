@@ -1,4 +1,4 @@
-import { Plugin, setIcon, Notice } from 'obsidian';
+import { Menu, Notice, Plugin, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
@@ -218,8 +218,64 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     const isHidden = queryControlsContainer.classList.toggle('is-hidden');
                     toggleBtn.classList.toggle('is-active', !isHidden);
                 };
+
+                toggleBtn.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.openToggleMenu(e);
+                });
             }
         });
+    }
+
+    private openToggleMenu(event: MouseEvent) {
+        const menu = new Menu();
+        this.buildToggleMenu(menu);
+        menu.showAtMouseEvent(event);
+    }
+
+    private buildToggleMenu(menu: Menu) {
+        menu.addItem(item => {
+            item.setTitle(t('OPEN_PLUGIN_SETTINGS'));
+            item.setIcon('settings');
+            item.onClick(() => this.openPluginSettings());
+        });
+    }
+
+    private openPluginSettings() {
+        const setting = (this.app as AppWithInternalSettings).setting;
+        if (!setting) {
+            new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
+            return;
+        }
+
+        setting.open();
+
+        const pluginSettingTabId = this.manifest.id;
+        const communityPluginSettingTabId = `community-plugins:${this.manifest.id}`;
+
+        if (typeof setting.openTabById === 'function') {
+            setting.openTabById(communityPluginSettingTabId);
+            if (setting.activeTab?.id === communityPluginSettingTabId) return;
+
+            setting.openTabById(pluginSettingTabId);
+            if (setting.activeTab?.id === pluginSettingTabId) return;
+        }
+
+        const tabs = setting.tabContentContainer?.querySelectorAll('.vertical-tab-nav-item');
+        const pluginName = this.manifest.name;
+        const matchedTab = Array.from(tabs || []).find(tab => {
+            const tabId = tab.getAttribute('data-tab-id');
+            const title = tab.textContent?.trim();
+            return tabId === communityPluginSettingTabId || tabId === pluginSettingTabId || title === pluginName;
+        });
+
+        if (matchedTab instanceof HTMLElement) {
+            matchedTab.click();
+            return;
+        }
+
+        new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
     }
 
     private createNavButton(parent: HTMLElement, text: string, cls: string, clickHandler: () => void) {
@@ -688,3 +744,13 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 }
+
+type AppWithInternalSettings = Plugin['app'] & {
+    setting?: {
+        open: () => void;
+        openTabById?: (id: string) => void;
+        activeTab?: { id?: string };
+        tabContentContainer?: HTMLElement;
+        pluginTabs?: Record<string, { id: string }>;
+    };
+};

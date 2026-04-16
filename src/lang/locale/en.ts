@@ -14,6 +14,8 @@ export default {
     "COPIED_TO_CLIPBOARD": "Copied to clipboard",
     "FAILED_TO_COPY": "Failed to copy",
     "GROUP_QUERY_PASTED": "Group query pasted",
+    "OPEN_PLUGIN_SETTINGS": "Open plugin settings",
+    "FAILED_TO_OPEN_PLUGIN_SETTINGS": "Failed to open plugin settings",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Import and execution",
