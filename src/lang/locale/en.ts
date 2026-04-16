@@ -40,6 +40,14 @@ export default {
 
     "TOGGLE_FLOATING_SEARCH_PANEL": "Toggle floating search panel",
 
+    "FLOATING_PANEL_OPACITY": "Floating panel opacity",
+
+    "FLOATING_PANEL_OPACITY_DESC": "Adjust the opacity of the floating search panel.",
+
+    "FLOATING_PANEL_DEFAULT_COMPACT": "Default compact mode",
+
+    "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "When enabled, the floating search panel hides the search result area by default.",
+
 
 
     // Settings groups

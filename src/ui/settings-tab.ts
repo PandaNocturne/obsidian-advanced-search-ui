@@ -66,6 +66,28 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.updateInterval();
                 }));
 
+        new Setting(panelGroup)
+            .setName(t('FLOATING_PANEL_OPACITY') || 'Floating panel opacity')
+            .setDesc(t('FLOATING_PANEL_OPACITY_DESC') || 'Adjust the opacity of the floating search panel.')
+            .addSlider(slider => slider
+                .setLimits(20, 100, 5)
+                .setValue(Math.round(this.plugin.settings.floatingPanelOpacity * 100))
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingPanelOpacity = value / 100;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(panelGroup)
+            .setName(t('FLOATING_PANEL_DEFAULT_COMPACT') || 'Default compact mode')
+            .setDesc(t('FLOATING_PANEL_DEFAULT_COMPACT_DESC') || 'When enabled, the floating search panel hides the search result area by default.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingPanelDefaultCompact)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingPanelDefaultCompact = value;
+                    await this.plugin.saveSettings();
+                }));
+
         const importGroup = this.createSettingGroup(
             containerEl,
             t('SETTING_GROUP_SEARCH'),

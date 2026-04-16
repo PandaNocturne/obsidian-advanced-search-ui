@@ -20,6 +20,8 @@ export interface AdvancedSearchSettings {
     enableExperimentalRowDragAndDrop: boolean;
     importMode: 'append' | 'replace';
     floatingPanelBounds: FloatingPanelBounds | null;
+    floatingPanelOpacity: number;
+    floatingPanelDefaultCompact: boolean;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -36,5 +38,7 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     enableExperimentalGroupDragAndDrop: true,
     enableExperimentalRowDragAndDrop: false,
     importMode: 'append',
-    floatingPanelBounds: null
+    floatingPanelBounds: null,
+    floatingPanelOpacity: 1,
+    floatingPanelDefaultCompact: true
 };

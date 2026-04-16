@@ -19,6 +19,10 @@ export default {
     "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",
     "CLOSE_FLOATING_SEARCH_PANEL": "关闭悬浮搜索面板",
     "TOGGLE_FLOATING_SEARCH_PANEL": "切换悬浮搜索面板",
+    "FLOATING_PANEL_OPACITY": "悬浮面板不透明度",
+    "FLOATING_PANEL_OPACITY_DESC": "调整悬浮搜索面板的不透明度。",
+    "FLOATING_PANEL_DEFAULT_COMPACT": "默认简化模式",
+    "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "开启后，悬浮搜索面板默认隐藏检索结果区。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

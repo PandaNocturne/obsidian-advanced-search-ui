@@ -9,6 +9,7 @@ export interface FloatingSearchPanelOptions {
     onResize?: (bounds: FloatingPanelBounds) => void;
     onCollapsedChange?: (collapsed: boolean) => void;
     onCompactChange?: (compact: boolean) => void;
+    opacity?: number;
 }
 
 export class FloatingSearchPanel {
@@ -55,6 +56,7 @@ export class FloatingSearchPanel {
             width: initialWidth,
             height: initialHeight
         }, false);
+        this.windowEl.style.opacity = `${Math.max(0.2, Math.min(options.opacity ?? 1, 1))}`;
         this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
