@@ -705,15 +705,28 @@
   cursor: grabbing;
 }
 
-.asui-floating-panel-title {
+
+.asui-floating-panel-title-wrap {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
   min-width: 0;
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 8px;
+}
+
+.asui-floating-panel-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--icon-color);
+  flex: 0 0 auto;
+}
+
+.asui-floating-panel-title-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .asui-floating-panel-controls {
@@ -800,16 +813,16 @@
   overflow: hidden;
 }
 
-.asui-floating-panel-host > .workspace-leaf,
-.asui-floating-panel-host > .workspace-leaf-content[data-type="search"],
-.asui-floating-panel-host > .view-content,
-.asui-floating-panel-host > .search-info-container,
-.asui-floating-panel-host > .search-result-container.mod-global-search {
+.asui-floating-panel-host>.workspace-leaf,
+.asui-floating-panel-host>.workspace-leaf-content[data-type="search"],
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-info-container,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
   min-height: 0;
 }
 
-.asui-floating-panel-host > .workspace-leaf,
-.asui-floating-panel-host > .workspace-leaf-content[data-type="search"] {
+.asui-floating-panel-host>.workspace-leaf,
+.asui-floating-panel-host>.workspace-leaf-content[data-type="search"] {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -817,19 +830,19 @@
   overflow: hidden;
 }
 
-.asui-floating-panel-host > .view-content,
-.asui-floating-panel-host > .search-info-container,
-.asui-floating-panel-host > .search-result-container.mod-global-search {
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-info-container,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
   flex: 1 1 auto;
   min-height: 0;
 }
 
-.asui-floating-panel-host > .view-content,
-.asui-floating-panel-host > .search-result-container.mod-global-search {
+.asui-floating-panel-host>.view-content,
+.asui-floating-panel-host>.search-result-container.mod-global-search {
   overflow: auto;
 }
 
-.asui-floating-panel-host > .asui-search-form-container {
+.asui-floating-panel-host>.asui-search-form-container {
   margin: 0;
   max-width: none;
   flex: 0 0 auto;

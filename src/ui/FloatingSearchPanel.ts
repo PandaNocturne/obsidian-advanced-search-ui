@@ -5,11 +5,11 @@ export interface FloatingSearchPanelOptions {
     title: string;
     bounds?: FloatingPanelBounds | null;
     onClose: () => void;
+    onOpenSettings?: () => void;
     onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     onResize?: (bounds: FloatingPanelBounds) => void;
     onCollapsedChange?: (collapsed: boolean) => void;
     onCompactChange?: (compact: boolean) => void;
-    opacity?: number;
 }
 
 export class FloatingSearchPanel {
@@ -18,6 +18,7 @@ export class FloatingSearchPanel {
     public readonly titleEl: HTMLElement;
     public readonly contentEl: HTMLElement;
 
+    private readonly settingsBtn: HTMLButtonElement;
     private readonly collapseBtn: HTMLButtonElement;
     private readonly compactBtn: HTMLButtonElement;
     private readonly closeBtn: HTMLButtonElement;
@@ -59,8 +60,22 @@ export class FloatingSearchPanel {
         this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
-        this.titleEl = headerEl.createDiv({ cls: 'asui-floating-panel-title', text: options.title });
+        const titleWrapEl = headerEl.createDiv({ cls: 'asui-floating-panel-title-wrap' });
+        const titleIconEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title-icon' });
+        setIcon(titleIconEl, 'text-search');
+        this.titleEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title', text: options.title });
         const controlsEl = headerEl.createDiv({ cls: 'asui-floating-panel-controls' });
+
+        this.settingsBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-settings',
+            attr: { type: 'button', 'aria-label': '打开插件设置', title: '打开插件设置' }
+        });
+        setIcon(this.settingsBtn, 'settings');
+        this.settingsBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            options.onOpenSettings?.();
+        };
 
         this.collapseBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
@@ -96,7 +111,6 @@ export class FloatingSearchPanel {
         };
 
         this.contentEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-content' });
-        this.setOpacity(options.opacity ?? 1);
 
         headerEl.addEventListener('pointerdown', this.onPointerDown);
         window.addEventListener('pointermove', this.onPointerMove);
@@ -127,10 +141,6 @@ export class FloatingSearchPanel {
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
         this.rootEl.remove();
-    }
-
-    public setOpacity(opacity: number) {
-        this.contentEl.style.opacity = `${Math.max(0.2, Math.min(opacity, 1))}`;
     }
 
     public setCompact(compact: boolean) {

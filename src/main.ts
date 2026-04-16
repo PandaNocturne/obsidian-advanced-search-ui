@@ -157,10 +157,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         await this.saveData(this.settings);
     }
 
-    public updateFloatingPanelOpacity() {
-        this.floatingSearchPanel?.setOpacity(this.settings.floatingPanelOpacity);
-    }
-
     onunload() {
         document.body.classList.remove('advanced-search-auto-scale');
         this.observer?.disconnect();
@@ -214,7 +210,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 });
 
                 if (!this.settings.defaultCollapsed) toggleBtn.classList.add('is-active');
-                setIcon(toggleBtn, 'list-filter');
+                setIcon(toggleBtn, 'text-search');
 
                 toggleBtn.onclick = e => {
                     e.preventDefault();
@@ -346,8 +342,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const panel = new FloatingSearchPanel({
             title: t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板',
             bounds: this.settings.floatingPanelBounds,
-            opacity: this.settings.floatingPanelOpacity,
             onClose: () => this.closeFloatingSearchPanel(),
+            onOpenSettings: () => this.openPluginSettings(),
             onBoundsChange: bounds => this.updateFloatingPanelBounds(bounds),
             onResize: () => this.requestFloatingSearchLayout(),
             onCollapsedChange: collapsed => this.toggleFloatingSearchCollapsed(collapsed),
@@ -356,7 +352,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.floatingSearchPanel = panel;
         void this.mountFloatingSearchPanelContent(panel);
-        panel.setOpacity(this.settings.floatingPanelOpacity);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();
     }
