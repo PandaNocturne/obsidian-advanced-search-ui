@@ -1,4 +1,4 @@
-import { Plugin, setIcon } from 'obsidian';
+import { Plugin, setIcon, Notice } from 'obsidian';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
@@ -8,6 +8,7 @@ import { SearchQueryBuilder } from './services/SearchQueryBuilder';
 import { SearchExecutionService } from './services/SearchExecutionService';
 import { SearchImportService } from './services/SearchImportService';
 import { GraphColorGroupService } from './services/GraphColorGroupService';
+import { QueryParser } from './utils/QueryParser';
 
 type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
@@ -319,6 +320,75 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private shouldAutoSearchForGroup(currentGroup: SearchGroup) {
         return currentGroup.rows.some(row => !!row.getValue());
+    }
+
+    async copyGroupQuery(currentGroup: SearchGroup): Promise<boolean> {
+        const query = this.queryBuilder.buildGroupQuery(currentGroup).trim();
+        if (!query) {
+            return false;
+        }
+
+        try {
+            await navigator.clipboard.writeText(query);
+            new Notice(t('COPIED_TO_CLIPBOARD'));
+            return true;
+        } catch {
+            new Notice(t('FAILED_TO_COPY'));
+            return false;
+        }
+    }
+
+    async pasteGroupQuery(currentGroup: SearchGroup): Promise<boolean> {
+        let clipboardText = '';
+        try {
+            clipboardText = (await navigator.clipboard.readText()).trim();
+        } catch {
+            return false;
+        }
+
+        if (!clipboardText) {
+            return false;
+        }
+
+        const parsedGroups = QueryParser.parseGroups(clipboardText);
+        if (parsedGroups.length !== 1) {
+            return false;
+        }
+
+        const parsedGroup = parsedGroups[0];
+        if (!parsedGroup) {
+            return false;
+        }
+
+        const rebuiltQuery = this.queryBuilder.buildGroupQuery(currentGroupFromParsed(parsedGroup)).trim();
+        if (!parsedGroup.rows.length || rebuiltQuery !== clipboardText) {
+            return false;
+        }
+
+        currentGroup.setData({
+            operator: currentGroup.operatorSelect.value as 'AND' | 'OR' | 'NOT',
+            rows: parsedGroup.rows.map(row => ({
+                operator: row.operator,
+                type: row.type,
+                value: row.value,
+                caseSensitive: row.caseSensitive,
+                regex: row.isRegex
+            }))
+        });
+        this.normalizeGroupRows(currentGroup);
+        return true;
+
+        function currentGroupFromParsed(group: ReturnType<typeof QueryParser.parseGroups>[number]): SearchGroup {
+            return {
+                rows: group.rows.map(row => ({
+                    operatorSelect: { value: row.operator } as HTMLSelectElement,
+                    typeSelect: { value: row.type } as HTMLSelectElement,
+                    caseInput: { checked: row.caseSensitive } as HTMLInputElement,
+                    regexInput: { checked: row.isRegex } as HTMLInputElement,
+                    getValue: () => row.value
+                }))
+            } as unknown as SearchGroup;
+        }
     }
 
     onAddRow(currentRow: SearchRow) {

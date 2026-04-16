@@ -9,9 +9,11 @@ export default {
     // UI elements
     "REMOVE_CRITERIA": "Remove criteria",
     "ADD_CRITERIA": "Add criteria",
+    "PASTE_BUTTON": "Paste",
     "NO_QUERY_TO_IMPORT": "No query to import",
     "COPIED_TO_CLIPBOARD": "Copied to clipboard",
     "FAILED_TO_COPY": "Failed to copy",
+    "GROUP_QUERY_PASTED": "Group query pasted",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Import and execution",
