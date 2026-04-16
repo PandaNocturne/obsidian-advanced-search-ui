@@ -706,6 +706,12 @@
   pointer-events: auto;
 }
 
+.asui-floating-panel-window.is-fullscreen,
+.asui-floating-panel-window.is-stretched-horizontal,
+.asui-floating-panel-window.is-stretched-vertical {
+  resize: none;
+}
+
 .asui-floating-panel-header {
   display: flex;
   align-items: center;
@@ -716,6 +722,12 @@
   background: var(--background-secondary);
   cursor: move;
   user-select: none;
+}
+
+.asui-floating-panel-window.is-fullscreen .asui-floating-panel-header,
+.asui-floating-panel-window.is-stretched-horizontal .asui-floating-panel-header,
+.asui-floating-panel-window.is-stretched-vertical .asui-floating-panel-header {
+  cursor: default;
 }
 
 .asui-floating-panel-header:active {

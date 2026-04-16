@@ -13,6 +13,8 @@ export interface FloatingSearchPanelOptions {
     onCompactChange?: (compact: boolean) => void;
 }
 
+type PanelStretchMode = 'normal' | 'horizontal' | 'vertical' | 'fullscreen';
+
 export class FloatingSearchPanel {
     public readonly rootEl: HTMLElement;
     public readonly windowEl: HTMLElement;
@@ -22,6 +24,9 @@ export class FloatingSearchPanel {
     private readonly settingsBtn: HTMLButtonElement;
     private readonly collapseBtn: HTMLButtonElement;
     private readonly compactBtn: HTMLButtonElement;
+    private readonly stretchHorizontalBtn: HTMLButtonElement;
+    private readonly stretchVerticalBtn: HTMLButtonElement;
+    private readonly fullscreenBtn: HTMLButtonElement;
     private readonly closeBtn: HTMLButtonElement;
     private readonly onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: (bounds: FloatingPanelBounds) => void;
@@ -35,13 +40,14 @@ export class FloatingSearchPanel {
     private dragOffsetY = 0;
     private resizeObserver: ResizeObserver | null = null;
     private expandedHeight: number | null = null;
+    private stretchMode: PanelStretchMode = 'normal';
+    private restoredBounds: FloatingPanelBounds | null = null;
 
     constructor(options: FloatingSearchPanelOptions) {
         this.onBoundsChange = options.onBoundsChange;
         this.onResize = options.onResize;
         this.onCollapsedChange = options.onCollapsedChange;
         this.onCompactChange = options.onCompactChange;
-        // this.rootEl = document.body.createDiv({ cls: 'asui-floating-panel-root' });
         const mountEl = options.mountEl ?? document.body;
         this.rootEl = mountEl.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
@@ -51,8 +57,8 @@ export class FloatingSearchPanel {
         const bounds = options.bounds;
         const initialWidth = bounds ? Math.min(bounds.width, window.innerWidth - 24) : defaultWidth;
         const initialHeight = bounds ? Math.min(bounds.height, window.innerHeight - 24) : defaultHeight;
-        const initialLeft = Math.max(24, Math.round((window.innerWidth - initialWidth) / 2));
-        const initialTop = Math.max(24, Math.round((window.innerHeight - initialHeight) / 2));
+        const initialLeft = bounds ? bounds.left : Math.max(24, Math.round((window.innerWidth - initialWidth) / 2));
+        const initialTop = bounds ? bounds.top : Math.max(24, Math.round((window.innerHeight - initialHeight) / 2));
 
         this.applyBounds({
             left: initialLeft,
@@ -78,6 +84,39 @@ export class FloatingSearchPanel {
             event.preventDefault();
             event.stopPropagation();
             options.onOpenSettings?.();
+        };
+
+        this.stretchHorizontalBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-stretch-horizontal',
+            attr: { type: 'button', 'aria-label': '水平拉伸', title: '水平拉伸' }
+        });
+        setIcon(this.stretchHorizontalBtn, 'move-horizontal');
+        this.stretchHorizontalBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleStretchMode('horizontal');
+        };
+
+        this.stretchVerticalBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-stretch-vertical',
+            attr: { type: 'button', 'aria-label': '垂直拉伸', title: '垂直拉伸' }
+        });
+        setIcon(this.stretchVerticalBtn, 'move-vertical');
+        this.stretchVerticalBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleStretchMode('vertical');
+        };
+
+        this.fullscreenBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-fullscreen',
+            attr: { type: 'button', 'aria-label': '全屏显示', title: '全屏显示' }
+        });
+        setIcon(this.fullscreenBtn, 'maximize');
+        this.fullscreenBtn.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleStretchMode('fullscreen');
         };
 
         this.collapseBtn = controlsEl.createEl('button', {
@@ -121,6 +160,7 @@ export class FloatingSearchPanel {
         window.addEventListener('pointercancel', this.onPointerUp);
         this.resizeObserver = new ResizeObserver(() => this.emitResize());
         this.resizeObserver.observe(this.windowEl);
+        this.updateStretchControls();
     }
 
     public focus() {
@@ -168,12 +208,95 @@ export class FloatingSearchPanel {
         if (collapsed) {
             const headerHeight = this.windowEl.querySelector('.asui-floating-panel-header')?.clientHeight ?? 48;
             this.windowEl.style.height = `${headerHeight}px`;
+        } else if (this.stretchMode !== 'normal') {
+            this.applyStretchBounds(this.stretchMode);
+            return;
         } else if (this.expandedHeight) {
             this.windowEl.style.height = `${this.expandedHeight}px`;
         }
 
         this.onCollapsedChange?.(collapsed);
         this.emitResize();
+    }
+
+    private toggleStretchMode(nextMode: Exclude<PanelStretchMode, 'normal'>) {
+        const mode = this.stretchMode === nextMode ? 'normal' : nextMode;
+        this.setStretchMode(mode);
+    }
+
+    private setStretchMode(mode: PanelStretchMode) {
+        if (this.stretchMode === mode) return;
+
+        if (mode === 'normal') {
+            this.restoreBounds();
+        } else {
+            this.captureRestoreBounds();
+            this.applyStretchBounds(mode);
+        }
+
+        this.stretchMode = mode;
+        this.windowEl.classList.toggle('is-fullscreen', mode === 'fullscreen');
+        this.windowEl.classList.toggle('is-stretched-horizontal', mode === 'horizontal');
+        this.windowEl.classList.toggle('is-stretched-vertical', mode === 'vertical');
+        this.updateStretchControls();
+        this.emitResize();
+    }
+
+    private captureRestoreBounds() {
+        if (this.stretchMode !== 'normal') return;
+        this.restoredBounds = this.getBounds();
+    }
+
+    private restoreBounds() {
+        const bounds = this.restoredBounds;
+        if (!bounds) return;
+        this.applyBounds(bounds, false);
+        this.restoredBounds = null;
+    }
+
+    private applyStretchBounds(mode: Exclude<PanelStretchMode, 'normal'>) {
+        const margin = 12;
+        const current = this.restoredBounds ?? this.getBounds();
+        const fullWidth = Math.max(420, window.innerWidth - margin * 2);
+        const fullHeight = Math.max(260, window.innerHeight - margin * 2);
+
+        if (mode === 'fullscreen') {
+            this.applyBounds({
+                left: margin,
+                top: margin,
+                width: fullWidth,
+                height: fullHeight
+            }, false);
+            return;
+        }
+
+        if (mode === 'horizontal') {
+            const height = this.isCollapsed
+                ? (this.windowEl.querySelector('.asui-floating-panel-header')?.clientHeight ?? 48)
+                : current.height;
+            this.applyBounds({
+                left: margin,
+                top: current.top,
+                width: fullWidth,
+                height
+            }, false);
+            return;
+        }
+
+        const width = current.width;
+        this.applyBounds({
+            left: current.left,
+            top: margin,
+            width,
+            height: fullHeight
+        }, false);
+    }
+
+    private updateStretchControls() {
+        this.fullscreenBtn.classList.toggle('is-active', this.stretchMode === 'fullscreen');
+        this.stretchHorizontalBtn.classList.toggle('is-active', this.stretchMode === 'horizontal');
+        this.stretchVerticalBtn.classList.toggle('is-active', this.stretchMode === 'vertical');
+        setIcon(this.fullscreenBtn, this.stretchMode === 'fullscreen' ? 'minimize' : 'maximize');
     }
 
     private applyBounds(bounds: FloatingPanelBounds, emit = true) {
@@ -207,6 +330,7 @@ export class FloatingSearchPanel {
     private onPointerDown = (event: PointerEvent) => {
         if (!(event.target instanceof HTMLElement)) return;
         if (event.target.closest('button')) return;
+        if (this.stretchMode !== 'normal') return;
 
         const rect = this.windowEl.getBoundingClientRect();
         this.isDragging = true;
