@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { t } from '../lang/helpers';
 import type { FloatingPanelBounds } from '../settings';
 
 export interface FloatingSearchPanelOptions {
@@ -90,7 +91,7 @@ export class FloatingSearchPanel {
 
         this.settingsBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-settings',
-            attr: { type: 'button', 'aria-label': '打开插件设置', title: '打开插件设置' }
+            attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS'), title: t('OPEN_PLUGIN_SETTINGS') }
         });
         setIcon(this.settingsBtn, 'settings');
         this.settingsBtn.onclick = event => {
@@ -101,7 +102,7 @@ export class FloatingSearchPanel {
 
         this.fullscreenBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-fullscreen',
-            attr: { type: 'button', 'aria-label': '全屏显示', title: '全屏显示' }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_FULLSCREEN'), title: t('FLOATING_PANEL_FULLSCREEN') }
         });
         setIcon(this.fullscreenBtn, 'maximize');
         this.fullscreenBtn.onclick = event => {
@@ -112,7 +113,7 @@ export class FloatingSearchPanel {
 
         this.collapseBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
-            attr: { type: 'button', 'aria-label': '折叠面板', title: '折叠面板' }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE'), title: t('FLOATING_PANEL_COLLAPSE') }
         });
         setIcon(this.collapseBtn, 'chevrons-down-up');
         this.collapseBtn.onclick = event => {
@@ -123,7 +124,7 @@ export class FloatingSearchPanel {
 
         this.compactBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-compact',
-            attr: { type: 'button', 'aria-label': '简化控件', title: '简化控件' }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT'), title: t('FLOATING_PANEL_COMPACT') }
         });
         setIcon(this.compactBtn, 'hat-glasses');
         this.compactBtn.onclick = event => {
@@ -134,7 +135,7 @@ export class FloatingSearchPanel {
 
         this.closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-close',
-            attr: { type: 'button', 'aria-label': options.title, title: '关闭面板' }
+            attr: { type: 'button', 'aria-label': t('CLOSE_PANEL'), title: t('CLOSE_PANEL') }
         });
         setIcon(this.closeBtn, 'x');
         this.closeBtn.onclick = event => {

@@ -106,7 +106,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.registerEvent(this.app.workspace.on('layout-change', () => this.injectSearchUI()));
         this.patchWorkspaceSearchRouting();
         this.registerFloatingPanelCommands();
-        this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板', () => {
+        this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL'), () => {
             this.toggleFloatingSearchPanel();
         });
         this.updateInterval();
@@ -333,7 +333,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 const switchWrapper = searchRow.createDiv({ cls: 'advanced-search-ui-toggle-wrapper' });
                 const toggleBtn = switchWrapper.createEl('div', {
                     cls: 'clickable-icon advanced-search-toggle',
-                    attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板' }
+                    attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') }
                 });
 
                 if (!this.settings.defaultCollapsed) toggleBtn.classList.add('is-active');
@@ -428,7 +428,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private registerFloatingPanelCommands() {
         this.addCommand({
             id: 'open-floating-search-panel',
-            name: t('OPEN_FLOATING_SEARCH_PANEL') || '打开悬浮搜索面板',
+            name: t('OPEN_FLOATING_SEARCH_PANEL'),
             callback: () => this.openFloatingSearchPanel()
         });
     }
@@ -449,7 +449,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
 
         const panel = new FloatingSearchPanel({
-            title: t('TOGGLE_ADVANCED_SEARCH') || '高级检索面板',
+            title: t('TOGGLE_ADVANCED_SEARCH'),
             bounds: this.settings.floatingPanelBounds,
             mountEl: this.app.workspace.containerEl,
             onClose: () => this.closeFloatingSearchPanel(),
