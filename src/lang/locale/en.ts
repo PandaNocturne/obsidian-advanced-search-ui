@@ -38,6 +38,8 @@ export default {
 
     "CLOSE_FLOATING_SEARCH_PANEL": "Close floating search panel",
 
+    "TOGGLE_FLOATING_SEARCH_PANEL": "Toggle floating search panel",
+
 
 
     // Settings groups

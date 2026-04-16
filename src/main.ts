@@ -85,6 +85,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.app.workspace.onLayoutReady(() => this.injectSearchUI());
         this.registerEvent(this.app.workspace.on('layout-change', () => this.injectSearchUI()));
+        this.registerFloatingPanelCommands();
+        this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板', () => {
+            this.toggleFloatingSearchPanel();
+        });
         this.updateInterval();
         this.addSettingTab(new AdvancedSearchSettingTab(this.app, this));
     }
@@ -292,6 +296,41 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                 closeFloatingSearchPanel: () => this.closeFloatingSearchPanel()
             }
         );
+    }
+
+    private registerFloatingPanelCommands() {
+        this.addCommand({
+            id: 'open-floating-search-panel',
+            name: t('OPEN_FLOATING_SEARCH_PANEL') || '打开悬浮搜索面板',
+            callback: () => this.openFloatingSearchPanel()
+        });
+
+        this.addCommand({
+            id: 'close-floating-search-panel',
+            name: t('CLOSE_FLOATING_SEARCH_PANEL') || '关闭悬浮搜索面板',
+            checkCallback: checking => {
+                const isOpen = !!this.floatingSearchPanel;
+                if (!checking && isOpen) {
+                    this.closeFloatingSearchPanel();
+                }
+                return isOpen;
+            }
+        });
+
+        this.addCommand({
+            id: 'toggle-floating-search-panel',
+            name: t('TOGGLE_FLOATING_SEARCH_PANEL') || '切换悬浮搜索面板',
+            callback: () => this.toggleFloatingSearchPanel()
+        });
+    }
+
+    private toggleFloatingSearchPanel() {
+        if (this.floatingSearchPanel) {
+            this.closeFloatingSearchPanel();
+            return;
+        }
+
+        this.openFloatingSearchPanel();
     }
 
     private openFloatingSearchPanel() {

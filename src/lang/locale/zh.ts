@@ -18,6 +18,7 @@ export default {
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
     "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",
     "CLOSE_FLOATING_SEARCH_PANEL": "关闭悬浮搜索面板",
+    "TOGGLE_FLOATING_SEARCH_PANEL": "切换悬浮搜索面板",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",
