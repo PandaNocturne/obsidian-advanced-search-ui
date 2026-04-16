@@ -479,27 +479,27 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             const active = document.activeElement;
             if (!(active instanceof HTMLElement)) return;
 
-            if (['INPUT', 'SELECT', 'BUTTON'].includes(active.tagName) && e.key === 'Tab') {
+            if (e.key === 'Tab' && active.matches('input.asui-search-input')) {
                 e.preventDefault();
-                const focusableElements = Array.from(container.querySelectorAll('input, select, button')).filter(
-                    (el): el is HTMLElement => {
-                        if (!(el instanceof HTMLElement)) return false;
+                const focusableInputs = Array.from(container.querySelectorAll('input.asui-search-input')).filter(
+                    (el): el is HTMLInputElement => {
+                        if (!(el instanceof HTMLInputElement)) return false;
                         const style = window.getComputedStyle(el);
-                        return style.display !== 'none' && style.visibility !== 'hidden' && !el.hasAttribute('disabled');
+                        return style.display !== 'none' && style.visibility !== 'hidden' && !el.disabled;
                     }
                 );
 
-                if (focusableElements.length > 0) {
-                    const index = focusableElements.indexOf(active);
+                if (focusableInputs.length > 0) {
+                    const index = focusableInputs.indexOf(active as HTMLInputElement);
                     let nextIndex = 0;
                     if (index > -1) {
                         nextIndex = e.shiftKey ? index - 1 : index + 1;
-                        if (nextIndex < 0) nextIndex = focusableElements.length - 1;
-                        if (nextIndex >= focusableElements.length) nextIndex = 0;
+                        if (nextIndex < 0) nextIndex = focusableInputs.length - 1;
+                        if (nextIndex >= focusableInputs.length) nextIndex = 0;
                     } else if (e.shiftKey) {
-                        nextIndex = focusableElements.length - 1;
+                        nextIndex = focusableInputs.length - 1;
                     }
-                    focusableElements[nextIndex]?.focus();
+                    focusableInputs[nextIndex]?.focus();
                 }
             }
         };
