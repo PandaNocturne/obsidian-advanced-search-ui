@@ -811,15 +811,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     onGroupDragOver(currentGroup: SearchGroup, event: DragEvent) {
         if (!this.draggingGroup || this.draggingGroup === currentGroup) return;
         const currentContainer = this.findContainerByGroup(currentGroup);
-        const draggingContainer = this.findContainerByGroup(this.draggingGroup);
-        if (!currentContainer || !draggingContainer || currentContainer !== draggingContainer) return;
+        if (!currentContainer) return;
 
-        const groups = this.containerGroups.get(currentContainer) || [];
-        groups.forEach(group => {
-            if (group !== currentGroup) {
-                group.container.classList.remove('is-drop-target', 'is-drop-before', 'is-drop-after');
-            }
-        });
+        for (const groups of this.containerGroups.values()) {
+            groups.forEach(group => {
+                if (group !== currentGroup) {
+                    group.container.classList.remove('is-drop-target', 'is-drop-before', 'is-drop-after');
+                }
+            });
+        }
 
         const rect = currentGroup.container.getBoundingClientRect();
         const insertAfter = event.clientY > rect.top + rect.height / 2;
@@ -838,44 +838,59 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             return;
         }
 
-        const groups = this.containerGroups.get(sourceContainer);
-        if (!groups) {
+        const sourceGroups = this.containerGroups.get(sourceContainer);
+        if (!sourceGroups) {
             this.draggingGroup = null;
             return;
         }
 
-        const targetGroup = groups.find(group => group.container.classList.contains('is-drop-before') || group.container.classList.contains('is-drop-after'));
+        let targetGroup: SearchGroup | null = null;
+        for (const groups of this.containerGroups.values()) {
+            targetGroup = groups.find(group => group.container.classList.contains('is-drop-before') || group.container.classList.contains('is-drop-after')) || null;
+            if (targetGroup) break;
+        }
         const insertAfter = !!targetGroup?.container.classList.contains('is-drop-after');
 
         this.draggingGroup = null;
 
         if (targetGroup && targetGroup !== draggingGroup) {
-            const sourceIndex = groups.indexOf(draggingGroup);
-            const targetIndex = groups.indexOf(targetGroup);
-            if (sourceIndex >= 0 && targetIndex >= 0) {
-                groups.splice(sourceIndex, 1);
+            const targetContainer = this.findContainerByGroup(targetGroup);
+            const targetGroups = targetContainer ? this.containerGroups.get(targetContainer) : null;
 
-                let insertIndex = groups.indexOf(targetGroup);
-                if (insertIndex >= 0 && insertAfter) {
-                    insertIndex += 1;
-                }
-                if (insertIndex < 0) {
-                    insertIndex = groups.length;
-                }
+            if (targetContainer && targetGroups) {
+                const sourceIndex = sourceGroups.indexOf(draggingGroup);
+                const targetIndex = targetGroups.indexOf(targetGroup);
 
-                groups.splice(insertIndex, 0, draggingGroup);
+                if (sourceIndex >= 0 && targetIndex >= 0) {
+                    sourceGroups.splice(sourceIndex, 1);
 
-                const section = sourceContainer.querySelector('.search-section');
-                if (section instanceof HTMLElement) {
-                    const referenceGroup = groups[insertIndex + 1];
-                    if (referenceGroup) {
-                        section.insertBefore(draggingGroup.container, referenceGroup.container);
-                    } else {
-                        section.appendChild(draggingGroup.container);
+                    let insertIndex = targetGroups.indexOf(targetGroup);
+                    if (insertIndex >= 0 && insertAfter) {
+                        insertIndex += 1;
                     }
-                }
+                    if (insertIndex < 0) {
+                        insertIndex = targetGroups.length;
+                    }
 
-                this.containerGroups.set(sourceContainer, groups);
+                    if (sourceContainer === targetContainer) {
+                        targetGroups.splice(insertIndex, 0, draggingGroup);
+                    } else {
+                        targetGroups.splice(insertIndex, 0, draggingGroup);
+                    }
+
+                    const section = targetContainer.querySelector('.search-section');
+                    if (section instanceof HTMLElement) {
+                        const referenceGroup = targetGroups[insertIndex + 1];
+                        if (referenceGroup) {
+                            section.insertBefore(draggingGroup.container, referenceGroup.container);
+                        } else {
+                            section.appendChild(draggingGroup.container);
+                        }
+                    }
+
+                    this.containerGroups.set(sourceContainer, sourceGroups);
+                    this.containerGroups.set(targetContainer, targetGroups);
+                }
             }
         }
 
