@@ -2,6 +2,8 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 import AdvancedSearchPlugin from '../main';
 import { t } from '../lang/helpers';
 
+const FLOAT_SEARCH_PLUGIN_URI = 'obsidian://show-plugin?id=float-search';
+
 export class AdvancedSearchSettingTab extends PluginSettingTab {
     plugin: AdvancedSearchPlugin;
 
@@ -17,6 +19,23 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
         info.createDiv({ cls: 'setting-item-description', text: description });
 
         return containerEl.createDiv({ cls: 'advanced-search-settings-group' });
+    }
+
+    private setRichDescription(setting: Setting, fragments: Array<string | { text: string; href: string }>) {
+        const descEl = setting.descEl;
+        descEl.empty();
+
+        fragments.forEach(fragment => {
+            if (typeof fragment === 'string') {
+                descEl.appendText(fragment);
+                return;
+            }
+
+            descEl.createEl('a', {
+                text: fragment.text,
+                href: fragment.href
+            });
+        });
     }
 
     display(): void {
@@ -56,17 +75,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(panelGroup)
-            .setName(t('ADAPT_FLOAT_SEARCH') || 'Adapt to Float Search plugin')
-            .setDesc(t('ADAPT_FLOAT_SEARCH_DESC') || 'Enable compatibility with modal and other modes of Float Search plugin.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.adaptToFloatSearch)
-                .onChange(async (value) => {
-                    this.plugin.settings.adaptToFloatSearch = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.updateInterval();
-                }));
-
-        new Setting(panelGroup)
             .setName(t('FLOATING_PANEL_DEFAULT_COMPACT') || 'Default compact mode')
             .setDesc(t('FLOATING_PANEL_DEFAULT_COMPACT_DESC') || 'When enabled, the floating search panel hides the search result area by default.')
             .addToggle(toggle => toggle
@@ -76,13 +84,24 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        const importGroup = this.createSettingGroup(
+        const searchGroup = this.createSettingGroup(
             containerEl,
             t('SETTING_GROUP_SEARCH'),
             t('SETTING_GROUP_SEARCH_DESC')
         );
 
-        new Setting(importGroup)
+        new Setting(searchGroup)
+            .setName(t('ENABLE_GROUPING') || 'Grouping')
+            .setDesc(t('ENABLE_GROUPING_DESC') || 'Enable grouped search controls.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableExperimentalGrouping)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableExperimentalGrouping = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshSearchUI();
+                }));
+
+        new Setting(searchGroup)
             .setName(t('IMPORT_MODE') || 'Import mode')
             .setDesc(t('IMPORT_MODE_DESC') || 'Choose whether importing query conditions appends to existing conditions or clears them first and replaces them.')
             .addDropdown(dropdown => dropdown
@@ -94,7 +113,7 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(importGroup)
+        new Setting(searchGroup)
             .setName(t('AUTO_SEARCH_AFTER_IMPORT') || 'Auto search after import')
             .setDesc(t('AUTO_SEARCH_AFTER_IMPORT_DESC') || 'Automatically execute search after importing query conditions.')
             .addToggle(toggle => toggle
@@ -104,7 +123,7 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(importGroup)
+        new Setting(searchGroup)
             .setName(t('AUTO_SEARCH_ON_OPERATOR_CHANGE') || 'Auto search on operator change')
             .setDesc(t('AUTO_SEARCH_ON_OPERATOR_CHANGE_DESC') || 'Automatically execute search when switching AND / OR / NOT.')
             .addToggle(toggle => toggle
@@ -112,6 +131,34 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.autoSearchOnOperatorChange = value;
                     await this.plugin.saveSettings();
+                }));
+
+        const interactionGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_INTERACTION'),
+            t('SETTING_GROUP_INTERACTION_DESC')
+        );
+
+        new Setting(interactionGroup)
+            .setName(t('ENABLE_GROUP_DRAG_AND_DROP') || 'Group drag and drop')
+            .setDesc(t('ENABLE_GROUP_DRAG_AND_DROP_DESC') || 'Enable reordering groups by dragging their headers.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableExperimentalGroupDragAndDrop)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableExperimentalGroupDragAndDrop = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshSearchUI();
+                }));
+
+        new Setting(interactionGroup)
+            .setName(t('ENABLE_ROW_DRAG_AND_DROP') || 'Row drag and drop')
+            .setDesc(t('ENABLE_ROW_DRAG_AND_DROP_DESC') || 'Enable reordering and moving rows between existing groups by dragging row handles.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableExperimentalRowDragAndDrop)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableExperimentalRowDragAndDrop = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshSearchUI();
                 }));
 
         const graphGroup = this.createSettingGroup(
@@ -150,43 +197,29 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        const experimentalGroup = this.createSettingGroup(
+        const integrationGroup = this.createSettingGroup(
             containerEl,
-            t('SETTING_GROUP_EXPERIMENTAL') || 'Experimental features',
-            t('SETTING_GROUP_EXPERIMENTAL_DESC') || 'The following features are experimental and disabled by default.'
+            t('SETTING_GROUP_INTEGRATION'),
+            t('SETTING_GROUP_INTEGRATION_DESC')
         );
 
-        new Setting(experimentalGroup)
-            .setName(t('ENABLE_EXPERIMENTAL_GROUPING') || 'Grouping')
-            .setDesc(t('ENABLE_EXPERIMENTAL_GROUPING_DESC') || 'Enable grouped search controls.')
+        const adaptFloatSearchSetting = new Setting(integrationGroup)
+            .setName(t('ADAPT_FLOAT_SEARCH') || 'Adapt to Float Search')
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableExperimentalGrouping)
+                .setValue(this.plugin.settings.adaptToFloatSearch)
                 .onChange(async (value) => {
-                    this.plugin.settings.enableExperimentalGrouping = value;
+                    this.plugin.settings.adaptToFloatSearch = value;
                     await this.plugin.saveSettings();
-                    this.plugin.refreshSearchUI();
+                    this.plugin.updateInterval();
                 }));
 
-        new Setting(experimentalGroup)
-            .setName(t('ENABLE_EXPERIMENTAL_GROUP_DRAG_AND_DROP') || 'Group drag and drop')
-            .setDesc(t('ENABLE_EXPERIMENTAL_GROUP_DRAG_AND_DROP_DESC') || 'Enable reordering groups by dragging their headers.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableExperimentalGroupDragAndDrop)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableExperimentalGroupDragAndDrop = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshSearchUI();
-                }));
-
-        new Setting(experimentalGroup)
-            .setName(t('ENABLE_EXPERIMENTAL_ROW_DRAG_AND_DROP') || 'Row drag and drop')
-            .setDesc(t('ENABLE_EXPERIMENTAL_ROW_DRAG_AND_DROP_DESC') || 'Enable reordering and moving rows between existing groups by dragging row handles.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableExperimentalRowDragAndDrop)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableExperimentalRowDragAndDrop = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshSearchUI();
-                }));
+        this.setRichDescription(adaptFloatSearchSetting, [
+            t('ADAPT_FLOAT_SEARCH_DESC_PREFIX') || 'Enable compatibility with ',
+            {
+                text: t('FLOAT_SEARCH_PLUGIN_NAME') || 'Float Search',
+                href: FLOAT_SEARCH_PLUGIN_URI
+            },
+            t('ADAPT_FLOAT_SEARCH_DESC_SUFFIX') || ' modal and other search views.'
+        ]);
     }
 }

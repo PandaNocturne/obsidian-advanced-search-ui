@@ -12,7 +12,7 @@ export interface AdvancedSearchSettings {
     graphColorGroupPalette: string[];
     defaultCollapsed: boolean;
     adaptToFloatSearch: boolean;
-    autoScaleUI: boolean; // 窄屏自动缩放UI
+    autoScaleUI: boolean;
     autoSearchAfterImport: boolean;
     autoSearchOnOperatorChange: boolean;
     enableExperimentalGrouping: boolean;
