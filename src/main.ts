@@ -860,7 +860,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
 
         const targetContainer = this.findContainerByGroup(targetGroup);
-        if (targetContainer && this.shouldAutoSearchForGroup(targetGroup)) {
+        if (targetContainer && this.settings.autoSearchOnOperatorChange && this.shouldAutoSearchForGroup(targetGroup)) {
             this.searchExecution.executeSearch(targetContainer);
         }
     }
