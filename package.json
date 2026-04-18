@@ -1,6 +1,6 @@
 {
 	"name": "advanced-search-ui",
-	"version": "1.4.4",
+	"version": "1.4.5",
 	"description": "A powerful search UI that provides AND/OR/NOT operators and easy access to search filters.",
 	"main": "main.js",
 	"type": "module",
