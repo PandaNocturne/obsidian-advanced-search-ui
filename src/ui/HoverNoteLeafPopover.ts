@@ -248,15 +248,6 @@ export class HoverNoteLeafPopover {
         this.requestLeafMeasure();
     }
 
-    async showEmpty(): Promise<void> {
-        const leaf = this.leaf;
-        if (!leaf) return;
-        await leaf.setViewState({ type: 'empty', active: true });
-        this.titleTextEl.setText(t('FLOATING_NOTE_EMPTY'));
-        this.syncModeToggleUi();
-        this.requestLeafMeasure();
-    }
-
     destroy(): void {
         this.disposed = true;
         window.removeEventListener('pointermove', this.onPointerMove);
@@ -350,8 +341,6 @@ export class HoverNoteLeafPopover {
         } finally {
             remove();
         }
-
-        void this.showEmpty();
     }
 
     private applyBounds(bounds: FloatingPanelBounds, emit: boolean): void {

@@ -59,6 +59,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private rowDropIndex: number | null = null;
     private floatingSearchPanel: FloatingSearchPanel | null = null;
     private floatingNotePopover: HoverNoteLeafPopover | null = null;
+    /** PiP / small-window mode: armed from the toolbar; preview DOM is created only when opening a file from results. */
+    private floatingNotePipMode = false;
     /** When false, the note window keeps its position instead of following the floating search panel. */
     private floatingNoteDockedToPanel = true;
     private lastFloatingNoteFile: TFile | null = null;
@@ -626,6 +628,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             this.floatingSearchLeaf = null;
         }
 
+        this.floatingNotePipMode = false;
         this.closeFloatingNoteWindow(false);
         this.floatingSearchLeafHost = null;
         this.floatingSearchPanel?.destroy();
@@ -633,7 +636,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private shouldRouteToFloatingNotePanel() {
-        return !!this.floatingNotePopover && Date.now() <= this.floatingSearchResultOpenContextUntil;
+        return (
+            this.floatingNotePipMode &&
+            !!this.floatingSearchPanel &&
+            Date.now() <= this.floatingSearchResultOpenContextUntil
+        );
     }
 
     private markFloatingSearchResultInteraction = (event: Event) => {
@@ -647,11 +654,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private async toggleFloatingNoteWindow(active: boolean) {
         if (active) {
-            await this.openFloatingNoteWindow();
+            this.floatingNotePipMode = true;
+            this.floatingSearchPanel?.setPictureInPictureActive(true, false);
             return;
         }
 
-        this.closeFloatingNoteWindow();
+        this.closeFloatingNoteWindow(true);
     }
 
     private async openFloatingNoteWindow() {
@@ -666,7 +674,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             plugin: this,
             mountEl: this.app.workspace.containerEl,
             bounds: this.settings.floatingNotePanelBounds,
-            onClose: () => this.closeFloatingNoteWindow(),
+            onClose: () => this.closeFloatingNotePreviewOnly(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
             onResize: () => this.floatingNotePopover?.requestLeafMeasure(),
             onPinnedChange: pinned => {
@@ -678,10 +686,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.syncFloatingNoteWindowPosition();
         this.floatingSearchPanel?.setPictureInPictureActive(true, false);
         this.floatingNotePopover.focus();
-
-        if (this.lastFloatingNoteFile) {
-            await this.openFileInFloatingNoteWindow(this.lastFloatingNoteFile);
-        }
     }
 
     private closeFloatingNoteWindow(updateSearchButton = true) {
@@ -694,8 +698,20 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.floatingNoteDockedToPanel = true;
 
         if (updateSearchButton) {
+            this.floatingNotePipMode = false;
             this.floatingSearchPanel?.setPictureInPictureActive(false, false);
         }
+    }
+
+    /** Close the preview shell only; keep PiP mode so the next result opens in the small window again. */
+    private closeFloatingNotePreviewOnly() {
+        if (this.floatingNotePopover) {
+            this.updateFloatingNotePanelBounds(this.floatingNotePopover.getPersistedBounds());
+        }
+        this.floatingNotePopover?.destroy();
+        this.floatingNotePopover = null;
+        this.floatingNoteDockedToPanel = true;
+        this.lastFloatingNoteFile = null;
     }
 
     private updateFloatingNotePanelBounds(bounds: FloatingPanelBounds) {
@@ -709,10 +725,19 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const source = this.floatingSearchPanel.getBounds();
         const current = this.floatingNotePopover.getBounds();
         const gap = 16;
-        const fitsRight = source.left + source.width + gap + current.width <= window.innerWidth - 8;
-        const left = fitsRight
-            ? source.left + source.width + gap
-            : Math.max(0, source.left - current.width - gap);
+        const margin = 8;
+        const leftDocked = source.left - current.width - gap;
+        const fitsLeft = leftDocked >= margin;
+        const rightDocked = source.left + source.width + gap;
+        const fitsRight = rightDocked + current.width <= window.innerWidth - margin;
+        let left: number;
+        if (fitsLeft) {
+            left = leftDocked;
+        } else if (fitsRight) {
+            left = rightDocked;
+        } else {
+            left = Math.max(margin, Math.min(leftDocked, window.innerWidth - current.width - margin));
+        }
         const top = Math.max(0, Math.min(source.top, window.innerHeight - current.height));
 
         this.floatingNotePopover.setBounds({
@@ -724,6 +749,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private async openFileInFloatingNoteWindow(file: TFile) {
+        if (!this.floatingNotePipMode) return;
         await this.openFloatingNoteWindow();
         this.lastFloatingNoteFile = file;
         await this.floatingNotePopover?.openFile(file);
