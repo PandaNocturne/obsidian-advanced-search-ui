@@ -4,14 +4,19 @@ import type { FloatingPanelBounds } from '../settings';
 
 export interface FloatingSearchPanelOptions {
     title: string;
+    icon?: string;
     bounds?: FloatingPanelBounds | null;
     mountEl?: HTMLElement;
+    showSettingsButton?: boolean;
+    showCompactButton?: boolean;
+    showPictureInPictureButton?: boolean;
     onClose: () => void;
     onOpenSettings?: () => void;
     onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     onResize?: (bounds: FloatingPanelBounds) => void;
     onCollapsedChange?: (collapsed: boolean) => void;
     onCompactChange?: (compact: boolean) => void;
+    onPictureInPictureToggle?: (active: boolean) => void;
 }
 
 type PanelStretchMode = 'normal' | 'fullscreen';
@@ -28,15 +33,17 @@ export class FloatingSearchPanel {
     public readonly titleEl: HTMLElement;
     public readonly contentEl: HTMLElement;
 
-    private readonly settingsBtn: HTMLButtonElement;
+    private readonly settingsBtn: HTMLButtonElement | null;
+    private readonly pictureInPictureBtn: HTMLButtonElement | null;
     private readonly collapseBtn: HTMLButtonElement;
-    private readonly compactBtn: HTMLButtonElement;
+    private readonly compactBtn: HTMLButtonElement | null;
     private readonly fullscreenBtn: HTMLButtonElement;
     private readonly closeBtn: HTMLButtonElement;
     private readonly onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: (bounds: FloatingPanelBounds) => void;
     private readonly onCollapsedChange?: (collapsed: boolean) => void;
     private readonly onCompactChange?: (compact: boolean) => void;
+    private readonly onPictureInPictureToggle?: (active: boolean) => void;
     private isDragging = false;
     private isResizing = false;
     private isCollapsed = false;
@@ -59,6 +66,7 @@ export class FloatingSearchPanel {
         this.onResize = options.onResize;
         this.onCollapsedChange = options.onCollapsedChange;
         this.onCompactChange = options.onCompactChange;
+        this.onPictureInPictureToggle = options.onPictureInPictureToggle;
         const mountEl = options.mountEl ?? document.body;
         this.rootEl = mountEl.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
@@ -85,20 +93,37 @@ export class FloatingSearchPanel {
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
         const titleWrapEl = headerEl.createDiv({ cls: 'asui-floating-panel-title-wrap' });
         const titleIconEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title-icon' });
-        setIcon(titleIconEl, 'text-search');
+        setIcon(titleIconEl, options.icon ?? 'text-search');
         this.titleEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title', text: options.title });
         const controlsEl = headerEl.createDiv({ cls: 'asui-floating-panel-controls' });
 
-        this.settingsBtn = controlsEl.createEl('button', {
+        this.settingsBtn = options.showSettingsButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-settings',
             attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS'), title: t('OPEN_PLUGIN_SETTINGS') }
         });
-        setIcon(this.settingsBtn, 'settings');
-        this.settingsBtn.onclick = event => {
-            event.preventDefault();
-            event.stopPropagation();
-            options.onOpenSettings?.();
-        };
+        if (this.settingsBtn) {
+            setIcon(this.settingsBtn, 'settings');
+            this.settingsBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                options.onOpenSettings?.();
+            };
+        }
+
+        this.pictureInPictureBtn = options.showPictureInPictureButton ? controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-picture-in-picture',
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_OPEN_NOTE_WINDOW'), title: t('FLOATING_PANEL_OPEN_NOTE_WINDOW') }
+        }) : null;
+        if (this.pictureInPictureBtn) {
+            const pictureInPictureBtn = this.pictureInPictureBtn;
+            setIcon(pictureInPictureBtn, 'picture-in-picture-2');
+            pictureInPictureBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const nextActive = !pictureInPictureBtn.classList.contains('is-active');
+                this.setPictureInPictureActive(nextActive, true);
+            };
+        }
 
         this.fullscreenBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-fullscreen',
@@ -122,16 +147,18 @@ export class FloatingSearchPanel {
             this.setCollapsed(!this.isCollapsed);
         };
 
-        this.compactBtn = controlsEl.createEl('button', {
+        this.compactBtn = options.showCompactButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-compact',
             attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT'), title: t('FLOATING_PANEL_COMPACT') }
         });
-        setIcon(this.compactBtn, 'hat-glasses');
-        this.compactBtn.onclick = event => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.setCompact(!this.isCompact);
-        };
+        if (this.compactBtn) {
+            setIcon(this.compactBtn, 'hat-glasses');
+            this.compactBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.setCompact(!this.isCompact);
+            };
+        }
 
         this.closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-close',
@@ -184,10 +211,22 @@ export class FloatingSearchPanel {
         this.rootEl.remove();
     }
 
+    public setPictureInPictureActive(active: boolean, notify = true) {
+        this.pictureInPictureBtn?.classList.toggle('is-active', active);
+        if (notify) {
+            this.onPictureInPictureToggle?.(active);
+        }
+    }
+
+    public setBounds(bounds: FloatingPanelBounds) {
+        this.applyBounds(bounds, false);
+        this.emitResize();
+    }
+
     public setCompact(compact: boolean) {
         this.isCompact = compact;
         this.windowEl.classList.toggle('is-compact', compact);
-        this.compactBtn.classList.toggle('is-active', compact);
+        this.compactBtn?.classList.toggle('is-active', compact);
         this.onCompactChange?.(compact);
         this.emitResize();
     }
