@@ -33,6 +33,8 @@ export default {
     "TOGGLE_FLOATING_SEARCH_PANEL": "切换悬浮搜索面板",
     "FLOATING_PANEL_DEFAULT_COMPACT": "默认简化模式",
     "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "开启后，悬浮搜索面板默认隐藏检索结果区。",
+    "FLOATING_SEARCH_NOTE_PREVIEW": "默认开启笔记小窗预览",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "开启后，每次打开悬浮搜索面板时会自动进入小窗预览模式（标题栏按钮为高亮），在结果中点开的笔记会进入预览窗。关闭则打开面板时为小窗模式关，仍可手动点击按钮开启。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

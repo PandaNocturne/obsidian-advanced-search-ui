@@ -33,6 +33,8 @@ export default {
     "TOGGLE_FLOATING_SEARCH_PANEL": "Toggle floating search panel",
     "FLOATING_PANEL_DEFAULT_COMPACT": "Default compact mode",
     "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "When enabled, the floating search panel hides the search result area by default.",
+    "FLOATING_SEARCH_NOTE_PREVIEW": "Default note preview (PiP) on panel open",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "When enabled, each time you open the floating search panel, note preview mode starts on (toolbar button active) and result clicks can open in the preview window. When disabled, the panel opens with preview off; you can still turn it on with the button.",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Search behavior",

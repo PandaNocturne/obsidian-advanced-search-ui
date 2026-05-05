@@ -16,6 +16,8 @@ import { QueryParser } from './utils/QueryParser';
 
 type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
+    /** Pre-1.x: treated as default-on when `floatingSearchNotePreviewDefaultOn` was absent */
+    floatingSearchNotePreviewEnabled?: boolean;
 };
 
 type WorkspaceWithDetachedLeaf = Plugin['app']['workspace'] & {
@@ -108,6 +110,18 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.injectSearchUI();
     }
 
+    /** Apply the “default PiP on open” preference to the current floating panel (if any). */
+    applyFloatingSearchNotePreviewDefaultSetting(): void {
+        const panel = this.floatingSearchPanel;
+        if (!panel) return;
+        const on = this.settings.floatingSearchNotePreviewDefaultOn;
+        this.floatingNotePipMode = on;
+        panel.setPictureInPictureActive(on, false);
+        if (!on) {
+            this.closeFloatingNotePreviewOnly();
+        }
+    }
+
     async onload() {
         await this.loadSettings();
 
@@ -176,6 +190,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     async loadSettings() {
         const rawSettings = ((await this.loadData()) as LegacyAdvancedSearchSettings | null) || {};
         this.settings = Object.assign({}, DEFAULT_SETTINGS, rawSettings);
+
+        if (
+            rawSettings.floatingSearchNotePreviewDefaultOn === undefined &&
+            rawSettings.floatingSearchNotePreviewEnabled !== undefined
+        ) {
+            this.settings.floatingSearchNotePreviewDefaultOn = !!rawSettings.floatingSearchNotePreviewEnabled;
+        }
+        delete (this.settings as unknown as { floatingSearchNotePreviewEnabled?: unknown }).floatingSearchNotePreviewEnabled;
 
         if (rawSettings.enableExperimentalDragAndDrop !== undefined) {
             if (rawSettings.enableExperimentalGroupDragAndDrop === undefined) {
@@ -532,6 +554,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
 
         this.floatingSearchPanel = panel;
+        this.floatingNotePipMode = this.settings.floatingSearchNotePreviewDefaultOn;
+        panel.setPictureInPictureActive(this.floatingNotePipMode, false);
         void this.mountFloatingSearchPanelContent(panel);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();

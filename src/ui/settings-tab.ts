@@ -84,6 +84,17 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        new Setting(panelGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW') || 'Default note preview on panel open')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultOn)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultOn = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyFloatingSearchNotePreviewDefaultSetting();
+                }));
+
         const searchGroup = this.createSettingGroup(
             containerEl,
             t('SETTING_GROUP_SEARCH'),

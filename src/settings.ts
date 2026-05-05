@@ -22,6 +22,8 @@ export interface AdvancedSearchSettings {
     floatingPanelBounds: FloatingPanelBounds | null;
     floatingNotePanelBounds: FloatingPanelBounds | null;
     floatingPanelDefaultCompact: boolean;
+    /** When true, opening the floating search panel starts with note preview (PiP) mode on. */
+    floatingSearchNotePreviewDefaultOn: boolean;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -40,5 +42,6 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     importMode: 'append',
     floatingPanelBounds: null,
     floatingNotePanelBounds: null,
-    floatingPanelDefaultCompact: true
+    floatingPanelDefaultCompact: true,
+    floatingSearchNotePreviewDefaultOn: true
 };
