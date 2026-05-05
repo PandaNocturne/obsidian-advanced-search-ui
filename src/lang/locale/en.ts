@@ -25,6 +25,7 @@ export default {
     "FLOATING_NOTE_PREVIEW": "Preview",
     "FLOATING_NOTE_SAVE": "Save",
     "FLOATING_NOTE_CLOSE": "Close note window",
+    "FLOATING_NOTE_BIND": "Dock note window to search panel",
     "CLOSE_PANEL": "Close panel",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "Failed to open plugin settings",
     "OPEN_FLOATING_SEARCH_PANEL": "Open floating search panel",

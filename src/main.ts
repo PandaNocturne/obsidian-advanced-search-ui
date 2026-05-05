@@ -59,6 +59,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private rowDropIndex: number | null = null;
     private floatingSearchPanel: FloatingSearchPanel | null = null;
     private floatingNotePopover: HoverNoteLeafPopover | null = null;
+    /** When false, the note window keeps its position instead of following the floating search panel. */
+    private floatingNoteDockedToPanel = true;
     private lastFloatingNoteFile: TFile | null = null;
     private floatingSearchContainer: HTMLElement | null = null;
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
@@ -666,7 +668,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             bounds: this.settings.floatingNotePanelBounds,
             onClose: () => this.closeFloatingNoteWindow(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
-            onResize: () => this.floatingNotePopover?.requestLeafMeasure()
+            onResize: () => this.floatingNotePopover?.requestLeafMeasure(),
+            onPinnedChange: pinned => {
+                this.floatingNoteDockedToPanel = pinned;
+                if (pinned) this.syncFloatingNoteWindowPosition();
+            }
         });
 
         this.syncFloatingNoteWindowPosition();
@@ -685,6 +691,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.floatingNotePopover?.destroy();
         this.floatingNotePopover = null;
+        this.floatingNoteDockedToPanel = true;
 
         if (updateSearchButton) {
             this.floatingSearchPanel?.setPictureInPictureActive(false, false);
@@ -697,7 +704,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private syncFloatingNoteWindowPosition() {
-        if (!this.floatingSearchPanel || !this.floatingNotePopover) return;
+        if (!this.floatingNoteDockedToPanel || !this.floatingSearchPanel || !this.floatingNotePopover) return;
 
         const source = this.floatingSearchPanel.getBounds();
         const current = this.floatingNotePopover.getBounds();

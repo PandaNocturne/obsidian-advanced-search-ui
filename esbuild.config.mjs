@@ -16,7 +16,12 @@ const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["src/main.ts", "styles.less"],
+	// Map entry names to paths so outputs land at plugin root (`main.js`), not `src/main.js`
+	// (Obsidian loads `main` from manifest relative to the plugin folder).
+	entryPoints: {
+		main: "src/main.ts",
+		styles: "styles.less",
+	},
 	bundle: true,
 	external: [
 		"obsidian",

@@ -25,6 +25,7 @@ export default {
     "FLOATING_NOTE_PREVIEW": "阅读",
     "FLOATING_NOTE_SAVE": "保存",
     "FLOATING_NOTE_CLOSE": "关闭笔记窗口",
+    "FLOATING_NOTE_BIND": "绑定到搜索面板",
     "CLOSE_PANEL": "关闭面板",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
     "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",

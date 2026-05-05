@@ -1,6 +1,18 @@
 import { around } from 'monkey-around';
+import { t } from '../lang/helpers';
 import type { FloatingPanelBounds } from '../settings';
-import { FileView, Plugin, setIcon, TFile, Workspace, WorkspaceItem, WorkspaceLeaf, WorkspaceSplit, WorkspaceTabs } from 'obsidian';
+import {
+    FileView,
+    MarkdownView,
+    Plugin,
+    setIcon,
+    TFile,
+    Workspace,
+    WorkspaceItem,
+    WorkspaceLeaf,
+    WorkspaceSplit,
+    WorkspaceTabs
+} from 'obsidian';
 
 type WorkspaceSplitCtor = new (ws: Workspace, dir: 'horizontal' | 'vertical') => WorkspaceSplit;
 type SplitWithReplace = WorkspaceSplit & {
@@ -22,17 +34,28 @@ export interface HoverNoteLeafPopoverOptions {
     onClose: () => void;
     onBoundsChange: (bounds: FloatingPanelBounds) => void;
     onResize?: () => void;
+    /** Fires when the user toggles “bind” / pin (dock next to the floating search panel). */
+    onPinnedChange?: (pinned: boolean) => void;
 }
 
 /**
- * Hover Editor–style shell: core {@link WorkspaceSplit} + {@link WorkspaceLeaf} inside Obsidian popover markup.
- * Mirrors nothingislost/obsidian-hover-editor’s leaf-in-popover approach (no custom note body / toolbar).
+ * Floating note preview: {@link WorkspaceSplit} + {@link WorkspaceLeaf} in a plain DOM shell.
+ * Uses plugin-owned `asui-preview-window*` classes only — not `.popover` / Hover Editor markup (Obsidian may rewrite those).
  */
 export class HoverNoteLeafPopover {
-    readonly hoverEl: HTMLElement;
-    private readonly containerEl: HTMLElement;
-    private readonly titleBarEl: HTMLElement;
+    /** Root element of the preview window (`asui-preview-window`). */
+    readonly rootEl: HTMLElement;
+
+    /** @deprecated Use {@link rootEl}. */
+    get hoverEl(): HTMLElement {
+        return this.rootEl;
+    }
+
+    private readonly bodyEl: HTMLElement;
+    private readonly headerEl: HTMLElement;
     private readonly titleTextEl: HTMLElement;
+    private readonly modeToggleBtn: HTMLButtonElement;
+    private readonly pinBtn: HTMLButtonElement;
     private readonly rootSplit: WorkspaceSplit;
     private readonly plugin: Plugin;
     private readonly onBoundsChange: (bounds: FloatingPanelBounds) => void;
@@ -57,22 +80,59 @@ export class HoverNoteLeafPopover {
         this.onResize = options.onResize;
 
         const mount = options.mountEl;
-        this.hoverEl = mount.createDiv({
-            cls: 'popover hover-popover hover-editor asui-hover-note-popover show-navbar',
-            attr: { 'data-asui-hover-note': 'true' }
+        this.rootEl = mount.createDiv({
+            cls: 'asui-preview-window asui-preview-window--bound',
+            attr: { 'data-asui-preview-window': 'true' }
         });
-        this.hoverEl.toggleClass('is-pinned', true);
 
-        this.containerEl = this.hoverEl.createDiv({ cls: 'popover-content' });
-        this.titleBarEl = this.containerEl.createDiv({ cls: 'popover-titlebar' });
-        this.titleTextEl = this.titleBarEl.createDiv({ cls: 'popover-title', text: '' });
-        const actionsEl = this.titleBarEl.createDiv({ cls: 'popover-actions' });
-        const closeEl = actionsEl.createEl('a', {
-            cls: 'popover-action mod-close',
-            attr: { 'aria-label': 'Close' }
+        this.headerEl = this.rootEl.createDiv({
+            cls: 'asui-preview-window-header asui-floating-panel-header'
         });
-        setIcon(closeEl, 'x');
-        closeEl.addEventListener('click', e => {
+        const titleWrapEl = this.headerEl.createDiv({
+            cls: 'asui-preview-window-title-wrap asui-floating-panel-title-wrap'
+        });
+        const titleIconEl = titleWrapEl.createDiv({
+            cls: 'asui-preview-window-title-icon asui-floating-panel-title-icon'
+        });
+        setIcon(titleIconEl, 'file-text');
+        this.titleTextEl = titleWrapEl.createDiv({
+            cls: 'asui-preview-window-title asui-floating-panel-title',
+            text: ''
+        });
+        const controlsEl = this.headerEl.createDiv({
+            cls: 'asui-preview-window-controls asui-floating-panel-controls'
+        });
+
+        this.modeToggleBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--mode',
+            attr: { type: 'button' }
+        });
+        this.modeToggleBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            void this.toggleMarkdownMode();
+        });
+
+        this.pinBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--bind is-active',
+            attr: { type: 'button', title: t('FLOATING_NOTE_BIND'), 'aria-label': t('FLOATING_NOTE_BIND') }
+        });
+        setIcon(this.pinBtn, 'link');
+        this.pinBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const bound = !this.rootEl.classList.contains('asui-preview-window--bound');
+            this.rootEl.toggleClass('asui-preview-window--bound', bound);
+            this.pinBtn.classList.toggle('is-active', bound);
+            options.onPinnedChange?.(bound);
+        });
+
+        const closeBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--close asui-floating-panel-close',
+            attr: { type: 'button', title: t('FLOATING_NOTE_CLOSE'), 'aria-label': t('FLOATING_NOTE_CLOSE') }
+        });
+        setIcon(closeBtn, 'x');
+        closeBtn.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
             options.onClose();
@@ -82,7 +142,8 @@ export class HoverNoteLeafPopover {
         this.rootSplit = new SplitCtor(this.plugin.app.workspace, 'vertical');
         this.wireRootSplitRouting();
 
-        this.titleBarEl.insertAdjacentElement('afterend', (this.rootSplit as WorkspaceSplitWithDom).containerEl);
+        this.bodyEl = this.rootEl.createDiv({ cls: 'asui-preview-window-body' });
+        this.bodyEl.appendChild((this.rootSplit as WorkspaceSplitWithDom).containerEl);
         this.attachLeaf();
 
         const defaultWidth = Math.min(560, window.innerWidth - VIEWPORT_MARGIN);
@@ -119,11 +180,12 @@ export class HoverNoteLeafPopover {
             })
         );
 
-        this.titleBarEl.addEventListener('pointerdown', this.onTitlePointerDown);
+        this.syncModeToggleUi();
+        this.headerEl.addEventListener('pointerdown', this.onTitlePointerDown);
         for (const dir of RESIZE_DIRECTIONS) {
-            this.hoverEl
+            this.rootEl
                 .createDiv({
-                    cls: `asui-hover-note-resize is-${dir}`,
+                    cls: `asui-preview-window-resize is-${dir}`,
                     attr: { 'data-direction': dir }
                 })
                 .addEventListener('pointerdown', this.onResizePointerDown);
@@ -134,7 +196,7 @@ export class HoverNoteLeafPopover {
         window.addEventListener('pointercancel', this.onPointerUp);
 
         this.resizeObserver = new ResizeObserver(() => this.emitResize());
-        this.resizeObserver.observe(this.hoverEl);
+        this.resizeObserver.observe(this.rootEl);
     }
 
     getLeaf(): WorkspaceLeaf | null {
@@ -142,7 +204,7 @@ export class HoverNoteLeafPopover {
     }
 
     focus(): void {
-        this.hoverEl.addClass('is-active');
+        this.rootEl.addClass('asui-preview-window--active');
         if (this.leaf) {
             void this.plugin.app.workspace.setActiveLeaf(this.leaf, { focus: true });
         }
@@ -150,10 +212,10 @@ export class HoverNoteLeafPopover {
 
     getBounds(): FloatingPanelBounds {
         return {
-            left: this.hoverEl.offsetLeft,
-            top: this.hoverEl.offsetTop,
-            width: this.hoverEl.offsetWidth,
-            height: this.hoverEl.offsetHeight
+            left: this.rootEl.offsetLeft,
+            top: this.rootEl.offsetTop,
+            width: this.rootEl.offsetWidth,
+            height: this.rootEl.offsetHeight
         };
     }
 
@@ -182,6 +244,7 @@ export class HoverNoteLeafPopover {
 
         await leaf.loadIfDeferred?.();
         this.syncTitleFromLeaf();
+        this.syncModeToggleUi();
         this.requestLeafMeasure();
     }
 
@@ -189,7 +252,8 @@ export class HoverNoteLeafPopover {
         const leaf = this.leaf;
         if (!leaf) return;
         await leaf.setViewState({ type: 'empty', active: true });
-        this.titleTextEl.setText('');
+        this.titleTextEl.setText(t('FLOATING_NOTE_EMPTY'));
+        this.syncModeToggleUi();
         this.requestLeafMeasure();
     }
 
@@ -198,7 +262,7 @@ export class HoverNoteLeafPopover {
         window.removeEventListener('pointermove', this.onPointerMove);
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
-        this.titleBarEl.removeEventListener('pointerdown', this.onTitlePointerDown);
+        this.headerEl.removeEventListener('pointerdown', this.onTitlePointerDown);
 
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
@@ -208,16 +272,17 @@ export class HoverNoteLeafPopover {
             this.leaf = null;
         }
 
-        this.hoverEl.remove();
+        this.rootEl.remove();
     }
 
     syncTitleFromLeaf(): void {
         const leaf = this.leaf;
         if (!leaf?.view) {
-            this.titleTextEl.setText('');
+            this.titleTextEl.setText(t('FLOATING_NOTE_WINDOW_TITLE'));
             return;
         }
-        this.titleTextEl.setText(leaf.getDisplayText());
+        const display = leaf.getDisplayText();
+        this.titleTextEl.setText(display || t('FLOATING_NOTE_EMPTY'));
         const path = leaf.view instanceof FileView ? leaf.view.file?.path : undefined;
         if (path) {
             this.titleTextEl.setAttr('data-path', path);
@@ -233,6 +298,37 @@ export class HoverNoteLeafPopover {
             leaf.onResize?.();
             leaf.view?.onResize?.();
         });
+    }
+
+    private syncModeToggleUi(): void {
+        const view = this.leaf?.view;
+        const md = view instanceof MarkdownView ? view : null;
+        const show = !!md?.file && md.file.extension === 'md';
+        this.modeToggleBtn.style.display = show ? '' : 'none';
+        if (!show || !md?.file) {
+            return;
+        }
+        const preview = md.getMode() === 'preview';
+        setIcon(this.modeToggleBtn, preview ? 'pencil' : 'book-open');
+        const label = preview ? t('FLOATING_NOTE_EDIT') : t('FLOATING_NOTE_PREVIEW');
+        this.modeToggleBtn.setAttrs({ title: label, 'aria-label': label });
+    }
+
+    private async toggleMarkdownMode(): Promise<void> {
+        const leaf = this.leaf;
+        if (!leaf) return;
+        const view = leaf.view;
+        if (!(view instanceof MarkdownView) || !view.file || view.file.extension !== 'md') return;
+
+        const next = view.getMode() === 'preview' ? 'source' : 'preview';
+        await leaf.setViewState({
+            type: 'markdown',
+            state: { file: view.file.path, mode: next },
+            active: true
+        });
+        await leaf.loadIfDeferred?.();
+        this.syncModeToggleUi();
+        this.requestLeafMeasure();
     }
 
     private wireRootSplitRouting(): void {
@@ -266,17 +362,17 @@ export class HoverNoteLeafPopover {
         const left = Math.min(maxLeft, Math.max(0, bounds.left));
         const top = Math.min(maxTop, Math.max(0, bounds.top));
 
-        this.hoverEl.style.width = `${width}px`;
-        this.hoverEl.style.height = `${height}px`;
-        this.hoverEl.style.left = `${left}px`;
-        this.hoverEl.style.top = `${top}px`;
-        this.hoverEl.style.position = 'fixed';
+        this.rootEl.style.width = `${width}px`;
+        this.rootEl.style.height = `${height}px`;
+        this.rootEl.style.left = `${left}px`;
+        this.rootEl.style.top = `${top}px`;
+        this.rootEl.style.position = 'fixed';
 
         const layer = getComputedStyle(document.documentElement).getPropertyValue('--layer-popover').trim();
         if (layer) {
-            this.hoverEl.style.zIndex = layer;
+            this.rootEl.style.zIndex = layer;
         } else {
-            this.hoverEl.style.zIndex = 'var(--layer-modal)';
+            this.rootEl.style.zIndex = 'var(--layer-modal)';
         }
 
         if (emit) {
@@ -293,14 +389,14 @@ export class HoverNoteLeafPopover {
     private onTitlePointerDown = (e: PointerEvent): void => {
         if (e.button !== 0) return;
         const target = e.target as HTMLElement;
-        if (target.closest('.popover-action')) return;
+        if (target.closest('.asui-preview-window-controls')) return;
 
         this.isDragging = true;
         this.dragPointerId = e.pointerId;
-        const r = this.hoverEl.getBoundingClientRect();
+        const r = this.rootEl.getBoundingClientRect();
         this.dragOffsetX = e.clientX - r.left;
         this.dragOffsetY = e.clientY - r.top;
-        this.titleBarEl.setPointerCapture(e.pointerId);
+        this.headerEl.setPointerCapture(e.pointerId);
         e.preventDefault();
     };
 
@@ -324,8 +420,8 @@ export class HoverNoteLeafPopover {
     private onPointerMove = (e: PointerEvent): void => {
         if (this.disposed) return;
         if (this.isDragging && e.pointerId === this.dragPointerId) {
-            const width = this.hoverEl.offsetWidth;
-            const height = this.hoverEl.offsetHeight;
+            const width = this.rootEl.offsetWidth;
+            const height = this.rootEl.offsetHeight;
             const left = Math.min(Math.max(0, e.clientX - this.dragOffsetX), window.innerWidth - width);
             const top = Math.min(Math.max(0, e.clientY - this.dragOffsetY), window.innerHeight - height);
             this.applyBounds({ left, top, width, height }, true);
@@ -341,7 +437,7 @@ export class HoverNoteLeafPopover {
             this.isDragging = false;
             this.dragPointerId = null;
             try {
-                this.titleBarEl.releasePointerCapture(e.pointerId);
+                this.headerEl.releasePointerCapture(e.pointerId);
             } catch {
                 /* noop */
             }
