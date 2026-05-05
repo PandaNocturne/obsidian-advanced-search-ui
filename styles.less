@@ -970,6 +970,134 @@
   line-height: 1.5;
 }
 
+/* ============================================================================
+   Hover note popover (PiP — WorkspaceLeaf in popover shell, Hover Editor–like)
+   ========================================================================== */
+
+.asui-hover-note-popover.popover {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .popover-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .workspace-split {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace-tabs,
+  .workspace-leaf {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .workspace-leaf-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Same idea as Hover Editor + normal tab: header hosts preview/source toggle; body fills remaining height */
+  &.show-navbar .view-header {
+    flex: 0 0 auto;
+  }
+
+  .view-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.asui-hover-note-resize {
+  position: absolute;
+  z-index: 2;
+
+  &.is-n,
+  &.is-s {
+    left: 8px;
+    right: 8px;
+    height: 8px;
+  }
+
+  &.is-e,
+  &.is-w {
+    top: 8px;
+    bottom: 8px;
+    width: 8px;
+  }
+
+  &.is-n {
+    top: -4px;
+    cursor: ns-resize;
+  }
+
+  &.is-s {
+    bottom: -4px;
+    cursor: ns-resize;
+  }
+
+  &.is-e {
+    right: -4px;
+    cursor: ew-resize;
+  }
+
+  &.is-w {
+    left: -4px;
+    cursor: ew-resize;
+  }
+
+  &.is-ne,
+  &.is-nw,
+  &.is-se,
+  &.is-sw {
+    width: 12px;
+    height: 12px;
+  }
+
+  &.is-ne {
+    top: -4px;
+    right: -4px;
+    cursor: nesw-resize;
+  }
+
+  &.is-nw {
+    top: -4px;
+    left: -4px;
+    cursor: nwse-resize;
+  }
+
+  &.is-se {
+    right: -4px;
+    bottom: -4px;
+    cursor: nwse-resize;
+  }
+
+  &.is-sw {
+    left: -4px;
+    bottom: -4px;
+    cursor: nesw-resize;
+  }
+}
+
 .is-hidden {
   display: none !important;
 }

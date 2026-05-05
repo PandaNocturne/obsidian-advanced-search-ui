@@ -1,10 +1,10 @@
-import { MarkdownRenderer, Menu, Notice, Plugin, TFile, Workspace, WorkspaceLeaf, setIcon } from 'obsidian';
+import { Menu, Notice, Plugin, TFile, Workspace, WorkspaceLeaf, setIcon } from 'obsidian';
 import { around } from 'monkey-around';
 import { t } from './lang/helpers';
 import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { FloatingSearchPanel } from './ui/FloatingSearchPanel';
-import { FloatingNotePanel, FloatingNoteMode } from './ui/FloatingNotePanel';
+import { HoverNoteLeafPopover } from './ui/HoverNoteLeafPopover';
 import { buildToggleContextMenu } from './ui/ToggleContextMenu';
 import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
@@ -58,14 +58,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
     private floatingSearchPanel: FloatingSearchPanel | null = null;
-    private floatingNotePanelWindow: FloatingSearchPanel | null = null;
-    private floatingNotePanelContent: FloatingNotePanel | null = null;
+    private floatingNotePopover: HoverNoteLeafPopover | null = null;
+    private lastFloatingNoteFile: TFile | null = null;
     private floatingSearchContainer: HTMLElement | null = null;
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
     private floatingSearchLeafHost: HTMLElement | null = null;
     private floatingSearchResultOpenContextUntil = 0;
-    private floatingNoteFile: TFile | null = null;
-    private floatingNoteMode: FloatingNoteMode = 'edit';
     private queryBuilder = new SearchQueryBuilder();
     private graphColorGroupService = new GraphColorGroupService();
     private searchExecution = new SearchExecutionService(
@@ -269,6 +267,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.workspaceOpenLinkTextUninstall?.();
 
         const shouldHandle = () => this.shouldRouteToFloatingNotePanel();
+        const getFloatingNoteLeaf = () => this.floatingNotePopover?.getLeaf() ?? null;
         const openFileInNoteWindow = (file: TFile) => this.openFileInFloatingNoteWindow(file);
         const app = this.app;
 
@@ -276,6 +275,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             openFile: oldOpenFile => {
                 return async function (this: WorkspaceLeaf, file: TFile, ...rest: WorkspaceLeafOpenFileArgs extends [TFile, ...infer R] ? R : never) {
                     if (!shouldHandle()) {
+                        return oldOpenFile.call(this, file, ...rest);
+                    }
+
+                    const noteLeaf = getFloatingNoteLeaf();
+                    if (noteLeaf && this === noteLeaf) {
                         return oldOpenFile.call(this, file, ...rest);
                     }
 
@@ -627,7 +631,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private shouldRouteToFloatingNotePanel() {
-        return !!this.floatingNotePanelWindow && Date.now() <= this.floatingSearchResultOpenContextUntil;
+        return !!this.floatingNotePopover && Date.now() <= this.floatingSearchResultOpenContextUntil;
     }
 
     private markFloatingSearchResultInteraction = (event: Event) => {
@@ -649,62 +653,38 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private async openFloatingNoteWindow() {
-        if (this.floatingNotePanelWindow) {
+        if (this.floatingNotePopover) {
             this.floatingSearchPanel?.setPictureInPictureActive(true, false);
-            this.floatingNotePanelWindow.focus();
+            this.floatingNotePopover.focus();
             this.syncFloatingNoteWindowPosition();
             return;
         }
 
-        const panel = new FloatingSearchPanel({
-            title: t('FLOATING_NOTE_WINDOW_TITLE'),
-            icon: 'file-text',
-            bounds: this.settings.floatingNotePanelBounds,
+        this.floatingNotePopover = new HoverNoteLeafPopover({
+            plugin: this,
             mountEl: this.app.workspace.containerEl,
-            showSettingsButton: false,
-            showCompactButton: false,
+            bounds: this.settings.floatingNotePanelBounds,
             onClose: () => this.closeFloatingNoteWindow(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
-            onResize: () => void this.renderFloatingNotePreview(),
-            onCollapsedChange: () => void this.renderFloatingNotePreview()
+            onResize: () => this.floatingNotePopover?.requestLeafMeasure()
         });
 
-        this.floatingNotePanelWindow = panel;
-        this.mountFloatingNoteWindowContent(panel);
         this.syncFloatingNoteWindowPosition();
         this.floatingSearchPanel?.setPictureInPictureActive(true, false);
-        panel.focus();
+        this.floatingNotePopover.focus();
 
-        if (this.floatingNoteFile) {
-            await this.openFileInFloatingNoteWindow(this.floatingNoteFile);
+        if (this.lastFloatingNoteFile) {
+            await this.openFileInFloatingNoteWindow(this.lastFloatingNoteFile);
         }
-    }
-
-    private mountFloatingNoteWindowContent(panel: FloatingSearchPanel) {
-        panel.contentEl.empty();
-        this.floatingNotePanelContent?.destroy();
-        this.floatingNotePanelContent = new FloatingNotePanel(panel.contentEl, {
-            onClose: () => this.closeFloatingNoteWindow(),
-            onModeChange: mode => {
-                this.floatingNoteMode = mode;
-                void this.renderFloatingNotePreview();
-            },
-            onSave: async content => {
-                await this.saveFloatingNoteContent(content);
-            }
-        });
-        this.floatingNotePanelContent.setMode(this.floatingNoteMode, false);
     }
 
     private closeFloatingNoteWindow(updateSearchButton = true) {
-        if (this.floatingNotePanelWindow) {
-            this.updateFloatingNotePanelBounds(this.floatingNotePanelWindow.getPersistedBounds());
+        if (this.floatingNotePopover) {
+            this.updateFloatingNotePanelBounds(this.floatingNotePopover.getPersistedBounds());
         }
 
-        this.floatingNotePanelContent?.destroy();
-        this.floatingNotePanelContent = null;
-        this.floatingNotePanelWindow?.destroy();
-        this.floatingNotePanelWindow = null;
+        this.floatingNotePopover?.destroy();
+        this.floatingNotePopover = null;
 
         if (updateSearchButton) {
             this.floatingSearchPanel?.setPictureInPictureActive(false, false);
@@ -717,10 +697,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private syncFloatingNoteWindowPosition() {
-        if (!this.floatingSearchPanel || !this.floatingNotePanelWindow) return;
+        if (!this.floatingSearchPanel || !this.floatingNotePopover) return;
 
         const source = this.floatingSearchPanel.getBounds();
-        const current = this.floatingNotePanelWindow.getBounds();
+        const current = this.floatingNotePopover.getBounds();
         const gap = 16;
         const fitsRight = source.left + source.width + gap + current.width <= window.innerWidth - 8;
         const left = fitsRight
@@ -728,7 +708,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             : Math.max(0, source.left - current.width - gap);
         const top = Math.max(0, Math.min(source.top, window.innerHeight - current.height));
 
-        this.floatingNotePanelWindow.setBounds({
+        this.floatingNotePopover.setBounds({
             left,
             top,
             width: current.width,
@@ -738,40 +718,9 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private async openFileInFloatingNoteWindow(file: TFile) {
         await this.openFloatingNoteWindow();
-        const content = await this.app.vault.read(file);
-        this.floatingNoteFile = file;
-        this.floatingNotePanelContent?.setFile(file, content);
-        this.floatingNotePanelContent?.setMode(this.floatingNoteMode, false);
-        if (this.floatingNoteMode === 'preview') {
-            await this.renderFloatingNotePreview();
-        } else {
-            this.floatingNotePanelContent?.focusEditor();
-        }
-        this.floatingNotePanelWindow?.focus();
-    }
-
-    private async saveFloatingNoteContent(content: string) {
-        if (!this.floatingNoteFile) {
-            return;
-        }
-
-        await this.app.vault.modify(this.floatingNoteFile, content);
-        this.floatingNotePanelContent?.markSaved(content);
-        if (this.floatingNoteMode === 'preview') {
-            await this.renderFloatingNotePreview();
-        }
-    }
-
-    private async renderFloatingNotePreview() {
-        const file = this.floatingNoteFile;
-        const panel = this.floatingNotePanelContent;
-        if (!file || !panel || panel.getMode() !== 'preview') {
-            return;
-        }
-
-        const previewEl = panel.previewEl;
-        previewEl.empty();
-        await MarkdownRenderer.render(this.app, panel.getValue(), previewEl, file.path, this);
+        this.lastFloatingNoteFile = file;
+        await this.floatingNotePopover?.openFile(file);
+        this.floatingNotePopover?.focus();
     }
 
     private openPluginSettings() {
