@@ -86,6 +86,8 @@ export class HoverNoteLeafPopover {
     private resizeObserver: ResizeObserver | null = null;
     /** Coalesce leaf/content reflow during rapid bounds changes (avoids preview white flash). */
     private resizeReflowRaf: number | null = null;
+    private leafModeSyncUninstall: (() => void) | null = null;
+    private modeToggleLayoutRaf: number | null = null;
     private disposed = false;
 
     constructor(options: HoverNoteLeafPopoverOptions) {
@@ -176,6 +178,7 @@ export class HoverNoteLeafPopover {
         this.bodyEl = this.rootEl.createDiv({ cls: 'asui-preview-window-body' });
         this.bodyEl.appendChild((this.rootSplit as WorkspaceSplitWithDom).containerEl);
         this.attachLeaf();
+        this.wireLeafModeSync();
 
         this.setPreviewScale(options.previewScale ?? 0.6);
 
@@ -191,15 +194,17 @@ export class HoverNoteLeafPopover {
         this.plugin.registerEvent(
             this.plugin.app.workspace.on('layout-change', () => {
                 const rs = this.rootSplit as unknown as SplitWithReplace;
-                if (!rs.children || typeof rs.replaceChild !== 'function') return;
-                rs.children.forEach((item, index) => {
-                    if (!(item instanceof WorkspaceTabs)) return;
-                    const tabs = item as WorkspaceTabs & { children?: WorkspaceItem[] };
-                    const first = tabs.children?.[0];
-                    if (first) {
-                        rs.replaceChild(index, first);
-                    }
-                });
+                if (rs.children && typeof rs.replaceChild === 'function') {
+                    rs.children.forEach((item, index) => {
+                        if (!(item instanceof WorkspaceTabs)) return;
+                        const tabs = item as WorkspaceTabs & { children?: WorkspaceItem[] };
+                        const first = tabs.children?.[0];
+                        if (first) {
+                            rs.replaceChild(index, first);
+                        }
+                    });
+                }
+                this.scheduleSyncModeToggleUiAfterLayout();
             })
         );
 
@@ -209,6 +214,7 @@ export class HoverNoteLeafPopover {
                 if (!view || !file) return;
                 if (view instanceof FileView && view.file === file) {
                     this.syncTitleFromLeaf();
+                    this.syncModeToggleUi();
                 }
             })
         );
@@ -295,6 +301,10 @@ export class HoverNoteLeafPopover {
             cancelAnimationFrame(this.resizeReflowRaf);
             this.resizeReflowRaf = null;
         }
+        if (this.modeToggleLayoutRaf !== null) {
+            cancelAnimationFrame(this.modeToggleLayoutRaf);
+            this.modeToggleLayoutRaf = null;
+        }
         window.removeEventListener('pointermove', this.onPointerMove);
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
@@ -302,6 +312,9 @@ export class HoverNoteLeafPopover {
 
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
+
+        this.leafModeSyncUninstall?.();
+        this.leafModeSyncUninstall = null;
 
         if (this.leaf) {
             this.leaf.detach();
@@ -386,6 +399,46 @@ export class HoverNoteLeafPopover {
         } finally {
             remove();
         }
+    }
+
+    /**
+     * Obsidian shortcuts that toggle reading/source usually call {@link WorkspaceLeaf.setViewState}.
+     * Patch only our leaf so the header icon stays in sync without touching other tabs.
+     */
+    /** Fallback when mode changes without hitting our patched leaf (coalesced per frame). */
+    private scheduleSyncModeToggleUiAfterLayout(): void {
+        if (this.modeToggleLayoutRaf !== null) return;
+        this.modeToggleLayoutRaf = window.requestAnimationFrame(() => {
+            this.modeToggleLayoutRaf = null;
+            if (this.disposed) return;
+            const v = this.leaf?.view;
+            if (v instanceof MarkdownView && v.file?.extension === 'md') {
+                this.syncModeToggleUi();
+            }
+        });
+    }
+
+    private wireLeafModeSync(): void {
+        const leafRef = this.leaf;
+        if (!leafRef) return;
+        const popover = this;
+        this.leafModeSyncUninstall = around(WorkspaceLeaf.prototype, {
+            setViewState: (old: WorkspaceLeaf['setViewState']) => {
+                return function (this: WorkspaceLeaf, ...args: Parameters<WorkspaceLeaf['setViewState']>) {
+                    const ret = old.apply(this, args) as ReturnType<WorkspaceLeaf['setViewState']>;
+                    const sync = () => {
+                        if (this !== leafRef || popover.disposed) return;
+                        popover.syncModeToggleUi();
+                    };
+                    if (ret && typeof (ret as PromiseLike<void>).then === 'function') {
+                        void (ret as PromiseLike<void>).then(sync);
+                    } else {
+                        queueMicrotask(sync);
+                    }
+                    return ret;
+                };
+            }
+        });
     }
 
     private applyBounds(bounds: FloatingPanelBounds, emit: boolean): void {
