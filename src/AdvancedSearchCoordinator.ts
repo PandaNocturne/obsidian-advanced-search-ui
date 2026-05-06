@@ -56,6 +56,8 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
     private floatingSearchLeafHost: HTMLElement | null = null;
     private floatingSearchResultOpenContextUntil = 0;
+    /** Mirrors {@link Workspace}'s active leaf from `active-leaf-change` (avoids deprecated `activeLeaf`). */
+    private cachedActiveWorkspaceLeaf: WorkspaceLeaf | null = null;
     private queryBuilder = new SearchQueryBuilder();
     private graphColorGroupService = new GraphColorGroupService();
     private searchExecution: SearchExecutionService;
@@ -122,7 +124,8 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
     private isFloatingSearchWorkflowActive(): boolean {
         if (this.floatingSearchSurfaceEngaged) return true;
-        const active = this.pluginHost.app.workspace.activeLeaf;
+        const active =
+            this.cachedActiveWorkspaceLeaf ?? this.pluginHost.app.workspace.getMostRecentLeaf();
         if (!active) return false;
         if (this.floatingSearchLeaf && active === this.floatingSearchLeaf) return true;
         const pipLeaf = this.floatingNotePopover?.getLeaf();
@@ -172,8 +175,9 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.patchFloatingResultOpenRouting();
         this.updateInterval();
         this.pluginHost.registerEvent(
-            this.pluginHost.app.workspace.on('active-leaf-change', () => {
-                const active = this.pluginHost.app.workspace.activeLeaf;
+            this.pluginHost.app.workspace.on('active-leaf-change', leaf => {
+                this.cachedActiveWorkspaceLeaf = leaf;
+                const active = leaf;
                 const inWorkflow =
                     !!(this.floatingSearchLeaf && active === this.floatingSearchLeaf) ||
                     !!(this.floatingNotePopover?.getLeaf() && active === this.floatingNotePopover.getLeaf());
@@ -181,6 +185,16 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
                 this.updateFloatingNotePreviewVisibility();
             })
         );
+        const seedActiveLeafCache = () => {
+            if (this.cachedActiveWorkspaceLeaf == null) {
+                this.cachedActiveWorkspaceLeaf = this.pluginHost.app.workspace.getMostRecentLeaf();
+            }
+        };
+        if (this.pluginHost.app.workspace.layoutReady) {
+            seedActiveLeafCache();
+        } else {
+            this.pluginHost.app.workspace.onLayoutReady(() => seedActiveLeafCache());
+        }
         this.pluginHost.registerDomEvent(document, 'pointerdown', this.onDocumentPointerDownForPreviewEngagement, true);
     }
 

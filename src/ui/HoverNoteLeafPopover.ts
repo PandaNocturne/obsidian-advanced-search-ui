@@ -446,17 +446,18 @@ export class HoverNoteLeafPopover {
     private wireLeafModeSync(): void {
         const leafRef = this.leaf;
         if (!leafRef) return;
-        const popover = this;
+        const syncIfOurLeaf = (patchedLeaf: WorkspaceLeaf) => {
+            if (patchedLeaf !== leafRef || this.disposed) return;
+            this.syncModeToggleUi();
+        };
         this.leafModeSyncUninstall = around(WorkspaceLeaf.prototype, {
             setViewState: (old: WorkspaceLeaf['setViewState']) => {
                 return function (this: WorkspaceLeaf, ...args: Parameters<WorkspaceLeaf['setViewState']>) {
-                    const ret = old.apply(this, args) as ReturnType<WorkspaceLeaf['setViewState']>;
-                    const sync = () => {
-                        if (this !== leafRef || popover.disposed) return;
-                        popover.syncModeToggleUi();
-                    };
-                    if (ret && typeof (ret as PromiseLike<void>).then === 'function') {
-                        void (ret as PromiseLike<void>).then(sync);
+                    const ret = old.apply(this, args);
+                    const sync = () => syncIfOurLeaf(this);
+                    const maybeThenable = ret as PromiseLike<void> | void;
+                    if (maybeThenable != null && typeof maybeThenable.then === 'function') {
+                        void maybeThenable.then(sync);
                     } else {
                         queueMicrotask(sync);
                     }
@@ -478,14 +479,12 @@ export class HoverNoteLeafPopover {
         this.rootEl.style.height = `${height}px`;
         this.rootEl.style.left = `${left}px`;
         this.rootEl.style.top = `${top}px`;
-        this.rootEl.style.position = 'fixed';
 
         const layer = getComputedStyle(document.documentElement).getPropertyValue('--layer-popover').trim();
-        if (layer) {
-            this.rootEl.style.zIndex = layer;
-        } else {
-            this.rootEl.style.zIndex = 'var(--layer-modal)';
-        }
+        this.rootEl.setCssProps({
+            position: 'fixed',
+            'z-index': layer || 'var(--layer-modal)'
+        });
 
         if (emit) {
             this.onBoundsChange(this.getBounds());
