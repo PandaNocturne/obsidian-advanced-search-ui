@@ -385,8 +385,8 @@ export class HoverNoteLeafPopover {
             return;
         }
         const preview = md.getMode() === 'preview';
-        setIcon(this.modeToggleBtn, preview ? 'pencil' : 'book-open');
-        const label = preview ? t('FLOATING_NOTE_EDIT') : t('FLOATING_NOTE_PREVIEW');
+        setIcon(this.modeToggleBtn, preview ? 'book-open' : 'pencil');
+        const label = preview ? t('FLOATING_NOTE_PREVIEW') : t('FLOATING_NOTE_EDIT');
         this.modeToggleBtn.setAttrs({ title: label, 'aria-label': label });
     }
 
