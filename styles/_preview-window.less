@@ -320,6 +320,19 @@ body .asui-preview-window .view-content {
     visibility: hidden;
     pointer-events: none;
   }
+
+  /* Metadata / Properties: toggled via root modifier classes from plugin settings */
+  &.asui-preview-metadata-hide-reading .markdown-preview-view .metadata-container {
+    display: none !important;
+  }
+
+  &.asui-preview-metadata-hide-live .markdown-source-view.is-live-preview .metadata-container {
+    display: none !important;
+  }
+
+  &.asui-preview-metadata-hide-source .markdown-source-view:not(.is-live-preview) .metadata-container {
+    display: none !important;
+  }
 }
 
 

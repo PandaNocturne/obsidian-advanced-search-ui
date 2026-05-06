@@ -51,6 +51,14 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "Preview window scale",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "Sets CSS zoom on the note body (.view-content) inside the preview window, not the outer chrome (0.5 to 1.0).",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "Reset to default scale",
+    "SETTING_GROUP_PREVIEW_METADATA": "Preview Properties (metadata)",
+    "SETTING_GROUP_PREVIEW_METADATA_DESC": "Per-mode visibility of the Properties / YAML block inside the floating note preview window only.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING": "Show properties in reading view",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING_DESC": "When off, hides `.metadata-container` under `.markdown-preview-view` in the preview window.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE": "Show properties in live preview",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE_DESC": "When off, hides `.metadata-container` when the note is in live preview (source + preview hybrid).",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE": "Show properties in source mode",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE_DESC": "When off, hides `.metadata-container` in plain source (non-live-preview) editing.",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Search behavior",

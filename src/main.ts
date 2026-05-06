@@ -138,6 +138,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.applyPreviewWindowScale();
     }
 
+    /** Apply metadata-container visibility toggles to the open preview window (if any). */
+    applyPreviewMetadataVisibility(): void {
+        this.floatingNotePopover?.syncMetadataVisibilityClasses();
+    }
+
     private isFloatingSearchWorkflowActive(): boolean {
         if (this.floatingSearchSurfaceEngaged) return true;
         const active = this.app.workspace.activeLeaf;

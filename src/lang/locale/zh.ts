@@ -51,6 +51,14 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "预览窗口缩放等级",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "仅缩放预览窗内笔记正文（view-content 的 zoom），不包含标题栏等外壳（0.5 至 1.0）。",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "恢复默认缩放",
+    "SETTING_GROUP_PREVIEW_METADATA": "预览窗口属性（metadata）",
+    "SETTING_GROUP_PREVIEW_METADATA_DESC": "仅作用于悬浮预览小窗内，按视图模式控制 Obsidian 属性（YAML / Properties）区域是否显示。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING": "阅读模式下显示属性",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING_DESC": "关闭时隐藏阅读视图（markdown-preview-view）下的 `.metadata-container`。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE": "实时预览下显示属性",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE_DESC": "关闭时隐藏实时预览（`.markdown-source-view.is-live-preview`）下的 `.metadata-container`。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE": "源码模式下显示属性",
+    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE_DESC": "关闭时隐藏纯源码编辑（非实时预览的 markdown-source-view）下的 `.metadata-container`。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

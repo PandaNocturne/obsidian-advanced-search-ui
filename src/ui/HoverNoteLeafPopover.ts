@@ -1,5 +1,6 @@
 import { around } from 'monkey-around';
 import { t } from '../lang/helpers';
+import type AdvancedSearchPlugin from '../main';
 import type { FloatingPanelBounds } from '../settings';
 import {
     FileView,
@@ -239,6 +240,16 @@ export class HoverNoteLeafPopover {
             this.emitResize();
         });
         this.resizeObserver.observe(this.rootEl);
+
+        this.syncMetadataVisibilityClasses();
+    }
+
+    /** Align root modifier classes with plugin settings for `.metadata-container` visibility. */
+    syncMetadataVisibilityClasses(): void {
+        const settings = (this.plugin as AdvancedSearchPlugin).settings;
+        this.rootEl.toggleClass('asui-preview-metadata-hide-reading', !settings.floatingSearchNotePreviewMetadataShowReading);
+        this.rootEl.toggleClass('asui-preview-metadata-hide-live', !settings.floatingSearchNotePreviewMetadataShowLivePreview);
+        this.rootEl.toggleClass('asui-preview-metadata-hide-source', !settings.floatingSearchNotePreviewMetadataShowSource);
     }
 
     getLeaf(): WorkspaceLeaf | null {

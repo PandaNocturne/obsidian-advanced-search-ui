@@ -34,6 +34,12 @@ export interface AdvancedSearchSettings {
     floatingSearchNotePreviewBindSide: 'left' | 'right';
     /** Content zoom for `.view-content` in the preview window (0.5–1). */
     floatingSearchNotePreviewScale: number;
+    /** Show Properties (metadata) in PiP reading view (`.markdown-preview-view`). Default hidden. */
+    floatingSearchNotePreviewMetadataShowReading: boolean;
+    /** Show Properties in PiP live preview (`.markdown-source-view.is-live-preview`). Default hidden. */
+    floatingSearchNotePreviewMetadataShowLivePreview: boolean;
+    /** Show Properties in PiP source editor (non-live `.markdown-source-view`). Default hidden. */
+    floatingSearchNotePreviewMetadataShowSource: boolean;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -58,5 +64,8 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     floatingSearchNotePreviewDefaultMarkdownMode: 'preview',
     floatingSearchNotePreviewDefaultBind: true,
     floatingSearchNotePreviewBindSide: 'left',
-    floatingSearchNotePreviewScale: 0.6
+    floatingSearchNotePreviewScale: 0.6,
+    floatingSearchNotePreviewMetadataShowReading: false,
+    floatingSearchNotePreviewMetadataShowLivePreview: false,
+    floatingSearchNotePreviewMetadataShowSource: false
 };
