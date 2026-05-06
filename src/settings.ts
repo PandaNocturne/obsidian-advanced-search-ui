@@ -24,6 +24,14 @@ export interface AdvancedSearchSettings {
     floatingPanelDefaultCompact: boolean;
     /** When true, opening the floating search panel starts with note preview (PiP) mode on. */
     floatingSearchNotePreviewDefaultOn: boolean;
+    /** Title pin: when true, preview stays visible even when the floating search leaf is not active. */
+    floatingSearchNotePreviewDefaultPinned: boolean;
+    /** Bind (link) control: dock preview position to the floating search panel edge. */
+    floatingSearchNotePreviewDefaultBind: boolean;
+    /** Preferred side when docking next to the floating panel. */
+    floatingSearchNotePreviewBindSide: 'left' | 'right';
+    /** UI scale for the preview window shell (0.5–1). */
+    floatingSearchNotePreviewScale: number;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -43,5 +51,9 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     floatingPanelBounds: null,
     floatingNotePanelBounds: null,
     floatingPanelDefaultCompact: true,
-    floatingSearchNotePreviewDefaultOn: true
+    floatingSearchNotePreviewDefaultOn: true,
+    floatingSearchNotePreviewDefaultPinned: false,
+    floatingSearchNotePreviewDefaultBind: true,
+    floatingSearchNotePreviewBindSide: 'left',
+    floatingSearchNotePreviewScale: 0.6
 };

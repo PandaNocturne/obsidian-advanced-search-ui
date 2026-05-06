@@ -64,7 +64,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     /** PiP / small-window mode: armed from the toolbar; preview DOM is created only when opening a file from results. */
     private floatingNotePipMode = false;
     /** When false, the note window keeps its position instead of following the floating search panel. */
+    /** Dock preview next to the floating search panel (link / bind). */
     private floatingNoteDockedToPanel = true;
+    /** Title pin: keep preview visible when search leaf is not active. */
+    private floatingNoteVisibilityPinned = false;
     private lastFloatingNoteFile: TFile | null = null;
     private floatingSearchContainer: HTMLElement | null = null;
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
@@ -122,6 +125,36 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
     }
 
+    /** Apply preview zoom from settings to the open preview window (if any). */
+    applyPreviewWindowScale(): void {
+        this.floatingNotePopover?.setPreviewScale(this.settings.floatingSearchNotePreviewScale);
+    }
+
+    /** Re-apply docking side and zoom when preview-related settings change. */
+    refreshOpenFloatingNotePreviewChrome(): void {
+        this.syncFloatingNoteWindowPosition();
+        this.applyPreviewWindowScale();
+    }
+
+    private isFloatingSearchWorkflowActive(): boolean {
+        const active = this.app.workspace.activeLeaf;
+        if (!active) return false;
+        if (this.floatingSearchLeaf && active === this.floatingSearchLeaf) return true;
+        const pipLeaf = this.floatingNotePopover?.getLeaf();
+        return !!(pipLeaf && active === pipLeaf);
+    }
+
+    private updateFloatingNotePreviewVisibility(): void {
+        const pop = this.floatingNotePopover;
+        if (!pop || !this.floatingSearchPanel) return;
+        if (this.floatingNoteVisibilityPinned) {
+            pop.rootEl.removeClass('asui-preview-window--inactive-hidden');
+            return;
+        }
+        const show = this.isFloatingSearchWorkflowActive();
+        pop.rootEl.toggleClass('asui-preview-window--inactive-hidden', !show);
+    }
+
     async onload() {
         await this.loadSettings();
 
@@ -139,6 +172,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
         this.updateInterval();
         this.addSettingTab(new AdvancedSearchSettingTab(this.app, this));
+        this.registerEvent(
+            this.app.workspace.on('active-leaf-change', () => {
+                this.updateFloatingNotePreviewVisibility();
+            })
+        );
     }
 
     public updateInterval() {
@@ -206,6 +244,17 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             if (rawSettings.enableExperimentalRowDragAndDrop === undefined) {
                 this.settings.enableExperimentalRowDragAndDrop = false;
             }
+        }
+
+        const scale = this.settings.floatingSearchNotePreviewScale;
+        if (typeof scale !== 'number' || Number.isNaN(scale)) {
+            this.settings.floatingSearchNotePreviewScale = DEFAULT_SETTINGS.floatingSearchNotePreviewScale;
+        } else {
+            this.settings.floatingSearchNotePreviewScale =
+                Math.round(Math.max(0.5, Math.min(1, scale)) * 10) / 10;
+        }
+        if (this.settings.floatingSearchNotePreviewBindSide !== 'left' && this.settings.floatingSearchNotePreviewBindSide !== 'right') {
+            this.settings.floatingSearchNotePreviewBindSide = 'left';
         }
     }
 
@@ -554,6 +603,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
 
         this.floatingSearchPanel = panel;
+        this.floatingNoteVisibilityPinned = this.settings.floatingSearchNotePreviewDefaultPinned;
+        this.floatingNoteDockedToPanel = this.settings.floatingSearchNotePreviewDefaultBind;
         this.floatingNotePipMode = this.settings.floatingSearchNotePreviewDefaultOn;
         panel.setPictureInPictureActive(this.floatingNotePipMode, false);
         void this.mountFloatingSearchPanelContent(panel);
@@ -691,6 +742,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             this.floatingSearchPanel?.setPictureInPictureActive(true, false);
             this.floatingNotePopover.focus();
             this.syncFloatingNoteWindowPosition();
+            this.updateFloatingNotePreviewVisibility();
             return;
         }
 
@@ -698,18 +750,26 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             plugin: this,
             mountEl: this.app.workspace.containerEl,
             bounds: this.settings.floatingNotePanelBounds,
+            defaultBound: this.floatingNoteDockedToPanel,
+            defaultVisibilityPinned: this.floatingNoteVisibilityPinned,
+            previewScale: this.settings.floatingSearchNotePreviewScale,
             onClose: () => this.closeFloatingNotePreviewOnly(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
             onResize: () => this.floatingNotePopover?.requestLeafMeasure(),
-            onPinnedChange: pinned => {
-                this.floatingNoteDockedToPanel = pinned;
-                if (pinned) this.syncFloatingNoteWindowPosition();
+            onBindChange: bound => {
+                this.floatingNoteDockedToPanel = bound;
+                if (bound) this.syncFloatingNoteWindowPosition();
+            },
+            onVisibilityPinnedChange: pinned => {
+                this.floatingNoteVisibilityPinned = pinned;
+                this.updateFloatingNotePreviewVisibility();
             }
         });
 
         this.syncFloatingNoteWindowPosition();
         this.floatingSearchPanel?.setPictureInPictureActive(true, false);
         this.floatingNotePopover.focus();
+        this.updateFloatingNotePreviewVisibility();
     }
 
     private closeFloatingNoteWindow(updateSearchButton = true) {
@@ -719,7 +779,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         this.floatingNotePopover?.destroy();
         this.floatingNotePopover = null;
-        this.floatingNoteDockedToPanel = true;
 
         if (updateSearchButton) {
             this.floatingNotePipMode = false;
@@ -734,7 +793,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
         this.floatingNotePopover?.destroy();
         this.floatingNotePopover = null;
-        this.floatingNoteDockedToPanel = true;
         this.lastFloatingNoteFile = null;
     }
 
@@ -754,11 +812,20 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         const fitsLeft = leftDocked >= margin;
         const rightDocked = source.left + source.width + gap;
         const fitsRight = rightDocked + current.width <= window.innerWidth - margin;
+        const preferLeft = this.settings.floatingSearchNotePreviewBindSide === 'left';
         let left: number;
-        if (fitsLeft) {
-            left = leftDocked;
+        if (preferLeft) {
+            if (fitsLeft) {
+                left = leftDocked;
+            } else if (fitsRight) {
+                left = rightDocked;
+            } else {
+                left = Math.max(margin, Math.min(leftDocked, window.innerWidth - current.width - margin));
+            }
         } else if (fitsRight) {
             left = rightDocked;
+        } else if (fitsLeft) {
+            left = leftDocked;
         } else {
             left = Math.max(margin, Math.min(leftDocked, window.innerWidth - current.width - margin));
         }
@@ -778,6 +845,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.lastFloatingNoteFile = file;
         await this.floatingNotePopover?.openFile(file);
         this.floatingNotePopover?.focus();
+        this.updateFloatingNotePreviewVisibility();
     }
 
     private openPluginSettings() {

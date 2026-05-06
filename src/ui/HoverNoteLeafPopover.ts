@@ -31,11 +31,19 @@ export interface HoverNoteLeafPopoverOptions {
     plugin: Plugin;
     mountEl: HTMLElement;
     bounds?: FloatingPanelBounds | null;
+    /** Dock preview to the floating search panel edge (link control). */
+    defaultBound?: boolean;
+    /** Title pin: keep preview visible when the search leaf is not active. */
+    defaultVisibilityPinned?: boolean;
+    /** Note body scale: applied as `zoom` on `.view-content` inside the preview shell (0.5–1). */
+    previewScale?: number;
     onClose: () => void;
     onBoundsChange: (bounds: FloatingPanelBounds) => void;
     onResize?: () => void;
-    /** Fires when the user toggles “bind” / pin (dock next to the floating search panel). */
-    onPinnedChange?: (pinned: boolean) => void;
+    /** Fires when the user toggles bind (dock next to the floating search panel). */
+    onBindChange?: (bound: boolean) => void;
+    /** Fires when the user toggles the title “always show” pin. */
+    onVisibilityPinnedChange?: (pinned: boolean) => void;
 }
 
 /**
@@ -55,7 +63,8 @@ export class HoverNoteLeafPopover {
     private readonly headerEl: HTMLElement;
     private readonly titleTextEl: HTMLElement;
     private readonly modeToggleBtn: HTMLButtonElement;
-    private readonly pinBtn: HTMLButtonElement;
+    private readonly visibilityPinBtn: HTMLButtonElement;
+    private readonly bindBtn: HTMLButtonElement;
     private readonly rootSplit: WorkspaceSplit;
     private readonly plugin: Plugin;
     private readonly onBoundsChange: (bounds: FloatingPanelBounds) => void;
@@ -80,8 +89,9 @@ export class HoverNoteLeafPopover {
         this.onResize = options.onResize;
 
         const mount = options.mountEl;
+        const defaultBound = options.defaultBound !== false;
         this.rootEl = mount.createDiv({
-            cls: 'asui-preview-window asui-preview-window--bound',
+            cls: `asui-preview-window${defaultBound ? ' asui-preview-window--bound' : ''}`,
             attr: { 'data-asui-preview-window': 'true' }
         });
 
@@ -91,10 +101,24 @@ export class HoverNoteLeafPopover {
         const titleWrapEl = this.headerEl.createDiv({
             cls: 'asui-preview-window-title-wrap asui-floating-panel-title-wrap'
         });
-        const titleIconEl = titleWrapEl.createDiv({
-            cls: 'asui-preview-window-title-icon asui-floating-panel-title-icon'
+        const visibilityPinned = !!options.defaultVisibilityPinned;
+        this.visibilityPinBtn = titleWrapEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-visibility-pin asui-floating-panel-title-icon',
+            attr: {
+                type: 'button',
+                title: t('FLOATING_NOTE_VISIBILITY_PIN'),
+                'aria-label': t('FLOATING_NOTE_VISIBILITY_PIN')
+            }
         });
-        setIcon(titleIconEl, 'file-text');
+        setIcon(this.visibilityPinBtn, 'pin');
+        this.visibilityPinBtn.classList.toggle('is-active', visibilityPinned);
+        this.visibilityPinBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const next = !this.visibilityPinBtn.classList.contains('is-active');
+            this.visibilityPinBtn.classList.toggle('is-active', next);
+            options.onVisibilityPinnedChange?.(next);
+        });
         this.titleTextEl = titleWrapEl.createDiv({
             cls: 'asui-preview-window-title asui-floating-panel-title',
             text: ''
@@ -113,18 +137,19 @@ export class HoverNoteLeafPopover {
             void this.toggleMarkdownMode();
         });
 
-        this.pinBtn = controlsEl.createEl('button', {
-            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--bind is-active',
+        this.bindBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--bind',
             attr: { type: 'button', title: t('FLOATING_NOTE_BIND'), 'aria-label': t('FLOATING_NOTE_BIND') }
         });
-        setIcon(this.pinBtn, 'link');
-        this.pinBtn.addEventListener('click', e => {
+        setIcon(this.bindBtn, 'link');
+        this.bindBtn.classList.toggle('is-active', defaultBound);
+        this.bindBtn.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
             const bound = !this.rootEl.classList.contains('asui-preview-window--bound');
             this.rootEl.toggleClass('asui-preview-window--bound', bound);
-            this.pinBtn.classList.toggle('is-active', bound);
-            options.onPinnedChange?.(bound);
+            this.bindBtn.classList.toggle('is-active', bound);
+            options.onBindChange?.(bound);
         });
 
         const closeBtn = controlsEl.createEl('button', {
@@ -145,6 +170,8 @@ export class HoverNoteLeafPopover {
         this.bodyEl = this.rootEl.createDiv({ cls: 'asui-preview-window-body' });
         this.bodyEl.appendChild((this.rootSplit as WorkspaceSplitWithDom).containerEl);
         this.attachLeaf();
+
+        this.setPreviewScale(options.previewScale ?? 0.6);
 
         const defaultWidth = Math.min(560, window.innerWidth - VIEWPORT_MARGIN);
         const defaultHeight = Math.min(480, window.innerHeight - VIEWPORT_MARGIN);
@@ -221,6 +248,11 @@ export class HoverNoteLeafPopover {
 
     getPersistedBounds(): FloatingPanelBounds {
         return this.getBounds();
+    }
+
+    setPreviewScale(scale: number): void {
+        const s = Math.max(0.5, Math.min(1, scale));
+        this.rootEl.style.setProperty('--asui-preview-view-content-zoom', String(s));
     }
 
     setBounds(bounds: FloatingPanelBounds): void {
@@ -379,6 +411,7 @@ export class HoverNoteLeafPopover {
         if (e.button !== 0) return;
         const target = e.target as HTMLElement;
         if (target.closest('.asui-preview-window-controls')) return;
+        if (target.closest('.asui-preview-window-visibility-pin')) return;
 
         this.isDragging = true;
         this.dragPointerId = e.pointerId;

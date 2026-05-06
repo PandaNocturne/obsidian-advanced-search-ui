@@ -26,6 +26,7 @@ export default {
     "FLOATING_NOTE_SAVE": "保存",
     "FLOATING_NOTE_CLOSE": "关闭笔记窗口",
     "FLOATING_NOTE_BIND": "绑定到搜索面板",
+    "FLOATING_NOTE_VISIBILITY_PIN": "固定预览显示（打开面板时常显）",
     "CLOSE_PANEL": "关闭面板",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
     "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",
@@ -33,8 +34,18 @@ export default {
     "TOGGLE_FLOATING_SEARCH_PANEL": "切换悬浮搜索面板",
     "FLOATING_PANEL_DEFAULT_COMPACT": "默认简化模式",
     "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "开启后，悬浮搜索面板默认隐藏检索结果区。",
-    "FLOATING_SEARCH_NOTE_PREVIEW": "默认开启笔记小窗预览",
+    "FLOATING_SEARCH_NOTE_PREVIEW": "默认开启预览",
     "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "开启后，每次打开悬浮搜索面板时会自动进入小窗预览模式（标题栏按钮为高亮），在结果中点开的笔记会进入预览窗。关闭则打开面板时为小窗模式关，仍可手动点击按钮开启。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED": "默认固定预览窗口",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "开启后，新建的预览小窗会默认点亮标题栏图钉，在未切换焦点时也会保持显示。关闭时，仅当悬浮搜索或预览小窗处于前台激活时才显示，否则自动隐藏。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "默认绑定悬浮面板",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC": "开启后，新建的预览小窗默认启用“绑定到搜索面板”，会随悬浮搜索面板移动位置。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE": "优先绑定位置",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE_DESC": "绑定到悬浮面板时，在空间允许的情况下优先将预览窗放在该侧。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_LEFT": "居左",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT": "居右",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "预览窗口缩放等级",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "仅缩放预览窗内笔记正文（view-content 的 zoom），不包含标题栏等外壳（0.5 至 1.0）。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",
@@ -47,6 +58,8 @@ export default {
     "SETTING_GROUP_INTEGRATION_DESC": "控制与其它插件的兼容行为。",
     "SETTING_GROUP_GRAPH": "图谱联动",
     "SETTING_GROUP_GRAPH_DESC": "控制搜索结果与图谱视图、图谱颜色组之间的联动方式。",
+    "SETTING_GROUP_PREVIEW_WINDOW": "预览窗口",
+    "SETTING_GROUP_PREVIEW_WINDOW_DESC": "悬浮检索旁笔记预览小窗的默认行为与外观。",
 
     // Settings
     "SEARCH_ALSO_GRAPH": "搜索连带图谱搜索",

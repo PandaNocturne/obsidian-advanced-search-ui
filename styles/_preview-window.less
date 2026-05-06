@@ -50,14 +50,29 @@
       gap: 8px;
     }
 
-    .asui-preview-window-title-icon {
+    .asui-preview-window-visibility-pin {
       display: inline-flex !important;
       align-items: center;
       justify-content: center;
       flex: 0 0 auto;
-      width: 16px;
-      height: 16px;
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: var(--radius-s);
+      background: transparent;
+      box-shadow: none;
       color: var(--icon-color);
+      cursor: pointer;
+
+      &:hover {
+        background-color: var(--background-modifier-hover);
+      }
+
+      &.is-active {
+        color: var(--interactive-accent);
+      }
 
       svg {
         width: 16px;
@@ -285,21 +300,26 @@ body .asui-preview-window .view-content {
   display: none !important;
 }
 
-// 预览窗口样式优化
+// 预览窗口样式补丁
 .asui-preview-window {
   --file-line-width:calc(100% - 16px);
   .cg-note-toolbar-container {
     display: none;
   }
 
+  /* 笔记正文区域缩放（由设置 `--asui-preview-view-content-zoom` 驱动，默认 0.6） */
+  .view-content {
+    zoom: var(--asui-preview-view-content-zoom, 0.6);
+  }
 
   .view-content>.markdown-source-view.mod-cm6>.cm-editor>.cm-scroller {
     padding: 0px;
   }
-}
 
-@container asui-pip (max-width: 560px) {
-  .asui-preview-window .view-content {
-    zoom: 0.6;
+  &.asui-preview-window--inactive-hidden {
+    visibility: hidden;
+    pointer-events: none;
   }
 }
+
+

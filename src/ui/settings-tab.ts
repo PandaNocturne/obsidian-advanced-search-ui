@@ -84,8 +84,14 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(panelGroup)
-            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW') || 'Default note preview on panel open')
+        const previewGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_PREVIEW_WINDOW') || 'Preview window',
+            t('SETTING_GROUP_PREVIEW_WINDOW_DESC') || 'Defaults for the floating note preview (PiP) window.'
+        );
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW') || 'Default preview on')
             .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DESC') || '')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultOn)
@@ -93,6 +99,53 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.floatingSearchNotePreviewDefaultOn = value;
                     await this.plugin.saveSettings();
                     this.plugin.applyFloatingSearchNotePreviewDefaultSetting();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED') || 'Default pin preview window')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultPinned)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultPinned = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND') || 'Default bind to floating panel')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultBind)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultBind = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE') || 'Preferred bind side')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE_DESC') || '')
+            .addDropdown(dropdown => dropdown
+                .addOption('left', t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_LEFT') || 'Left')
+                .addOption('right', t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT') || 'Right')
+                .setValue(this.plugin.settings.floatingSearchNotePreviewBindSide)
+                .onChange(async (value: 'left' | 'right') => {
+                    this.plugin.settings.floatingSearchNotePreviewBindSide = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshOpenFloatingNotePreviewChrome();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE') || 'Preview window scale')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC') || '')
+            .addSlider(slider => slider
+                .setLimits(0.5, 1, 0.1)
+                .setValue(this.plugin.settings.floatingSearchNotePreviewScale)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    const rounded = Math.round(Math.max(0.5, Math.min(1, value)) * 10) / 10;
+                    this.plugin.settings.floatingSearchNotePreviewScale = rounded;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyPreviewWindowScale();
                 }));
 
         const searchGroup = this.createSettingGroup(

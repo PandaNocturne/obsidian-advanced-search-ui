@@ -26,6 +26,7 @@ export default {
     "FLOATING_NOTE_SAVE": "Save",
     "FLOATING_NOTE_CLOSE": "Close note window",
     "FLOATING_NOTE_BIND": "Dock note window to search panel",
+    "FLOATING_NOTE_VISIBILITY_PIN": "Pin preview visibility (always show while panel is open)",
     "CLOSE_PANEL": "Close panel",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "Failed to open plugin settings",
     "OPEN_FLOATING_SEARCH_PANEL": "Open floating search panel",
@@ -35,6 +36,16 @@ export default {
     "FLOATING_PANEL_DEFAULT_COMPACT_DESC": "When enabled, the floating search panel hides the search result area by default.",
     "FLOATING_SEARCH_NOTE_PREVIEW": "Default note preview (PiP) on panel open",
     "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "When enabled, each time you open the floating search panel, note preview mode starts on (toolbar button active) and result clicks can open in the preview window. When disabled, the panel opens with preview off; you can still turn it on with the button.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED": "Default pin preview window",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "When enabled, each new preview window opens with the title pin on so the preview stays visible even when the floating search leaf is not active. When off, the preview hides until you focus the floating search or the preview again.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "Default bind to floating panel",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC": "When enabled, new preview windows start with “dock to panel” on so the preview follows the floating search panel position.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE": "Preferred bind side",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE_DESC": "When docking the preview to the floating panel, prefer placing it on this side when space allows.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_LEFT": "Left",
+    "FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT": "Right",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "Preview window scale",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "Sets CSS zoom on the note body (.view-content) inside the preview window, not the outer chrome (0.5 to 1.0).",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Search behavior",
@@ -47,6 +58,8 @@ export default {
     "SETTING_GROUP_INTEGRATION_DESC": "Controls compatibility behavior with other plugins.",
     "SETTING_GROUP_GRAPH": "Graph integration",
     "SETTING_GROUP_GRAPH_DESC": "Controls how search results interact with graph view and graph color groups.",
+    "SETTING_GROUP_PREVIEW_WINDOW": "Preview window",
+    "SETTING_GROUP_PREVIEW_WINDOW_DESC": "Defaults for the floating note preview window next to the floating search panel.",
 
     // Settings
     "SEARCH_ALSO_GRAPH": "Update graph on search",
