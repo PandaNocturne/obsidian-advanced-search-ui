@@ -129,7 +129,7 @@ export class FloatingSearchPanel {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
             attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE') }
         });
-        setIcon(this.collapseBtn, 'chevrons-down-up');
+        this.syncCollapseButtonUi();
         this.collapseBtn.onclick = event => {
             event.preventDefault();
             event.stopPropagation();
@@ -227,6 +227,7 @@ export class FloatingSearchPanel {
         this.isCollapsed = collapsed;
         this.windowEl.classList.toggle('is-collapsed', collapsed);
         this.collapseBtn.classList.toggle('is-active', collapsed);
+        this.syncCollapseButtonUi();
 
         if (collapsed) {
             const headerHeight = this.windowEl.querySelector('.asui-floating-panel-header')?.clientHeight ?? 48;
@@ -237,6 +238,13 @@ export class FloatingSearchPanel {
 
         this.onCollapsedChange?.(collapsed);
         this.emitResize();
+    }
+
+    private syncCollapseButtonUi(): void {
+        setIcon(this.collapseBtn, this.isCollapsed ? 'chevrons-up-down' : 'chevrons-down-up');
+        this.collapseBtn.setAttrs({
+            'aria-label': this.isCollapsed ? t('FLOATING_PANEL_EXPAND') : t('FLOATING_PANEL_COLLAPSE')
+        });
     }
 
     private createResizeHandles() {

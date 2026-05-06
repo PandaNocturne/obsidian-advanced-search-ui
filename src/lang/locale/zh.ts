@@ -16,6 +16,7 @@ export default {
     "GROUP_QUERY_PASTED": "已粘贴分组查询",
     "OPEN_PLUGIN_SETTINGS": "打开插件设置",
     "FLOATING_PANEL_COLLAPSE": "折叠面板",
+    "FLOATING_PANEL_EXPAND": "展开面板",
     "FLOATING_PANEL_COMPACT": "简化控件",
     "FLOATING_PANEL_OPEN_NOTE_WINDOW": "打开小窗口",
     "FLOATING_NOTE_WINDOW_TITLE": "笔记小窗口",

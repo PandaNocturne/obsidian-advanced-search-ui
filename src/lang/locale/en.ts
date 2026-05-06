@@ -16,6 +16,7 @@ export default {
     "GROUP_QUERY_PASTED": "Group query pasted",
     "OPEN_PLUGIN_SETTINGS": "Open plugin settings",
     "FLOATING_PANEL_COLLAPSE": "Collapse panel",
+    "FLOATING_PANEL_EXPAND": "Expand panel",
     "FLOATING_PANEL_COMPACT": "Compact controls",
     "FLOATING_PANEL_OPEN_NOTE_WINDOW": "Open note window",
     "FLOATING_NOTE_WINDOW_TITLE": "Note window",
