@@ -58,7 +58,7 @@ export class SearchRow {
         SearchRow.OPTIONS.forEach(opt => this.typeSelect.createEl('option', { text: t(opt as Parameters<typeof t>[0]) || opt, value: opt }));
 
         const inputGroup = this.container.createDiv({ cls: 'asui-input-group' });
-        this.input = inputGroup.createEl('input', { type: 'search', cls: 'asui-search-input' });
+        this.input = inputGroup.createEl('input', { type: 'text', cls: 'asui-search-input' });
         this.input.placeholder = t('SEARCH_BUTTON');
         this.iconButton = inputGroup.createEl('button', { cls: 'asui-icon-button', attr: { type: 'button' } });
 
@@ -162,7 +162,50 @@ export class SearchRow {
         this.input.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 this.delegate.onExecuteSearch();
+                return;
             }
+            // Search leaf may call preventDefault on Arrow/Home/End in capture phase for result navigation;
+            // restore caret movement inside our criteria inputs.
+            if (e.altKey || e.ctrlKey || e.metaKey) return;
+            const key = e.key;
+            if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'Home' && key !== 'End') return;
+
+            const el = this.input;
+            const len = el.value.length;
+            const start = el.selectionStart ?? 0;
+            const end = el.selectionEnd ?? 0;
+
+            if (e.shiftKey) {
+                if (key === 'Home' || key === 'End' || start !== end) return;
+                if (key === 'ArrowLeft' && start > 0) {
+                    e.preventDefault();
+                    el.setSelectionRange(start - 1, start);
+                } else if (key === 'ArrowRight' && start < len) {
+                    e.preventDefault();
+                    el.setSelectionRange(start, start + 1);
+                }
+                return;
+            }
+
+            e.preventDefault();
+
+            if (key === 'Home') {
+                el.setSelectionRange(0, 0);
+                return;
+            }
+            if (key === 'End') {
+                el.setSelectionRange(len, len);
+                return;
+            }
+
+            if (start === end) {
+                const next = key === 'ArrowLeft' ? Math.max(0, start - 1) : Math.min(len, start + 1);
+                el.setSelectionRange(next, next);
+                return;
+            }
+
+            const pos = key === 'ArrowLeft' ? Math.min(start, end) : Math.max(start, end);
+            el.setSelectionRange(pos, pos);
         });
 
         this.container.querySelector('.asui-remove-row')?.addEventListener('click', e => {
