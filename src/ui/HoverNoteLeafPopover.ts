@@ -84,6 +84,8 @@ export class HoverNoteLeafPopover {
     private resizeStartY = 0;
     private resizeStartBounds: FloatingPanelBounds | null = null;
     private resizeObserver: ResizeObserver | null = null;
+    /** Coalesce leaf/content reflow during rapid bounds changes (avoids preview white flash). */
+    private resizeReflowRaf: number | null = null;
     private disposed = false;
 
     constructor(options: HoverNoteLeafPopoverOptions) {
@@ -226,7 +228,10 @@ export class HoverNoteLeafPopover {
         window.addEventListener('pointerup', this.onPointerUp);
         window.addEventListener('pointercancel', this.onPointerUp);
 
-        this.resizeObserver = new ResizeObserver(() => this.emitResize());
+        this.resizeObserver = new ResizeObserver(() => {
+            if (this.disposed || this.isDragging || this.isResizing) return;
+            this.emitResize();
+        });
         this.resizeObserver.observe(this.rootEl);
     }
 
@@ -286,6 +291,10 @@ export class HoverNoteLeafPopover {
 
     destroy(): void {
         this.disposed = true;
+        if (this.resizeReflowRaf !== null) {
+            cancelAnimationFrame(this.resizeReflowRaf);
+            this.resizeReflowRaf = null;
+        }
         window.removeEventListener('pointermove', this.onPointerMove);
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
@@ -406,9 +415,30 @@ export class HoverNoteLeafPopover {
         this.emitResize();
     }
 
-    private emitResize(): void {
+    private runResizeReflow(): void {
         this.onResize?.();
         this.requestLeafMeasure();
+    }
+
+    /** Run pending reflow immediately (e.g. end of drag). */
+    private flushResizeReflow(): void {
+        if (this.resizeReflowRaf !== null) {
+            cancelAnimationFrame(this.resizeReflowRaf);
+            this.resizeReflowRaf = null;
+        }
+        this.runResizeReflow();
+    }
+
+    private scheduleResizeReflow(): void {
+        if (this.resizeReflowRaf !== null) return;
+        this.resizeReflowRaf = window.requestAnimationFrame(() => {
+            this.resizeReflowRaf = null;
+            if (!this.disposed) this.runResizeReflow();
+        });
+    }
+
+    private emitResize(): void {
+        this.scheduleResizeReflow();
     }
 
     private onTitlePointerDown = (e: PointerEvent): void => {
@@ -450,16 +480,17 @@ export class HoverNoteLeafPopover {
             const height = this.rootEl.offsetHeight;
             const left = Math.min(Math.max(0, e.clientX - this.dragOffsetX), window.innerWidth - width);
             const top = Math.min(Math.max(0, e.clientY - this.dragOffsetY), window.innerHeight - height);
-            this.applyBounds({ left, top, width, height }, true);
+            this.applyBounds({ left, top, width, height }, false);
         } else if (this.isResizing && e.pointerId === this.resizePointerId && this.resizeDirection && this.resizeStartBounds) {
             const b = this.getResizedBounds(e);
-            if (b) this.applyBounds(b, true);
+            if (b) this.applyBounds(b, false);
         }
     };
 
     private onPointerUp = (e: PointerEvent): void => {
         if (this.disposed) return;
         if (e.pointerId === this.dragPointerId) {
+            const endedDrag = this.isDragging;
             this.isDragging = false;
             this.dragPointerId = null;
             try {
@@ -467,8 +498,13 @@ export class HoverNoteLeafPopover {
             } catch {
                 /* noop */
             }
+            if (endedDrag) {
+                this.flushResizeReflow();
+                this.onBoundsChange(this.getBounds());
+            }
         }
         if (e.pointerId === this.resizePointerId) {
+            const endedResize = this.isResizing;
             this.isResizing = false;
             this.resizePointerId = null;
             this.resizeDirection = null;
@@ -477,6 +513,10 @@ export class HoverNoteLeafPopover {
                 (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
             } catch {
                 /* noop */
+            }
+            if (endedResize) {
+                this.flushResizeReflow();
+                this.onBoundsChange(this.getBounds());
             }
         }
     };

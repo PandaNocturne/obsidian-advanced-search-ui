@@ -794,7 +794,6 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             previewScale: this.settings.floatingSearchNotePreviewScale,
             onClose: () => this.closeFloatingNotePreviewOnly(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
-            onResize: () => this.floatingNotePopover?.requestLeafMeasure(),
             onBindChange: bound => {
                 this.floatingNoteDockedToPanel = bound;
                 if (bound) this.syncFloatingNoteWindowPosition();
