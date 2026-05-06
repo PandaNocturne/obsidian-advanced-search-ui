@@ -25,6 +25,7 @@
 		]
 	},
 	"include": [
+		"main.ts",
 		"src/**/*.ts"
 	]
 }

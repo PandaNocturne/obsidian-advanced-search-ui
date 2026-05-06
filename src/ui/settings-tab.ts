@@ -1,14 +1,14 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import AdvancedSearchPlugin from '../main';
+import { App, PluginSettingTab, Setting, type Plugin } from 'obsidian';
+import type { AdvancedSearchPluginFacade } from '../plugin/plugin-public-api';
 import { t } from '../lang/helpers';
 import { DEFAULT_SETTINGS } from '../settings';
 
 const FLOAT_SEARCH_PLUGIN_URI = 'obsidian://show-plugin?id=float-search';
 
 export class AdvancedSearchSettingTab extends PluginSettingTab {
-    plugin: AdvancedSearchPlugin;
+    plugin: Plugin & AdvancedSearchPluginFacade;
 
-    constructor(app: App, plugin: AdvancedSearchPlugin) {
+    constructor(app: App, plugin: Plugin & AdvancedSearchPluginFacade) {
         super(app, plugin);
         this.plugin = plugin;
     }
