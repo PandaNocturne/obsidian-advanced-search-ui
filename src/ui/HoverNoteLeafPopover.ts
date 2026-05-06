@@ -37,6 +37,8 @@ export interface HoverNoteLeafPopoverOptions {
     defaultVisibilityPinned?: boolean;
     /** Note body scale: applied as `zoom` on `.view-content` inside the preview shell (0.5–1). */
     previewScale?: number;
+    /** Initial Markdown mode for `.md` files opened in this window. */
+    defaultMarkdownMode?: 'preview' | 'source';
     onClose: () => void;
     onBoundsChange: (bounds: FloatingPanelBounds) => void;
     onResize?: () => void;
@@ -66,6 +68,7 @@ export class HoverNoteLeafPopover {
     private readonly visibilityPinBtn: HTMLButtonElement;
     private readonly bindBtn: HTMLButtonElement;
     private readonly rootSplit: WorkspaceSplit;
+    private readonly defaultMarkdownMode: 'preview' | 'source';
     private readonly plugin: Plugin;
     private readonly onBoundsChange: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: () => void;
@@ -85,6 +88,7 @@ export class HoverNoteLeafPopover {
 
     constructor(options: HoverNoteLeafPopoverOptions) {
         this.plugin = options.plugin;
+        this.defaultMarkdownMode = options.defaultMarkdownMode === 'source' ? 'source' : 'preview';
         this.onBoundsChange = options.onBoundsChange;
         this.onResize = options.onResize;
 
@@ -267,7 +271,7 @@ export class HoverNoteLeafPopover {
         if (file.extension === 'md') {
             await leaf.setViewState({
                 type: 'markdown',
-                state: { file: file.path, mode: 'preview' },
+                state: { file: file.path, mode: this.defaultMarkdownMode },
                 active: true
             });
         } else {

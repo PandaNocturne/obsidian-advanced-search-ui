@@ -38,6 +38,10 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "When enabled, each time you open the floating search panel, note preview mode starts on (toolbar button active) and result clicks can open in the preview window. When disabled, the panel opens with preview off; you can still turn it on with the button.",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED": "Default pin preview window",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "When enabled, each new preview window opens with the title pin on so the preview stays visible even when the floating search leaf is not active. When off, the preview hides until you focus the floating search or the preview again.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW": "Default view",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC": "Default Markdown mode when opening a note in the preview window.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING": "Reading",
+    "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING": "Editing",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "Default bind to floating panel",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC": "When enabled, new preview windows start with “dock to panel” on so the preview follows the floating search panel position.",
     "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE": "Preferred bind side",
@@ -46,6 +50,7 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT": "Right",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "Preview window scale",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "Sets CSS zoom on the note body (.view-content) inside the preview window, not the outer chrome (0.5 to 1.0).",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "Reset to default scale",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Search behavior",

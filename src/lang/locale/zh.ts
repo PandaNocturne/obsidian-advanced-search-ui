@@ -38,6 +38,10 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_DESC": "开启后，每次打开悬浮搜索面板时会自动进入小窗预览模式（标题栏按钮为高亮），在结果中点开的笔记会进入预览窗。关闭则打开面板时为小窗模式关，仍可手动点击按钮开启。",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED": "默认固定预览窗口",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "开启后，新建的预览小窗会默认点亮标题栏图钉，在未切换焦点时也会保持显示。关闭时，仅当悬浮搜索或预览小窗处于前台激活时才显示，否则自动隐藏。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW": "默认视图",
+    "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC": "在预览小窗中打开 Markdown 笔记时使用的默认模式。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING": "阅读",
+    "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING": "编辑",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "默认绑定悬浮面板",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC": "开启后，新建的预览小窗默认启用“绑定到搜索面板”，会随悬浮搜索面板移动位置。",
     "FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE": "优先绑定位置",
@@ -46,6 +50,7 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT": "居右",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "预览窗口缩放等级",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "仅缩放预览窗内笔记正文（view-content 的 zoom），不包含标题栏等外壳（0.5 至 1.0）。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "恢复默认缩放",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

@@ -68,6 +68,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private floatingNoteDockedToPanel = true;
     /** Title pin: keep preview visible when search leaf is not active. */
     private floatingNoteVisibilityPinned = false;
+    /** Last pointer target was inside floating panel or preview (for unpinned visibility). */
+    private floatingSearchSurfaceEngaged = false;
     private lastFloatingNoteFile: TFile | null = null;
     private floatingSearchContainer: HTMLElement | null = null;
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
@@ -137,12 +139,31 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private isFloatingSearchWorkflowActive(): boolean {
+        if (this.floatingSearchSurfaceEngaged) return true;
         const active = this.app.workspace.activeLeaf;
         if (!active) return false;
         if (this.floatingSearchLeaf && active === this.floatingSearchLeaf) return true;
         const pipLeaf = this.floatingNotePopover?.getLeaf();
         return !!(pipLeaf && active === pipLeaf);
     }
+
+    private onDocumentPointerDownForPreviewEngagement = (e: PointerEvent) => {
+        if (!this.floatingSearchPanel) {
+            this.floatingSearchSurfaceEngaged = false;
+            return;
+        }
+        if (!this.floatingNotePopover) {
+            this.floatingSearchSurfaceEngaged = false;
+            return;
+        }
+        if (this.floatingNoteVisibilityPinned) return;
+        const t = e.target;
+        if (!(t instanceof Node)) return;
+        const inPanel = this.floatingSearchPanel.rootEl.contains(t);
+        const inPreview = this.floatingNotePopover.rootEl.contains(t);
+        this.floatingSearchSurfaceEngaged = inPanel || inPreview;
+        this.updateFloatingNotePreviewVisibility();
+    };
 
     private updateFloatingNotePreviewVisibility(): void {
         const pop = this.floatingNotePopover;
@@ -174,9 +195,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.addSettingTab(new AdvancedSearchSettingTab(this.app, this));
         this.registerEvent(
             this.app.workspace.on('active-leaf-change', () => {
+                const active = this.app.workspace.activeLeaf;
+                const inWorkflow =
+                    !!(this.floatingSearchLeaf && active === this.floatingSearchLeaf) ||
+                    !!(this.floatingNotePopover?.getLeaf() && active === this.floatingNotePopover.getLeaf());
+                if (!inWorkflow) this.floatingSearchSurfaceEngaged = false;
                 this.updateFloatingNotePreviewVisibility();
             })
         );
+        this.registerDomEvent(document, 'pointerdown', this.onDocumentPointerDownForPreviewEngagement, true);
     }
 
     public updateInterval() {
@@ -255,6 +282,12 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
         if (this.settings.floatingSearchNotePreviewBindSide !== 'left' && this.settings.floatingSearchNotePreviewBindSide !== 'right') {
             this.settings.floatingSearchNotePreviewBindSide = 'left';
+        }
+        if (
+            this.settings.floatingSearchNotePreviewDefaultMarkdownMode !== 'preview' &&
+            this.settings.floatingSearchNotePreviewDefaultMarkdownMode !== 'source'
+        ) {
+            this.settings.floatingSearchNotePreviewDefaultMarkdownMode = 'preview';
         }
     }
 
@@ -583,6 +616,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private openFloatingSearchPanel() {
         if (this.floatingSearchPanel) {
             this.floatingSearchPanel.focus();
+            this.floatingSearchSurfaceEngaged = true;
+            this.updateFloatingNotePreviewVisibility();
             return;
         }
 
@@ -610,6 +645,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         void this.mountFloatingSearchPanelContent(panel);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();
+        this.floatingSearchSurfaceEngaged = true;
+        this.updateFloatingNotePreviewVisibility();
     }
 
     private createFloatingSearchLeaf(): WorkspaceLeaf | null {
@@ -704,6 +741,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
 
         this.floatingNotePipMode = false;
+        this.floatingSearchSurfaceEngaged = false;
         this.closeFloatingNoteWindow(false);
         this.floatingSearchLeafHost = null;
         this.floatingSearchPanel?.destroy();
@@ -752,6 +790,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             bounds: this.settings.floatingNotePanelBounds,
             defaultBound: this.floatingNoteDockedToPanel,
             defaultVisibilityPinned: this.floatingNoteVisibilityPinned,
+            defaultMarkdownMode: this.settings.floatingSearchNotePreviewDefaultMarkdownMode,
             previewScale: this.settings.floatingSearchNotePreviewScale,
             onClose: () => this.closeFloatingNotePreviewOnly(),
             onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),

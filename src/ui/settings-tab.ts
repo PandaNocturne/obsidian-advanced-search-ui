@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import AdvancedSearchPlugin from '../main';
 import { t } from '../lang/helpers';
+import { DEFAULT_SETTINGS } from '../settings';
 
 const FLOAT_SEARCH_PLUGIN_URI = 'obsidian://show-plugin?id=float-search';
 
@@ -112,6 +113,18 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW') || 'Default view')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC') || '')
+            .addDropdown(dropdown => dropdown
+                .addOption('preview', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING') || 'Reading')
+                .addOption('source', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING') || 'Editing')
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode)
+                .onChange(async (value: 'preview' | 'source') => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
             .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND') || 'Default bind to floating panel')
             .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC') || '')
             .addToggle(toggle => toggle
@@ -146,7 +159,18 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.floatingSearchNotePreviewScale = rounded;
                     await this.plugin.saveSettings();
                     this.plugin.applyPreviewWindowScale();
-                }));
+                }))
+            .addExtraButton(button =>
+                button
+                    .setIcon('rotate-ccw')
+                    .setTooltip(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET') || 'Reset to default')
+                    .onClick(async () => {
+                        this.plugin.settings.floatingSearchNotePreviewScale = DEFAULT_SETTINGS.floatingSearchNotePreviewScale;
+                        await this.plugin.saveSettings();
+                        this.plugin.applyPreviewWindowScale();
+                        this.display();
+                    })
+            );
 
         const searchGroup = this.createSettingGroup(
             containerEl,

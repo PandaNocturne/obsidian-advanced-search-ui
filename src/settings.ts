@@ -26,11 +26,13 @@ export interface AdvancedSearchSettings {
     floatingSearchNotePreviewDefaultOn: boolean;
     /** Title pin: when true, preview stays visible even when the floating search leaf is not active. */
     floatingSearchNotePreviewDefaultPinned: boolean;
+    /** Default Markdown view for newly opened notes in the preview window. */
+    floatingSearchNotePreviewDefaultMarkdownMode: 'preview' | 'source';
     /** Bind (link) control: dock preview position to the floating search panel edge. */
     floatingSearchNotePreviewDefaultBind: boolean;
     /** Preferred side when docking next to the floating panel. */
     floatingSearchNotePreviewBindSide: 'left' | 'right';
-    /** UI scale for the preview window shell (0.5–1). */
+    /** Content zoom for `.view-content` in the preview window (0.5–1). */
     floatingSearchNotePreviewScale: number;
 }
 
@@ -53,6 +55,7 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     floatingPanelDefaultCompact: true,
     floatingSearchNotePreviewDefaultOn: true,
     floatingSearchNotePreviewDefaultPinned: false,
+    floatingSearchNotePreviewDefaultMarkdownMode: 'preview',
     floatingSearchNotePreviewDefaultBind: true,
     floatingSearchNotePreviewBindSide: 'left',
     floatingSearchNotePreviewScale: 0.6
