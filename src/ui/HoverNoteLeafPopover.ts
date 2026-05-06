@@ -533,6 +533,7 @@ export class HoverNoteLeafPopover {
         this.dragOffsetY = e.clientY - r.top;
         this.headerEl.setPointerCapture(e.pointerId);
         e.preventDefault();
+        e.stopPropagation();
     };
 
     private onResizePointerDown = (e: PointerEvent): void => {

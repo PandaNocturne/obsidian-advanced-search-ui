@@ -10,6 +10,10 @@
 }
 
 .asui-floating-panel-window {
+  /* Electron / Obsidian: exclude custom chrome from the OS window drag region */
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+
   z-index: var(--layer-modal);
   position: fixed;
   display: flex;

@@ -3,6 +3,10 @@
    ========================================================================== */
 
 .asui-preview-window {
+  /* Electron / Obsidian: avoid overlapping native title-bar drag hit-testing */
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+
   /* Same idea as Hover Editor / narrow popovers: shrink note chrome when the shell is narrow */
   container-type: inline-size;
   container-name: asui-pip;

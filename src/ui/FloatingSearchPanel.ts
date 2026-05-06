@@ -39,6 +39,8 @@ export class FloatingSearchPanel {
     private readonly compactBtn: HTMLButtonElement | null;
     private readonly fullscreenBtn: HTMLButtonElement;
     private readonly closeBtn: HTMLButtonElement;
+    /** Header element used for drag pointer capture (Electron title-bar safe). */
+    private readonly panelHeaderEl: HTMLElement;
     private readonly onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: (bounds: FloatingPanelBounds) => void;
     private readonly onCollapsedChange?: (collapsed: boolean) => void;
@@ -50,6 +52,7 @@ export class FloatingSearchPanel {
     private isCompact = false;
     private dragPointerId: number | null = null;
     private resizePointerId: number | null = null;
+    private resizeCaptureEl: HTMLElement | null = null;
     private resizeDirection: ResizeDirection | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
@@ -91,6 +94,7 @@ export class FloatingSearchPanel {
         this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
+        this.panelHeaderEl = headerEl;
         const titleWrapEl = headerEl.createDiv({ cls: 'asui-floating-panel-title-wrap' });
         const titleIconEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title-icon' });
         setIcon(titleIconEl, options.icon ?? 'text-search');
@@ -453,7 +457,13 @@ export class FloatingSearchPanel {
         this.dragOffsetX = event.clientX - rect.left;
         this.dragOffsetY = event.clientY - rect.top;
         this.focus();
+        try {
+            this.panelHeaderEl.setPointerCapture(event.pointerId);
+        } catch {
+            /* noop — capture unsupported or invalid */
+        }
         event.preventDefault();
+        event.stopPropagation();
     };
 
     private onResizePointerDown = (event: PointerEvent) => {
@@ -466,11 +476,17 @@ export class FloatingSearchPanel {
 
         this.isResizing = true;
         this.resizePointerId = event.pointerId;
+        this.resizeCaptureEl = target;
         this.resizeDirection = direction;
         this.resizeStartX = event.clientX;
         this.resizeStartY = event.clientY;
         this.resizeStartBounds = this.getBounds();
         this.focus();
+        try {
+            target.setPointerCapture(event.pointerId);
+        } catch {
+            /* noop */
+        }
         event.preventDefault();
         event.stopPropagation();
     };
@@ -498,10 +514,19 @@ export class FloatingSearchPanel {
 
     private onPointerUp = (event: PointerEvent) => {
         if (this.isResizing && this.resizePointerId === event.pointerId) {
+            const captureEl = this.resizeCaptureEl;
             this.isResizing = false;
             this.resizePointerId = null;
             this.resizeDirection = null;
             this.resizeStartBounds = null;
+            this.resizeCaptureEl = null;
+            if (captureEl) {
+                try {
+                    captureEl.releasePointerCapture(event.pointerId);
+                } catch {
+                    /* noop */
+                }
+            }
             this.emitBoundsChange();
             return;
         }
@@ -509,6 +534,11 @@ export class FloatingSearchPanel {
         if (this.dragPointerId !== event.pointerId) return;
         this.isDragging = false;
         this.dragPointerId = null;
+        try {
+            this.panelHeaderEl.releasePointerCapture(event.pointerId);
+        } catch {
+            /* noop */
+        }
         this.emitBoundsChange();
     };
 }
