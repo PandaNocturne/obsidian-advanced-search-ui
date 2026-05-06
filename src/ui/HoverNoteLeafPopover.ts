@@ -66,6 +66,7 @@ export class HoverNoteLeafPopover {
     private readonly headerEl: HTMLElement;
     private readonly titleTextEl: HTMLElement;
     private readonly modeToggleBtn: HTMLButtonElement;
+    private readonly metadataRevealBtn: HTMLButtonElement;
     private readonly visibilityPinBtn: HTMLButtonElement;
     private readonly bindBtn: HTMLButtonElement;
     private readonly rootSplit: WorkspaceSplit;
@@ -134,6 +135,20 @@ export class HoverNoteLeafPopover {
         });
         const controlsEl = this.headerEl.createDiv({
             cls: 'asui-preview-window-controls asui-floating-panel-controls'
+        });
+
+        const metadataToggleLabel = t('FLOATING_NOTE_METADATA_TOGGLE');
+        this.metadataRevealBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--metadata',
+            attr: { type: 'button', title: metadataToggleLabel, 'aria-label': metadataToggleLabel }
+        });
+        setIcon(this.metadataRevealBtn, 'alert-circle');
+        this.metadataRevealBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const next = !this.rootEl.classList.contains('asui-metadata');
+            this.rootEl.toggleClass('asui-metadata', next);
+            this.metadataRevealBtn.classList.toggle('is-active', next);
         });
 
         this.modeToggleBtn = controlsEl.createEl('button', {

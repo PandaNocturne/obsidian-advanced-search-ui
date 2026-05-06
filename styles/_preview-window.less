@@ -321,16 +321,20 @@ body .asui-preview-window .view-content {
     pointer-events: none;
   }
 
-  /* Metadata / Properties: toggled via root modifier classes from plugin settings */
-  &.asui-preview-metadata-hide-reading .markdown-preview-view .metadata-container {
+  /*
+   * Metadata / Properties：设置项加 `asui-preview-metadata-hide-*`；根节点无 `.asui-metadata` 时按模式隐藏。
+   * 阅读视图默认组合：`.asui-preview-metadata-hide-reading`（设置关闭「阅读下显示属性」时由脚本挂上）。
+   * YAML 控制按钮切换 `.asui-metadata`：有则显示 `.metadata-container`，无则仍受上方 hide-* 约束。
+   */
+  &.asui-preview-metadata-hide-reading:not(.asui-metadata) .markdown-preview-view .metadata-container {
     display: none !important;
   }
 
-  &.asui-preview-metadata-hide-live .markdown-source-view.is-live-preview .metadata-container {
+  &.asui-preview-metadata-hide-live:not(.asui-metadata) .markdown-source-view.is-live-preview .metadata-container {
     display: none !important;
   }
 
-  &.asui-preview-metadata-hide-source .markdown-source-view:not(.is-live-preview) .metadata-container {
+  &.asui-preview-metadata-hide-source:not(.asui-metadata) .markdown-source-view:not(.is-live-preview) .metadata-container {
     display: none !important;
   }
 }
