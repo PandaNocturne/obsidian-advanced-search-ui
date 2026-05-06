@@ -23,6 +23,7 @@ export default {
     "FLOATING_NOTE_EMPTY": "Open a note here from the search results.",
     "FLOATING_NOTE_EDIT": "Edit",
     "FLOATING_NOTE_PREVIEW": "Preview",
+    "FLOATING_NOTE_TOGGLE_READ_EDIT": "Toggle reading / editing mode",
     "FLOATING_NOTE_SAVE": "Save",
     "FLOATING_NOTE_CLOSE": "Close note window",
     "FLOATING_NOTE_BIND": "Dock note window to search panel",

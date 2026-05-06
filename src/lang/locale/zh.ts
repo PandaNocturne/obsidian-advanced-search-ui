@@ -23,6 +23,7 @@ export default {
     "FLOATING_NOTE_EMPTY": "点击搜索结果后在此打开笔记",
     "FLOATING_NOTE_EDIT": "编辑",
     "FLOATING_NOTE_PREVIEW": "阅读",
+    "FLOATING_NOTE_TOGGLE_READ_EDIT": "切换阅读/编辑模式",
     "FLOATING_NOTE_SAVE": "保存",
     "FLOATING_NOTE_CLOSE": "关闭笔记窗口",
     "FLOATING_NOTE_BIND": "绑定到搜索面板",

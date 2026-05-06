@@ -383,10 +383,9 @@ export class HoverNoteLeafPopover {
         if (!show || !md?.file) {
             return;
         }
-        const preview = md.getMode() === 'preview';
-        setIcon(this.modeToggleBtn, preview ? 'book-open' : 'pencil');
-        const label = preview ? t('FLOATING_NOTE_PREVIEW') : t('FLOATING_NOTE_EDIT');
-        this.modeToggleBtn.setAttrs({ 'aria-label': label });
+        const isSource = md.getMode() === 'source';
+        setIcon(this.modeToggleBtn, isSource ? 'pencil' : 'book-open');
+        this.modeToggleBtn.setAttrs({ 'aria-label': t('FLOATING_NOTE_TOGGLE_READ_EDIT') });
     }
 
     private async toggleMarkdownMode(): Promise<void> {
@@ -395,7 +394,7 @@ export class HoverNoteLeafPopover {
         const view = leaf.view;
         if (!(view instanceof MarkdownView) || !view.file || view.file.extension !== 'md') return;
 
-        const next = view.getMode() === 'preview' ? 'source' : 'preview';
+        const next = view.getMode() === 'source' ? 'preview' : 'source';
         await leaf.setViewState({
             type: 'markdown',
             state: { file: view.file.path, mode: next },
