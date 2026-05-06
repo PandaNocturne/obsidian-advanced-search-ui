@@ -1,0 +1,90 @@
+/* ============================================================================
+   Navigation buttons
+   Top-level search actions and their semantic color variants.
+   ========================================================================== */
+
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 10px;
+}
+
+.asui-search-group.is-collapsed:last-of-type+.navigation-buttons {
+  border-top-color: transparent;
+}
+
+.navigation-buttons button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--interactive-normal);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.navigation-buttons button:hover {
+  border-color: var(--text-muted);
+  background-color: var(--interactive-hover);
+}
+
+.search-button {
+  border-color: var(--text-success) !important;
+  color: var(--text-success) !important;
+}
+
+.search-button:hover {
+  border-color: var(--text-success) !important;
+  background-color: var(--text-success) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.graph-button {
+  border-color: var(--interactive-accent) !important;
+  color: var(--interactive-accent) !important;
+}
+
+.graph-button:hover {
+  border-color: var(--interactive-accent) !important;
+  background-color: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.reset-button {
+  border-color: var(--text-error) !important;
+  color: var(--text-error) !important;
+}
+
+.reset-button:hover {
+  border-color: var(--background-modifier-error) !important;
+  background-color: var(--background-modifier-error) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.asui-form-row .asui-add-row {
+  border-color: var(--text-success) !important;
+  color: var(--text-success) !important;
+}
+
+.asui-form-row .asui-add-row:hover {
+  background-color: var(--background-modifier-success) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.asui-form-row .asui-remove-row {
+  border-color: var(--text-error) !important;
+  color: var(--text-error) !important;
+}
+
+.asui-form-row .asui-remove-row:hover {
+  background-color: var(--background-modifier-error) !important;
+  color: var(--text-on-accent) !important;
+}

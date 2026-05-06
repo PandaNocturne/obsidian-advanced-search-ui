@@ -1,0 +1,80 @@
+/* ============================================================================
+   Search row
+   Row layout, drag handle, and insertion indicators for row reordering.
+   ========================================================================== */
+
+.asui-form-row {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+
+.asui-form-row select,
+.asui-form-row .asui-input-group,
+.asui-form-row .asui-input-group input,
+.asui-form-row .asui-input-group .asui-icon-button,
+.asui-form-row .asui-remove-row,
+.asui-form-row .asui-add-row,
+.asui-form-row .asui-toggle-label,
+.asui-form-row .asui-row-drag-handle {
+  box-sizing: border-box;
+  height: 28px !important;
+}
+
+.asui-form-row .asui-row-drag-handle {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  border: none !important;
+  background: transparent !important;
+  cursor: grab;
+  opacity: 0.6;
+}
+
+.asui-form-row.is-draggable .asui-row-drag-handle {
+  display: inline-flex;
+}
+
+.asui-form-row.is-dragging {
+  opacity: 0.55;
+}
+
+.asui-form-row.is-drop-before::before,
+.asui-form-row.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 999px;
+  background-color: var(--interactive-accent);
+}
+
+.asui-form-row.is-drop-before::before {
+  top: -4px;
+}
+
+.asui-form-row.is-drop-after::after {
+  bottom: 4px;
+}
+
+.asui-form-row select {
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: normal;
+}
+
+.asui-form-row:first-child .asui-operator {
+  // display: none;
+}
+
+.asui-form-row input[type="search"] {
+  flex: 1 1 0;
+  min-width: 0;
+  border-width: 1px;
+}

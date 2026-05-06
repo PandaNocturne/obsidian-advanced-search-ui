@@ -1,0 +1,61 @@
+/* ============================================================================
+   Workspace integration
+   Ordering and toggle affordances inside the Obsidian search view.
+   ========================================================================== */
+
+.workspace-leaf-content[data-type="search"] {
+  display: flex;
+  flex-flow: column nowrap;
+  min-height: 0;
+}
+
+.workspace-leaf-content[data-type="search"] .search-row {
+  order: -3;
+  flex: 0 0 auto;
+}
+
+.workspace-leaf-content[data-type="search"] .asui-search-form-container {
+  order: -2;
+  flex: 0 0 auto;
+}
+
+.workspace-leaf-content[data-type="search"] .search-params {
+  order: -1;
+  flex: 0 0 auto;
+}
+
+.workspace-leaf-content[data-type="search"] .search-info-container {
+  order: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-leaf-content[data-type="search"] .search-result-container.mod-global-search,
+.workspace-leaf-content[data-type="search"] .search-result-container,
+.workspace-leaf-content[data-type="search"] .search-results-children {
+  min-height: 0;
+}
+
+.workspace-leaf-content[data-type="search"] .search-result-container.mod-global-search,
+.workspace-leaf-content[data-type="search"] .search-result-container {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.advanced-search-ui-toggle-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.advanced-search-ui-toggle-wrapper .advanced-search-toggle {
+  border-radius: var(--radius-s);
+  transition: all 0.15s ease;
+}
+
+.advanced-search-ui-toggle-wrapper .advanced-search-toggle.is-active {
+  background-color: var(--background-modifier-active-hover);
+  color: var(--icon-color-active);
+}

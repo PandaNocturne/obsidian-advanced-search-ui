@@ -1,0 +1,45 @@
+/* ============================================================================
+   Responsive behavior
+   Container-query scaling for compact search panes.
+   ========================================================================== */
+
+.advanced-search-auto-scale .asui-search-form-container {
+  container-type: inline-size;
+  container-name: searchform;
+}
+
+@container searchform (max-width: 600px) {
+
+  .asui-search-form-container .search-section,
+  .asui-search-form-container .navigation-buttons {
+    zoom: 0.8;
+  }
+
+  .asui-search-form-container .search-row-container {
+    padding: 6px 2px;
+  }
+
+  @container searchform (max-width: 500px) {
+
+    .asui-search-form-container .search-section,
+    .asui-search-form-container .navigation-buttons {
+      zoom: 0.7;
+    }
+
+    .asui-search-form-container .search-row-container {
+      padding: 5px 2px;
+    }
+
+    @container searchform (max-width: 400px) {
+
+      .asui-search-form-container .search-section,
+      .asui-search-form-container .navigation-buttons {
+        zoom: 0.6;
+      }
+
+      .asui-search-form-container .search-row-container {
+        padding: 4px 2px;
+      }
+    }
+  }
+}

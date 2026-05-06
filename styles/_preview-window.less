@@ -1,0 +1,305 @@
+/* ============================================================================
+   Note preview window (PiP) — `asui-preview-window*` only; not `.popover` / Hover Editor
+   ========================================================================== */
+
+.asui-preview-window {
+  /* Same idea as Hover Editor / narrow popovers: shrink note chrome when the shell is narrow */
+  container-type: inline-size;
+  container-name: asui-pip;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  isolation: isolate;
+
+  /*
+   * Full chrome scoped here — many themes target `.asui-floating-panel-*` only inside
+   * `.asui-floating-panel-window`, which hides title row / strips header padding on this shell.
+   */
+  >.asui-preview-window-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    border-radius: 11px 11px 0 0;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: move;
+    user-select: none;
+    position: relative;
+    z-index: 20;
+
+    .asui-preview-window-title-wrap {
+      display: flex !important;
+      flex: 1 1 auto;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+    }
+
+    .asui-preview-window-title-icon {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      color: var(--icon-color);
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .asui-preview-window-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      color: var(--text-normal);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--font-ui-medium);
+      line-height: var(--line-height-tight);
+    }
+
+    .asui-preview-window-controls {
+      display: flex !important;
+      flex: 0 0 auto;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .asui-preview-window-control {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--icon-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+
+      svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2px;
+      }
+    }
+
+    .asui-preview-window-control:hover {
+      background: var(--background-modifier-hover);
+      color: var(--icon-color-hover, var(--text-normal));
+    }
+
+    .asui-preview-window-control:active {
+      transform: scale(0.96);
+    }
+
+    .asui-preview-window-control.is-active {
+      background-color: unset;
+      color: var(--interactive-accent);
+    }
+
+    .asui-preview-window-control--close {
+      width: 30px;
+      height: 30px;
+    }
+
+    .asui-preview-window-control--close:hover {
+      background: var(--background-modifier-error-hover, var(--background-modifier-error));
+      color: var(--text-on-accent);
+    }
+
+    .asui-preview-window-control--close svg {
+      width: 17px;
+      height: 17px;
+    }
+  }
+
+  >.asui-preview-window-header:active {
+    cursor: grabbing;
+  }
+
+  >.asui-preview-window-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    border-radius: 0 0 11px 11px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Reading/edit toggle lives in plugin header; hide leaf tab bar */
+  .view-header {
+    display: none !important;
+  }
+
+  >.asui-preview-window-body>.workspace-split {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  >.asui-preview-window-body .workspace-leaf,
+  >.asui-preview-window-body .workspace-split {
+    min-height: 0;
+  }
+
+  >.asui-preview-window-body .workspace-tabs,
+  >.asui-preview-window-body .workspace-leaf {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+  }
+
+  >.asui-preview-window-body .workspace-leaf-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  >.asui-preview-window-body .workspace-split .view-content {
+    background-color: var(--background-primary);
+  }
+}
+
+body .asui-preview-window .view-content {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.asui-preview-window-resize {
+  position: absolute;
+  z-index: 6;
+
+  &.is-n,
+  &.is-s {
+    left: 8px;
+    right: 8px;
+    height: 8px;
+  }
+
+  &.is-e,
+  &.is-w {
+    top: 8px;
+    bottom: 8px;
+    width: 8px;
+  }
+
+  &.is-n {
+    top: -4px;
+    cursor: ns-resize;
+  }
+
+  &.is-s {
+    bottom: -4px;
+    cursor: ns-resize;
+  }
+
+  &.is-e {
+    right: -4px;
+    cursor: ew-resize;
+  }
+
+  &.is-w {
+    left: -4px;
+    cursor: ew-resize;
+  }
+
+  &.is-ne,
+  &.is-nw,
+  &.is-se,
+  &.is-sw {
+    width: 12px;
+    height: 12px;
+  }
+
+  &.is-ne {
+    top: -4px;
+    right: -4px;
+    cursor: nesw-resize;
+  }
+
+  &.is-nw {
+    top: -4px;
+    left: -4px;
+    cursor: nwse-resize;
+  }
+
+  &.is-se {
+    right: -4px;
+    bottom: -4px;
+    cursor: nwse-resize;
+  }
+
+  &.is-sw {
+    left: -4px;
+    bottom: -4px;
+    cursor: nesw-resize;
+  }
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+// 预览窗口样式优化
+.asui-preview-window {
+  --file-line-width:calc(100% - 16px);
+  .cg-note-toolbar-container {
+    display: none;
+  }
+
+
+  .view-content>.markdown-source-view.mod-cm6>.cm-editor>.cm-scroller {
+    padding: 0px;
+  }
+}
+
+@container asui-pip (max-width: 560px) {
+  .asui-preview-window .view-content {
+    zoom: 0.6;
+  }
+}
