@@ -3,12 +3,6 @@ import { AdvancedSearchCoordinator } from './src/AdvancedSearchCoordinator';
 import type { AdvancedSearchPluginFacade } from './src/plugin/plugin-public-api';
 import type { AdvancedSearchSettings } from './src/settings';
 
-/**
- * Obsidian entry — three responsibilities:
- * 1. Construct and initialize workspace/services (`AdvancedSearchCoordinator`).
- * 2. Register commands and settings UI entry points.
- * 3. Delegate the narrow API consumed by the settings tab (`AdvancedSearchPluginFacade`).
- */
 export default class AdvancedSearchPlugin extends Plugin implements AdvancedSearchPluginFacade {
     private core!: AdvancedSearchCoordinator;
 
