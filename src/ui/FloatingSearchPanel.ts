@@ -99,7 +99,7 @@ export class FloatingSearchPanel {
 
         this.settingsBtn = options.showSettingsButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-settings',
-            attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS'), title: t('OPEN_PLUGIN_SETTINGS') }
+            attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS') }
         });
         if (this.settingsBtn) {
             setIcon(this.settingsBtn, 'settings');
@@ -112,7 +112,7 @@ export class FloatingSearchPanel {
 
         this.pictureInPictureBtn = options.showPictureInPictureButton ? controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-picture-in-picture',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_OPEN_NOTE_WINDOW'), title: t('FLOATING_PANEL_OPEN_NOTE_WINDOW') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_OPEN_NOTE_WINDOW') }
         }) : null;
         if (this.pictureInPictureBtn) {
             const pictureInPictureBtn = this.pictureInPictureBtn;
@@ -127,7 +127,7 @@ export class FloatingSearchPanel {
 
         this.fullscreenBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-fullscreen',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_FULLSCREEN'), title: t('FLOATING_PANEL_FULLSCREEN') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_FULLSCREEN') }
         });
         setIcon(this.fullscreenBtn, 'maximize');
         this.fullscreenBtn.onclick = event => {
@@ -138,7 +138,7 @@ export class FloatingSearchPanel {
 
         this.collapseBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE'), title: t('FLOATING_PANEL_COLLAPSE') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE') }
         });
         setIcon(this.collapseBtn, 'chevrons-down-up');
         this.collapseBtn.onclick = event => {
@@ -149,7 +149,7 @@ export class FloatingSearchPanel {
 
         this.compactBtn = options.showCompactButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-compact',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT'), title: t('FLOATING_PANEL_COMPACT') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT') }
         });
         if (this.compactBtn) {
             setIcon(this.compactBtn, 'hat-glasses');
@@ -162,7 +162,7 @@ export class FloatingSearchPanel {
 
         this.closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-close',
-            attr: { type: 'button', 'aria-label': t('CLOSE_PANEL'), title: t('CLOSE_PANEL') }
+            attr: { type: 'button', 'aria-label': t('CLOSE_PANEL') }
         });
         setIcon(this.closeBtn, 'x');
         this.closeBtn.onclick = event => {

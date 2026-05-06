@@ -116,7 +116,6 @@ export class HoverNoteLeafPopover {
             cls: 'clickable-icon asui-preview-window-visibility-pin asui-floating-panel-title-icon',
             attr: {
                 type: 'button',
-                title: t('FLOATING_NOTE_VISIBILITY_PIN'),
                 'aria-label': t('FLOATING_NOTE_VISIBILITY_PIN')
             }
         });
@@ -140,7 +139,7 @@ export class HoverNoteLeafPopover {
         const metadataToggleLabel = t('FLOATING_NOTE_METADATA_TOGGLE');
         this.metadataRevealBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--metadata',
-            attr: { type: 'button', title: metadataToggleLabel, 'aria-label': metadataToggleLabel }
+            attr: { type: 'button', 'aria-label': metadataToggleLabel }
         });
         setIcon(this.metadataRevealBtn, 'alert-circle');
         this.metadataRevealBtn.addEventListener('click', e => {
@@ -163,7 +162,7 @@ export class HoverNoteLeafPopover {
 
         this.bindBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--bind',
-            attr: { type: 'button', title: t('FLOATING_NOTE_BIND'), 'aria-label': t('FLOATING_NOTE_BIND') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_NOTE_BIND') }
         });
         setIcon(this.bindBtn, 'link');
         this.bindBtn.classList.toggle('is-active', defaultBound);
@@ -178,7 +177,7 @@ export class HoverNoteLeafPopover {
 
         const closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--close asui-floating-panel-close',
-            attr: { type: 'button', title: t('FLOATING_NOTE_CLOSE'), 'aria-label': t('FLOATING_NOTE_CLOSE') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_NOTE_CLOSE') }
         });
         setIcon(closeBtn, 'x');
         closeBtn.addEventListener('click', e => {
@@ -387,7 +386,7 @@ export class HoverNoteLeafPopover {
         const preview = md.getMode() === 'preview';
         setIcon(this.modeToggleBtn, preview ? 'book-open' : 'pencil');
         const label = preview ? t('FLOATING_NOTE_PREVIEW') : t('FLOATING_NOTE_EDIT');
-        this.modeToggleBtn.setAttrs({ title: label, 'aria-label': label });
+        this.modeToggleBtn.setAttrs({ 'aria-label': label });
     }
 
     private async toggleMarkdownMode(): Promise<void> {
