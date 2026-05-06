@@ -18,6 +18,10 @@ type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
     enableExperimentalDragAndDrop?: boolean;
     /** Pre-1.x: treated as default-on when `floatingSearchNotePreviewDefaultOn` was absent */
     floatingSearchNotePreviewEnabled?: boolean;
+    /** Replaced by `floatingSearchNotePreviewYamlHiddenByDefault` */
+    floatingSearchNotePreviewMetadataShowReading?: boolean;
+    floatingSearchNotePreviewMetadataShowLivePreview?: boolean;
+    floatingSearchNotePreviewMetadataShowSource?: boolean;
 };
 
 type WorkspaceWithDetachedLeaf = Plugin['app']['workspace'] & {
@@ -294,6 +298,22 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         ) {
             this.settings.floatingSearchNotePreviewDefaultMarkdownMode = 'preview';
         }
+
+        if (rawSettings.floatingSearchNotePreviewYamlHiddenByDefault === undefined) {
+            const r = rawSettings.floatingSearchNotePreviewMetadataShowReading;
+            const l = rawSettings.floatingSearchNotePreviewMetadataShowLivePreview;
+            const s = rawSettings.floatingSearchNotePreviewMetadataShowSource;
+            if (r === true && l === true && s === true) {
+                this.settings.floatingSearchNotePreviewYamlHiddenByDefault = false;
+            } else {
+                this.settings.floatingSearchNotePreviewYamlHiddenByDefault = true;
+            }
+        }
+
+        const st = this.settings as unknown as Record<string, unknown>;
+        delete st.floatingSearchNotePreviewMetadataShowReading;
+        delete st.floatingSearchNotePreviewMetadataShowLivePreview;
+        delete st.floatingSearchNotePreviewMetadataShowSource;
     }
 
     async saveSettings() {

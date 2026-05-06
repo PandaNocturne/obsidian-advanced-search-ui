@@ -22,27 +22,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
         return containerEl.createDiv({ cls: 'advanced-search-settings-group' });
     }
 
-    /** Collapsible block (`<details>`); omit `open` when `defaultExpanded` is false. */
-    private createCollapsibleSettingGroup(
-        containerEl: HTMLElement,
-        title: string,
-        description: string,
-        defaultExpanded = false
-    ): HTMLElement {
-        const details = containerEl.createEl('details', { cls: 'advanced-search-settings-collapse' });
-        if (defaultExpanded) {
-            details.setAttr('open', 'true');
-        }
-        const summary = details.createEl('summary');
-        const summaryInner = summary.createDiv({ cls: 'asui-settings-collapse-summary-inner' });
-        const heading = summaryInner.createDiv({ cls: 'setting-item setting-item-heading' });
-        const info = heading.createDiv({ cls: 'setting-item-info' });
-        info.createDiv({ cls: 'setting-item-name', text: title });
-        info.createDiv({ cls: 'setting-item-description', text: description });
-
-        return details.createDiv({ cls: 'advanced-search-settings-group' });
-    }
-
     private setRichDescription(setting: Setting, fragments: Array<string | { text: string; href: string }>) {
         const descEl = setting.descEl;
         descEl.empty();
@@ -146,6 +125,17 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT') || 'Hide YAML by default')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewYamlHiddenByDefault)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewYamlHiddenByDefault = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyPreviewMetadataVisibility();
+                }));
+
+        new Setting(previewGroup)
             .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND') || 'Default bind to floating panel')
             .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC') || '')
             .addToggle(toggle => toggle
@@ -192,46 +182,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                         this.display();
                     })
             );
-
-        const previewMetadataGroup = this.createCollapsibleSettingGroup(
-            containerEl,
-            t('SETTING_GROUP_PREVIEW_METADATA') || 'Preview Properties (metadata)',
-            t('SETTING_GROUP_PREVIEW_METADATA_DESC') || 'Controls whether the Obsidian Properties block appears inside the floating preview window.',
-            false
-        );
-
-        new Setting(previewMetadataGroup)
-            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING') || 'Show properties in reading view')
-            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING_DESC') || '')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.floatingSearchNotePreviewMetadataShowReading)
-                .onChange(async (value) => {
-                    this.plugin.settings.floatingSearchNotePreviewMetadataShowReading = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.applyPreviewMetadataVisibility();
-                }));
-
-        new Setting(previewMetadataGroup)
-            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE') || 'Show properties in live preview')
-            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE_DESC') || '')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.floatingSearchNotePreviewMetadataShowLivePreview)
-                .onChange(async (value) => {
-                    this.plugin.settings.floatingSearchNotePreviewMetadataShowLivePreview = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.applyPreviewMetadataVisibility();
-                }));
-
-        new Setting(previewMetadataGroup)
-            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE') || 'Show properties in source mode')
-            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE_DESC') || '')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.floatingSearchNotePreviewMetadataShowSource)
-                .onChange(async (value) => {
-                    this.plugin.settings.floatingSearchNotePreviewMetadataShowSource = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.applyPreviewMetadataVisibility();
-                }));
 
         const searchGroup = this.createSettingGroup(
             containerEl,

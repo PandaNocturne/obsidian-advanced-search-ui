@@ -262,9 +262,10 @@ export class HoverNoteLeafPopover {
     /** Align root modifier classes with plugin settings for `.metadata-container` visibility. */
     syncMetadataVisibilityClasses(): void {
         const settings = (this.plugin as AdvancedSearchPlugin).settings;
-        this.rootEl.toggleClass('asui-preview-metadata-hide-reading', !settings.floatingSearchNotePreviewMetadataShowReading);
-        this.rootEl.toggleClass('asui-preview-metadata-hide-live', !settings.floatingSearchNotePreviewMetadataShowLivePreview);
-        this.rootEl.toggleClass('asui-preview-metadata-hide-source', !settings.floatingSearchNotePreviewMetadataShowSource);
+        const hidden = settings.floatingSearchNotePreviewYamlHiddenByDefault;
+        this.rootEl.toggleClass('asui-preview-metadata-hide-reading', hidden);
+        this.rootEl.toggleClass('asui-preview-metadata-hide-live', hidden);
+        this.rootEl.toggleClass('asui-preview-metadata-hide-source', hidden);
     }
 
     getLeaf(): WorkspaceLeaf | null {

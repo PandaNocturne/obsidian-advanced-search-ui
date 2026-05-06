@@ -41,6 +41,8 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "When enabled, each new preview window opens with the title pin on so the preview stays visible even when the floating search leaf is not active. When off, the preview hides until you focus the floating search or the preview again.",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW": "Default view",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC": "Default Markdown mode when opening a note in the preview window.",
+    "FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT": "Hide YAML by default",
+    "FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT_DESC": "When enabled, the Properties / YAML block is hidden in the preview window for reading, live preview, and source until you show it with the header (alert) button.",
     "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING": "Reading",
     "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING": "Editing",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "Default bind to floating panel",
@@ -52,14 +54,6 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "Preview window scale",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "Sets CSS zoom on the note body (.view-content) inside the preview window, not the outer chrome (0.5 to 1.0).",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "Reset to default scale",
-    "SETTING_GROUP_PREVIEW_METADATA": "Preview Properties (metadata)",
-    "SETTING_GROUP_PREVIEW_METADATA_DESC": "Per-mode visibility of the Properties / YAML block inside the floating note preview window only.",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING": "Show properties in reading view",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING_DESC": "When off, hides `.metadata-container` under `.markdown-preview-view` in the preview window.",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE": "Show properties in live preview",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE_DESC": "When off, hides `.metadata-container` when the note is in live preview (source + preview hybrid).",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE": "Show properties in source mode",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE_DESC": "When off, hides `.metadata-container` in plain source (non-live-preview) editing.",
 
     // Settings groups
     "SETTING_GROUP_SEARCH": "Search behavior",

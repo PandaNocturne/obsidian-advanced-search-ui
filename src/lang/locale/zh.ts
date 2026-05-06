@@ -41,6 +41,8 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC": "开启后，新建的预览小窗会默认点亮标题栏图钉，在未切换焦点时也会保持显示。关闭时，仅当悬浮搜索或预览小窗处于前台激活时才显示，否则自动隐藏。",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW": "默认视图",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC": "在预览小窗中打开 Markdown 笔记时使用的默认模式。",
+    "FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT": "默认隐藏 YAML",
+    "FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT_DESC": "开启后，预览小窗在阅读、实时预览与源码模式下默认隐藏属性（Properties）区域；可用标题栏圆形感叹号按钮临时显示。",
     "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING": "阅读",
     "FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING": "编辑",
     "FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND": "默认绑定悬浮面板",
@@ -52,14 +54,6 @@ export default {
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE": "预览窗口缩放等级",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC": "仅缩放预览窗内笔记正文（view-content 的 zoom），不包含标题栏等外壳（0.5 至 1.0）。",
     "FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET": "恢复默认缩放",
-    "SETTING_GROUP_PREVIEW_METADATA": "预览窗口属性（metadata）",
-    "SETTING_GROUP_PREVIEW_METADATA_DESC": "仅作用于悬浮预览小窗内，按视图模式控制 Obsidian 属性（YAML / Properties）区域是否显示。",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING": "阅读模式下显示属性",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_READING_DESC": "关闭时隐藏阅读视图（markdown-preview-view）下的 `.metadata-container`。",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE": "实时预览下显示属性",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_LIVE_DESC": "关闭时隐藏实时预览（`.markdown-source-view.is-live-preview`）下的 `.metadata-container`。",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE": "源码模式下显示属性",
-    "FLOATING_SEARCH_NOTE_PREVIEW_METADATA_SOURCE_DESC": "关闭时隐藏纯源码编辑（非实时预览的 markdown-source-view）下的 `.metadata-container`。",
     
     // Settings groups
     "SETTING_GROUP_SEARCH": "导入与执行",

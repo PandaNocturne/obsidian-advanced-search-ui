@@ -322,9 +322,8 @@ body .asui-preview-window .view-content {
   }
 
   /*
-   * Metadata / Properties：设置项加 `asui-preview-metadata-hide-*`；根节点无 `.asui-metadata` 时按模式隐藏。
-   * 阅读视图默认组合：`.asui-preview-metadata-hide-reading`（设置关闭「阅读下显示属性」时由脚本挂上）。
-   * YAML 控制按钮切换 `.asui-metadata`：有则显示 `.metadata-container`，无则仍受上方 hide-* 约束。
+   * Metadata / Properties：开启「默认隐藏 YAML」时脚本为根节点加上 `asui-preview-metadata-hide-*`；
+   * 根节点无 `.asui-metadata` 时按模式隐藏；标题栏按钮切换 `.asui-metadata` 以临时显示。
    */
   &.asui-preview-metadata-hide-reading:not(.asui-metadata) .markdown-preview-view .metadata-container {
     display: none !important;
