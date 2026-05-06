@@ -15,7 +15,6 @@ export default {
     "FAILED_TO_COPY": "复制失败",
     "GROUP_QUERY_PASTED": "已粘贴分组查询",
     "OPEN_PLUGIN_SETTINGS": "打开插件设置",
-    "FLOATING_PANEL_FULLSCREEN": "全屏显示",
     "FLOATING_PANEL_COLLAPSE": "折叠面板",
     "FLOATING_PANEL_COMPACT": "简化控件",
     "FLOATING_PANEL_OPEN_NOTE_WINDOW": "打开小窗口",
