@@ -113,18 +113,6 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(previewGroup)
-            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW') || 'Default view')
-            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC') || '')
-            .addDropdown(dropdown => dropdown
-                .addOption('preview', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING') || 'Reading')
-                .addOption('source', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING') || 'Editing')
-                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode)
-                .onChange(async (value: 'preview' | 'source') => {
-                    this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(previewGroup)
             .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT') || 'Hide YAML by default')
             .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT_DESC') || '')
             .addToggle(toggle => toggle
@@ -142,6 +130,18 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultBind)
                 .onChange(async (value) => {
                     this.plugin.settings.floatingSearchNotePreviewDefaultBind = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW') || 'Default view')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC') || '')
+            .addDropdown(dropdown => dropdown
+                .addOption('preview', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING') || 'Reading')
+                .addOption('source', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING') || 'Editing')
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode)
+                .onChange(async (value: 'preview' | 'source') => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode = value;
                     await this.plugin.saveSettings();
                 }));
 
