@@ -4,17 +4,21 @@ import type { FloatingPanelBounds } from '../settings';
 
 export interface FloatingSearchPanelOptions {
     title: string;
+    icon?: string;
     bounds?: FloatingPanelBounds | null;
     mountEl?: HTMLElement;
+    showSettingsButton?: boolean;
+    showCompactButton?: boolean;
+    showPictureInPictureButton?: boolean;
     onClose: () => void;
     onOpenSettings?: () => void;
     onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     onResize?: (bounds: FloatingPanelBounds) => void;
     onCollapsedChange?: (collapsed: boolean) => void;
     onCompactChange?: (compact: boolean) => void;
+    onPictureInPictureToggle?: (active: boolean) => void;
 }
 
-type PanelStretchMode = 'normal' | 'fullscreen';
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 const RESIZE_DIRECTIONS: ResizeDirection[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
@@ -28,21 +32,25 @@ export class FloatingSearchPanel {
     public readonly titleEl: HTMLElement;
     public readonly contentEl: HTMLElement;
 
-    private readonly settingsBtn: HTMLButtonElement;
+    private readonly settingsBtn: HTMLButtonElement | null;
+    private readonly pictureInPictureBtn: HTMLButtonElement | null;
     private readonly collapseBtn: HTMLButtonElement;
-    private readonly compactBtn: HTMLButtonElement;
-    private readonly fullscreenBtn: HTMLButtonElement;
+    private readonly compactBtn: HTMLButtonElement | null;
     private readonly closeBtn: HTMLButtonElement;
+    /** Header element used for drag pointer capture (Electron title-bar safe). */
+    private readonly panelHeaderEl: HTMLElement;
     private readonly onBoundsChange?: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: (bounds: FloatingPanelBounds) => void;
     private readonly onCollapsedChange?: (collapsed: boolean) => void;
     private readonly onCompactChange?: (compact: boolean) => void;
+    private readonly onPictureInPictureToggle?: (active: boolean) => void;
     private isDragging = false;
     private isResizing = false;
     private isCollapsed = false;
     private isCompact = false;
     private dragPointerId: number | null = null;
     private resizePointerId: number | null = null;
+    private resizeCaptureEl: HTMLElement | null = null;
     private resizeDirection: ResizeDirection | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
@@ -51,25 +59,24 @@ export class FloatingSearchPanel {
     private resizeStartBounds: FloatingPanelBounds | null = null;
     private resizeObserver: ResizeObserver | null = null;
     private expandedHeight: number | null = null;
-    private stretchMode: PanelStretchMode = 'normal';
-    private restoredBounds: FloatingPanelBounds | null = null;
 
     constructor(options: FloatingSearchPanelOptions) {
         this.onBoundsChange = options.onBoundsChange;
         this.onResize = options.onResize;
         this.onCollapsedChange = options.onCollapsedChange;
         this.onCompactChange = options.onCompactChange;
-        const mountEl = options.mountEl ?? document.body;
+        this.onPictureInPictureToggle = options.onPictureInPictureToggle;
+        const mountEl = options.mountEl ?? activeDocument.body;
         this.rootEl = mountEl.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
 
-        const defaultWidth = Math.min(720, window.innerWidth - 48);
-        const defaultHeight = Math.min(560, window.innerHeight - 48);
+        const defaultWidth = Math.min(720, activeWindow.innerWidth - 48);
+        const defaultHeight = Math.min(560, activeWindow.innerHeight - 48);
         const bounds = options.bounds;
-        const initialWidth = bounds ? Math.min(bounds.width, window.innerWidth - VIEWPORT_MARGIN) : defaultWidth;
-        const initialHeight = bounds ? Math.min(bounds.height, window.innerHeight - VIEWPORT_MARGIN) : defaultHeight;
-        const initialLeft = bounds ? bounds.left : Math.max(24, Math.round((window.innerWidth - initialWidth) / 2));
-        const initialTop = bounds ? bounds.top : Math.max(24, Math.round((window.innerHeight - initialHeight) / 2));
+        const initialWidth = bounds ? Math.min(bounds.width, activeWindow.innerWidth - VIEWPORT_MARGIN) : defaultWidth;
+        const initialHeight = bounds ? Math.min(bounds.height, activeWindow.innerHeight - VIEWPORT_MARGIN) : defaultHeight;
+        const initialLeft = bounds ? bounds.left : Math.max(0, Math.round((activeWindow.innerWidth - initialWidth) / 2));
+        const initialTop = bounds ? bounds.top : Math.max(0, Math.round((activeWindow.innerHeight - initialHeight) / 2));
 
         this.applyBounds(
             {
@@ -83,59 +90,68 @@ export class FloatingSearchPanel {
         this.expandedHeight = this.windowEl.offsetHeight;
 
         const headerEl = this.windowEl.createDiv({ cls: 'asui-floating-panel-header' });
+        this.panelHeaderEl = headerEl;
         const titleWrapEl = headerEl.createDiv({ cls: 'asui-floating-panel-title-wrap' });
         const titleIconEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title-icon' });
-        setIcon(titleIconEl, 'text-search');
+        setIcon(titleIconEl, options.icon ?? 'text-search');
         this.titleEl = titleWrapEl.createDiv({ cls: 'asui-floating-panel-title', text: options.title });
         const controlsEl = headerEl.createDiv({ cls: 'asui-floating-panel-controls' });
 
-        this.settingsBtn = controlsEl.createEl('button', {
+        this.settingsBtn = options.showSettingsButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-settings',
-            attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS'), title: t('OPEN_PLUGIN_SETTINGS') }
+            attr: { type: 'button', 'aria-label': t('OPEN_PLUGIN_SETTINGS') }
         });
-        setIcon(this.settingsBtn, 'settings');
-        this.settingsBtn.onclick = event => {
-            event.preventDefault();
-            event.stopPropagation();
-            options.onOpenSettings?.();
-        };
+        if (this.settingsBtn) {
+            setIcon(this.settingsBtn, 'settings');
+            this.settingsBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                options.onOpenSettings?.();
+            };
+        }
 
-        this.fullscreenBtn = controlsEl.createEl('button', {
-            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-fullscreen',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_FULLSCREEN'), title: t('FLOATING_PANEL_FULLSCREEN') }
-        });
-        setIcon(this.fullscreenBtn, 'maximize');
-        this.fullscreenBtn.onclick = event => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggleStretchMode('fullscreen');
-        };
+        this.pictureInPictureBtn = options.showPictureInPictureButton ? controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-picture-in-picture',
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_OPEN_NOTE_WINDOW') }
+        }) : null;
+        if (this.pictureInPictureBtn) {
+            const pictureInPictureBtn = this.pictureInPictureBtn;
+            setIcon(pictureInPictureBtn, 'picture-in-picture-2');
+            pictureInPictureBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const nextActive = !pictureInPictureBtn.classList.contains('is-active');
+                this.setPictureInPictureActive(nextActive, true);
+            };
+        }
 
         this.collapseBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-collapse',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE'), title: t('FLOATING_PANEL_COLLAPSE') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COLLAPSE') }
         });
-        setIcon(this.collapseBtn, 'chevrons-down-up');
+        this.syncCollapseButtonUi();
         this.collapseBtn.onclick = event => {
             event.preventDefault();
             event.stopPropagation();
             this.setCollapsed(!this.isCollapsed);
         };
 
-        this.compactBtn = controlsEl.createEl('button', {
+        this.compactBtn = options.showCompactButton === false ? null : controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-compact',
-            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT'), title: t('FLOATING_PANEL_COMPACT') }
+            attr: { type: 'button', 'aria-label': t('FLOATING_PANEL_COMPACT') }
         });
-        setIcon(this.compactBtn, 'hat-glasses');
-        this.compactBtn.onclick = event => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.setCompact(!this.isCompact);
-        };
+        if (this.compactBtn) {
+            setIcon(this.compactBtn, 'hat-glasses');
+            this.compactBtn.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.setCompact(!this.isCompact);
+            };
+        }
 
         this.closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-floating-panel-control asui-floating-panel-close',
-            attr: { type: 'button', 'aria-label': t('CLOSE_PANEL'), title: t('CLOSE_PANEL') }
+            attr: { type: 'button', 'aria-label': t('CLOSE_PANEL') }
         });
         setIcon(this.closeBtn, 'x');
         this.closeBtn.onclick = event => {
@@ -148,12 +164,11 @@ export class FloatingSearchPanel {
         this.createResizeHandles();
 
         headerEl.addEventListener('pointerdown', this.onPointerDown);
-        window.addEventListener('pointermove', this.onPointerMove);
-        window.addEventListener('pointerup', this.onPointerUp);
-        window.addEventListener('pointercancel', this.onPointerUp);
+        activeWindow.addEventListener('pointermove', this.onPointerMove);
+        activeWindow.addEventListener('pointerup', this.onPointerUp);
+        activeWindow.addEventListener('pointercancel', this.onPointerUp);
         this.resizeObserver = new ResizeObserver(() => this.emitResize());
         this.resizeObserver.observe(this.windowEl);
-        this.updateStretchControls();
     }
 
     public focus() {
@@ -170,24 +185,34 @@ export class FloatingSearchPanel {
     }
 
     public getPersistedBounds(): FloatingPanelBounds {
-        return this.stretchMode === 'fullscreen'
-            ? { ...(this.restoredBounds ?? this.getBounds()) }
-            : this.getBounds();
+        return this.getBounds();
     }
 
     public destroy() {
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
-        window.removeEventListener('pointermove', this.onPointerMove);
-        window.removeEventListener('pointerup', this.onPointerUp);
-        window.removeEventListener('pointercancel', this.onPointerUp);
+        activeWindow.removeEventListener('pointermove', this.onPointerMove);
+        activeWindow.removeEventListener('pointerup', this.onPointerUp);
+        activeWindow.removeEventListener('pointercancel', this.onPointerUp);
         this.rootEl.remove();
+    }
+
+    public setPictureInPictureActive(active: boolean, notify = true) {
+        this.pictureInPictureBtn?.classList.toggle('is-active', active);
+        if (notify) {
+            this.onPictureInPictureToggle?.(active);
+        }
+    }
+
+    public setBounds(bounds: FloatingPanelBounds) {
+        this.applyBounds(bounds, false);
+        this.emitResize();
     }
 
     public setCompact(compact: boolean) {
         this.isCompact = compact;
         this.windowEl.classList.toggle('is-compact', compact);
-        this.compactBtn.classList.toggle('is-active', compact);
+        this.compactBtn?.classList.toggle('is-active', compact);
         this.onCompactChange?.(compact);
         this.emitResize();
     }
@@ -202,19 +227,24 @@ export class FloatingSearchPanel {
         this.isCollapsed = collapsed;
         this.windowEl.classList.toggle('is-collapsed', collapsed);
         this.collapseBtn.classList.toggle('is-active', collapsed);
+        this.syncCollapseButtonUi();
 
         if (collapsed) {
             const headerHeight = this.windowEl.querySelector('.asui-floating-panel-header')?.clientHeight ?? 48;
             this.windowEl.style.height = `${headerHeight}px`;
-        } else if (this.stretchMode === 'fullscreen') {
-            this.applyStretchBounds();
-            return;
         } else if (this.expandedHeight) {
             this.windowEl.style.height = `${this.expandedHeight}px`;
         }
 
         this.onCollapsedChange?.(collapsed);
         this.emitResize();
+    }
+
+    private syncCollapseButtonUi(): void {
+        setIcon(this.collapseBtn, this.isCollapsed ? 'chevrons-up-down' : 'chevrons-down-up');
+        this.collapseBtn.setAttrs({
+            'aria-label': this.isCollapsed ? t('FLOATING_PANEL_EXPAND') : t('FLOATING_PANEL_COLLAPSE')
+        });
     }
 
     private createResizeHandles() {
@@ -227,81 +257,13 @@ export class FloatingSearchPanel {
         }
     }
 
-    private toggleStretchMode(nextMode: Exclude<PanelStretchMode, 'normal'>) {
-        const mode = this.stretchMode === nextMode ? 'normal' : nextMode;
-        this.setStretchMode(mode);
-    }
-
-    private setStretchMode(mode: PanelStretchMode) {
-        if (this.stretchMode === mode) return;
-
-        if (mode === 'normal') {
-            this.restoreBounds();
-        } else {
-            this.captureRestoreBounds();
-            this.applyStretchBounds();
-        }
-
-        this.stretchMode = mode;
-        this.windowEl.classList.toggle('is-fullscreen', mode === 'fullscreen');
-        this.updateStretchControls();
-        this.emitResize();
-    }
-
-    private captureRestoreBounds() {
-        if (this.stretchMode !== 'normal') return;
-        this.restoredBounds = this.getBounds();
-    }
-
-    private restoreBounds() {
-        const bounds = this.restoredBounds;
-        if (!bounds) return;
-        this.applyBounds(bounds, false);
-        this.restoredBounds = null;
-    }
-
-    private getTopSafeInset() {
-        const appContainerCandidate = document.body.querySelector('.app-container, .workspace-split');
-        const appContainerEl = appContainerCandidate instanceof HTMLElement ? appContainerCandidate : null;
-        const headerCandidate = this.windowEl.querySelector('.asui-floating-panel-header');
-        const headerEl = headerCandidate instanceof HTMLElement ? headerCandidate : null;
-        const titlebarHeight = Math.max(0, appContainerEl?.offsetTop ?? 0);
-        const headerHeight = headerEl?.offsetHeight ?? 40;
-        const headerBuffer = Math.max(12, Math.ceil(headerHeight));
-        return titlebarHeight + headerBuffer + 10;
-    }
-
-    private applyStretchBounds() {
-        const horizontalMargin = (parseFloat(getComputedStyle(document.body).getPropertyValue('--ribbon-width')) || 0) + 10;
-        const bottomMargin = 10;
-        const topSafeInset = this.getTopSafeInset();
-        const fullWidth = Math.max(MIN_PANEL_WIDTH, window.innerWidth - horizontalMargin * 2);
-        const fullHeight = Math.max(MIN_PANEL_HEIGHT, window.innerHeight - topSafeInset - bottomMargin);
-
-        this.applyBounds(
-            {
-                left: horizontalMargin,
-                top: topSafeInset,
-                width: fullWidth,
-                height: fullHeight
-            },
-            false
-        );
-    }
-
-    private updateStretchControls() {
-        this.fullscreenBtn.classList.toggle('is-active', this.stretchMode === 'fullscreen');
-        setIcon(this.fullscreenBtn, this.stretchMode === 'fullscreen' ? 'minimize' : 'maximize');
-    }
-
     private applyBounds(bounds: FloatingPanelBounds, emit = true) {
-        const width = Math.max(MIN_PANEL_WIDTH, Math.min(bounds.width, window.innerWidth - VIEWPORT_MARGIN));
-        const height = Math.max(MIN_PANEL_HEIGHT, Math.min(bounds.height, window.innerHeight - VIEWPORT_MARGIN));
-        const topSafeInset = this.getTopSafeInset();
-        const maxLeft = Math.max(0, window.innerWidth - width);
-        const maxTop = Math.max(topSafeInset, window.innerHeight - height);
+        const width = Math.max(MIN_PANEL_WIDTH, Math.min(bounds.width, activeWindow.innerWidth - VIEWPORT_MARGIN));
+        const height = Math.max(MIN_PANEL_HEIGHT, Math.min(bounds.height, activeWindow.innerHeight - VIEWPORT_MARGIN));
+        const maxLeft = Math.max(0, activeWindow.innerWidth - width);
+        const maxTop = Math.max(0, activeWindow.innerHeight - height);
         const left = Math.min(maxLeft, Math.max(0, bounds.left));
-        const top = Math.min(maxTop, Math.max(topSafeInset, bounds.top));
+        const top = Math.min(maxTop, Math.max(0, bounds.top));
 
         this.windowEl.style.width = `${width}px`;
         this.windowEl.style.height = `${height}px`;
@@ -318,9 +280,8 @@ export class FloatingSearchPanel {
 
         const deltaX = event.clientX - this.resizeStartX;
         const deltaY = event.clientY - this.resizeStartY;
-        const topSafeInset = this.getTopSafeInset();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
+        const viewportWidth = activeWindow.innerWidth;
+        const viewportHeight = activeWindow.innerHeight;
 
         let left = this.resizeStartBounds.left;
         let top = this.resizeStartBounds.top;
@@ -359,9 +320,9 @@ export class FloatingSearchPanel {
                 height = MIN_PANEL_HEIGHT;
             }
 
-            if (top < topSafeInset) {
-                height -= topSafeInset - top;
-                top = topSafeInset;
+            if (top < 0) {
+                height += top;
+                top = 0;
             }
         }
 
@@ -381,7 +342,7 @@ export class FloatingSearchPanel {
         }
 
         left = Math.max(0, Math.min(left, viewportWidth - width));
-        top = Math.max(topSafeInset, Math.min(top, viewportHeight - height));
+        top = Math.max(0, Math.min(top, viewportHeight - height));
 
         width = Math.max(MIN_PANEL_WIDTH, Math.min(width, viewportWidth - left));
         height = Math.max(MIN_PANEL_HEIGHT, Math.min(height, viewportHeight - top));
@@ -390,15 +351,12 @@ export class FloatingSearchPanel {
     }
 
     private emitBoundsChange() {
-        if (this.stretchMode === 'fullscreen') return;
         this.onBoundsChange?.(this.getBounds());
     }
 
     private emitResize() {
         const bounds = this.getBounds();
-        if (this.stretchMode !== 'fullscreen') {
-            this.onBoundsChange?.(bounds);
-        }
+        this.onBoundsChange?.(bounds);
         this.onResize?.(bounds);
     }
 
@@ -406,7 +364,6 @@ export class FloatingSearchPanel {
         if (!(event.target instanceof HTMLElement)) return;
         if (event.target.closest('button')) return;
         if (event.target.closest('.asui-floating-panel-resize-handle')) return;
-        if (this.stretchMode === 'fullscreen') return;
 
         const rect = this.windowEl.getBoundingClientRect();
         this.isDragging = true;
@@ -414,24 +371,36 @@ export class FloatingSearchPanel {
         this.dragOffsetX = event.clientX - rect.left;
         this.dragOffsetY = event.clientY - rect.top;
         this.focus();
+        try {
+            this.panelHeaderEl.setPointerCapture(event.pointerId);
+        } catch {
+            /* noop — capture unsupported or invalid */
+        }
         event.preventDefault();
+        event.stopPropagation();
     };
 
     private onResizePointerDown = (event: PointerEvent) => {
         const target = event.currentTarget;
         if (!(target instanceof HTMLElement)) return;
-        if (this.stretchMode === 'fullscreen' || this.isCollapsed) return;
+        if (this.isCollapsed) return;
 
         const direction = target.dataset.direction as ResizeDirection | undefined;
         if (!direction) return;
 
         this.isResizing = true;
         this.resizePointerId = event.pointerId;
+        this.resizeCaptureEl = target;
         this.resizeDirection = direction;
         this.resizeStartX = event.clientX;
         this.resizeStartY = event.clientY;
         this.resizeStartBounds = this.getBounds();
         this.focus();
+        try {
+            target.setPointerCapture(event.pointerId);
+        } catch {
+            /* noop */
+        }
         event.preventDefault();
         event.stopPropagation();
     };
@@ -446,11 +415,10 @@ export class FloatingSearchPanel {
 
         if (!this.isDragging || this.dragPointerId !== event.pointerId) return;
 
-        const topSafeInset = this.getTopSafeInset();
-        const maxLeft = Math.max(0, window.innerWidth - this.windowEl.offsetWidth);
-        const maxTop = Math.max(topSafeInset, window.innerHeight - this.windowEl.offsetHeight);
+        const maxLeft = Math.max(0, activeWindow.innerWidth - this.windowEl.offsetWidth);
+        const maxTop = Math.max(0, activeWindow.innerHeight - this.windowEl.offsetHeight);
         const nextLeft = Math.min(maxLeft, Math.max(0, event.clientX - this.dragOffsetX));
-        const nextTop = Math.min(maxTop, Math.max(topSafeInset, event.clientY - this.dragOffsetY));
+        const nextTop = Math.min(maxTop, Math.max(0, event.clientY - this.dragOffsetY));
 
         this.windowEl.style.left = `${nextLeft}px`;
         this.windowEl.style.top = `${nextTop}px`;
@@ -459,10 +427,19 @@ export class FloatingSearchPanel {
 
     private onPointerUp = (event: PointerEvent) => {
         if (this.isResizing && this.resizePointerId === event.pointerId) {
+            const captureEl = this.resizeCaptureEl;
             this.isResizing = false;
             this.resizePointerId = null;
             this.resizeDirection = null;
             this.resizeStartBounds = null;
+            this.resizeCaptureEl = null;
+            if (captureEl) {
+                try {
+                    captureEl.releasePointerCapture(event.pointerId);
+                } catch {
+                    /* noop */
+                }
+            }
             this.emitBoundsChange();
             return;
         }
@@ -470,6 +447,11 @@ export class FloatingSearchPanel {
         if (this.dragPointerId !== event.pointerId) return;
         this.isDragging = false;
         this.dragPointerId = null;
+        try {
+            this.panelHeaderEl.releasePointerCapture(event.pointerId);
+        } catch {
+            /* noop */
+        }
         this.emitBoundsChange();
     };
 }

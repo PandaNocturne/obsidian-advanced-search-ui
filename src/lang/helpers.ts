@@ -1,3 +1,4 @@
+import { getLanguage } from "obsidian";
 import en from "./locale/en";
 import zh from "./locale/zh";
 
@@ -29,8 +30,9 @@ function normalizeLocale(value: unknown): string | null {
 }
 
 function getCurrentLocale(): string {
-  const globalApp = (globalThis as { app?: AppWithLocale }).app;
+  const globalApp = (activeWindow as unknown as { app?: AppWithLocale }).app;
   const configCandidates = [
+    getLanguage(),
     globalApp?.vault?.getConfig?.("locale"),
     globalApp?.vault?.getConfig?.("lang"),
     globalApp?.vault?.config?.locale,
@@ -41,9 +43,9 @@ function getCurrentLocale(): string {
     globalApp?.language,
     globalApp?.loadLocalStorage?.("language"),
     globalApp?.loadLocalStorage?.("locale"),
-    globalThis.localStorage?.getItem("language"),
-    globalThis.localStorage?.getItem("locale"),
-    globalThis.navigator?.language,
+    activeWindow.localStorage?.getItem("language"),
+    activeWindow.localStorage?.getItem("locale"),
+    activeWindow.navigator?.language,
   ];
 
   for (const candidate of configCandidates) {

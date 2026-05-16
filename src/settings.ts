@@ -20,7 +20,25 @@ export interface AdvancedSearchSettings {
     enableExperimentalRowDragAndDrop: boolean;
     importMode: 'append' | 'replace';
     floatingPanelBounds: FloatingPanelBounds | null;
+    floatingNotePanelBounds: FloatingPanelBounds | null;
     floatingPanelDefaultCompact: boolean;
+    /** When true, opening the floating search panel starts with note preview (PiP) mode on. */
+    floatingSearchNotePreviewDefaultOn: boolean;
+    /** Title pin: when true, preview stays visible even when the floating search leaf is not active. */
+    floatingSearchNotePreviewDefaultPinned: boolean;
+    /** Default Markdown view for newly opened notes in the preview window. */
+    floatingSearchNotePreviewDefaultMarkdownMode: 'preview' | 'source';
+    /** Bind (link) control: dock preview position to the floating search panel edge. */
+    floatingSearchNotePreviewDefaultBind: boolean;
+    /** Preferred side when docking next to the floating panel. */
+    floatingSearchNotePreviewBindSide: 'left' | 'right';
+    /** Content zoom for `.view-content` in the preview window (0.5–1). */
+    floatingSearchNotePreviewScale: number;
+    /**
+     * When true, preview window hides `.metadata-container` in all Markdown modes until the user
+     * toggles `.asui-metadata` via the header button (see `_preview-window.less`).
+     */
+    floatingSearchNotePreviewYamlHiddenByDefault: boolean;
 }
 
 export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
@@ -38,5 +56,13 @@ export const DEFAULT_SETTINGS: AdvancedSearchSettings = {
     enableExperimentalRowDragAndDrop: false,
     importMode: 'append',
     floatingPanelBounds: null,
-    floatingPanelDefaultCompact: true
+    floatingNotePanelBounds: null,
+    floatingPanelDefaultCompact: true,
+    floatingSearchNotePreviewDefaultOn: true,
+    floatingSearchNotePreviewDefaultPinned: false,
+    floatingSearchNotePreviewDefaultMarkdownMode: 'preview',
+    floatingSearchNotePreviewDefaultBind: true,
+    floatingSearchNotePreviewBindSide: 'left',
+    floatingSearchNotePreviewScale: 0.6,
+    floatingSearchNotePreviewYamlHiddenByDefault: true
 };

@@ -1,9 +1,23 @@
-import { Menu, Notice, Plugin, Workspace, WorkspaceLeaf, setIcon } from 'obsidian';
-import { around } from 'monkey-around';
+import type { Plugin } from 'obsidian';
+import { Menu, Notice, TFile, WorkspaceLeaf, setIcon } from 'obsidian';
 import { t } from './lang/helpers';
-import { AdvancedSearchSettings, DEFAULT_SETTINGS, FloatingPanelBounds } from './settings';
+import { AdvancedSearchSettings, FloatingPanelBounds } from './settings';
+import { migrateLegacyAdvancedSearchSettings } from './plugin/migrate-legacy-settings';
+import { removeDetachedSearchUiFromDocument } from './plugin/search-form-dom';
+import {
+    installFloatingResultOpenRoutingPatches,
+    installWorkspaceSearchRoutingPatches
+} from './plugin/workspace-routing-patches';
+import type {
+    AppWithInternalSettings,
+    LegacyAdvancedSearchSettings,
+    WorkspaceEnsureSideLeafOptions,
+    WorkspaceWithDetachedLeaf
+} from './plugin/plugin-types';
+import type { AdvancedSearchPluginFacade } from './plugin/plugin-public-api';
 import { AdvancedSearchSettingTab } from './ui/settings-tab';
 import { FloatingSearchPanel } from './ui/FloatingSearchPanel';
+import { HoverNoteLeafPopover } from './ui/HoverNoteLeafPopover';
 import { buildToggleContextMenu } from './ui/ToggleContextMenu';
 import { SearchRow } from './components/SearchRow';
 import { SearchGroup, SearchGroupData, SearchGroupDelegate } from './components/SearchGroup';
@@ -13,37 +27,12 @@ import { SearchImportService } from './services/SearchImportService';
 import { GraphColorGroupService } from './services/GraphColorGroupService';
 import { QueryParser } from './utils/QueryParser';
 
-type LegacyAdvancedSearchSettings = Partial<AdvancedSearchSettings> & {
-    enableExperimentalDragAndDrop?: boolean;
-};
+export class AdvancedSearchCoordinator implements SearchGroupDelegate {
+    public settings!: AdvancedSearchSettings;
 
-type WorkspaceWithDetachedLeaf = Plugin['app']['workspace'] & {
-    createDetachedLeaf?: () => WorkspaceLeaf;
-    createLeafInParent?: (parent: unknown, index?: number) => WorkspaceLeaf;
-    floatingSplit?: unknown;
-};
-
-type WorkspaceEnsureSideLeafOptions = {
-    active?: boolean;
-    split?: boolean;
-    reveal?: boolean;
-    state?: Record<string, unknown>;
-};
-
-type WorkspaceSetActiveLeafParams = {
-    focus?: boolean;
-};
-
-type WorkspaceSetActiveLeafArgs =
-    | [params?: WorkspaceSetActiveLeafParams]
-    | [pushHistory: boolean, focus: boolean];
-
-export default class AdvancedSearchPlugin extends Plugin implements SearchGroupDelegate {
-    public settings: AdvancedSearchSettings;
-
-    private workspaceEnsureSideLeafUninstall: (() => void) | null = null;
-    private workspaceSetActiveLeafUninstall: (() => void) | null = null;
-    private workspaceRevealLeafUninstall: (() => void) | null = null;
+    private readonly pluginHost: Plugin;
+    private workspaceSearchRoutingDispose: (() => void) | null = null;
+    private floatingResultRoutingDispose: (() => void) | null = null;
     private containerGroups: Map<HTMLElement, SearchGroup[]> = new Map();
     private injectionInterval: number | null = null;
     private observer: MutationObserver | null = null;
@@ -52,72 +41,179 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private rowDropGroup: SearchGroup | null = null;
     private rowDropIndex: number | null = null;
     private floatingSearchPanel: FloatingSearchPanel | null = null;
+    private floatingNotePopover: HoverNoteLeafPopover | null = null;
+    /** PiP / small-window mode: armed from the toolbar; preview DOM is created only when opening a file from results. */
+    private floatingNotePipMode = false;
+    /** When false, the note window keeps its position instead of following the floating search panel. */
+    /** Dock preview next to the floating search panel (link / bind). */
+    private floatingNoteDockedToPanel = true;
+    /** Title pin: keep preview visible when search leaf is not active. */
+    private floatingNoteVisibilityPinned = false;
+    /** Last pointer target was inside floating panel or preview (for unpinned visibility). */
+    private floatingSearchSurfaceEngaged = false;
+    private lastFloatingNoteFile: TFile | null = null;
     private floatingSearchContainer: HTMLElement | null = null;
     private floatingSearchLeaf: WorkspaceLeaf | null = null;
     private floatingSearchLeafHost: HTMLElement | null = null;
+    private floatingSearchResultOpenContextUntil = 0;
+    /** Mirrors {@link Workspace}'s active leaf from `active-leaf-change` (avoids deprecated `activeLeaf`). */
+    private cachedActiveWorkspaceLeaf: WorkspaceLeaf | null = null;
     private queryBuilder = new SearchQueryBuilder();
     private graphColorGroupService = new GraphColorGroupService();
-    private searchExecution = new SearchExecutionService(
-        this.app,
-        this.queryBuilder,
-        this.graphColorGroupService,
-        container => this.containerGroups.get(container) || [],
-        () => this.settings.searchAlsoGraph,
-        () => this.settings.adaptToFloatSearch,
-        () => this.settings.enableExperimentalGrouping,
-        () => this.settings.clearGraphColorGroupsOnReset
-    );
-    private searchImport = new SearchImportService(
-        this.app,
-        this,
-        () => this.settings,
-        container => this.containerGroups.get(container) || [],
-        (container, groups) => this.containerGroups.set(container, groups),
-        group => this.updateGroupDragState(group),
-        (container, groupCount, rowsPerGroup) => this.clearSearchForm(container, groupCount, rowsPerGroup),
-        group => this.normalizeGroupRows(group),
-        container => this.searchExecution.executeSearch(container)
-    );
+    private searchExecution: SearchExecutionService;
+    private searchImport: SearchImportService;
+
+    constructor(pluginHost: Plugin) {
+        this.pluginHost = pluginHost;
+        this.searchExecution = new SearchExecutionService(
+            pluginHost.app,
+            this.queryBuilder,
+            this.graphColorGroupService,
+            container => this.containerGroups.get(container) || [],
+            () => this.settings.searchAlsoGraph,
+            () => this.settings.adaptToFloatSearch,
+            () => this.settings.enableExperimentalGrouping,
+            () => this.settings.clearGraphColorGroupsOnReset
+        );
+        this.searchImport = new SearchImportService(
+            pluginHost.app,
+            this,
+            () => this.settings,
+            container => this.containerGroups.get(container) || [],
+            (container, groups) => this.containerGroups.set(container, groups),
+            group => this.updateGroupDragState(group),
+            (container, groupCount, rowsPerGroup) => this.clearSearchForm(container, groupCount, rowsPerGroup),
+            group => this.normalizeGroupRows(group),
+            container => this.searchExecution.executeSearch(container)
+        );
+    }
 
     public refreshSearchUI() {
-        document.querySelectorAll('.asui-search-form-container').forEach(container => {
-            this.containerGroups.delete(container as HTMLElement);
-            container.remove();
-        });
-        document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
-
-        if (this.floatingSearchContainer?.isConnected) {
-            this.containerGroups.delete(this.floatingSearchContainer);
-            this.floatingSearchContainer.remove();
-            this.floatingSearchContainer = null;
-        }
-
+        removeDetachedSearchUiFromDocument(this.containerGroups);
+        this.floatingSearchContainer = null;
         this.injectSearchUI();
     }
 
-    async onload() {
+    /** Apply the “default PiP on open” preference to the current floating panel (if any). */
+    applyFloatingSearchNotePreviewDefaultSetting(): void {
+        const panel = this.floatingSearchPanel;
+        if (!panel) return;
+        const on = this.settings.floatingSearchNotePreviewDefaultOn;
+        this.floatingNotePipMode = on;
+        panel.setPictureInPictureActive(on, false);
+        if (!on) {
+            this.closeFloatingNotePreviewOnly();
+        }
+    }
+
+    /** Apply preview zoom from settings to the open preview window (if any). */
+    applyPreviewWindowScale(): void {
+        this.floatingNotePopover?.setPreviewScale(this.settings.floatingSearchNotePreviewScale);
+    }
+
+    /** Re-apply docking side and zoom when preview-related settings change. */
+    refreshOpenFloatingNotePreviewChrome(): void {
+        this.syncFloatingNoteWindowPosition();
+        this.applyPreviewWindowScale();
+    }
+
+    /** Apply metadata-container visibility toggles to the open preview window (if any). */
+    applyPreviewMetadataVisibility(): void {
+        this.floatingNotePopover?.syncMetadataVisibilityClasses();
+    }
+
+    private isFloatingSearchWorkflowActive(): boolean {
+        if (this.floatingSearchSurfaceEngaged) return true;
+        const active =
+            this.cachedActiveWorkspaceLeaf ?? this.pluginHost.app.workspace.getMostRecentLeaf();
+        if (!active) return false;
+        if (this.floatingSearchLeaf && active === this.floatingSearchLeaf) return true;
+        const pipLeaf = this.floatingNotePopover?.getLeaf();
+        return !!(pipLeaf && active === pipLeaf);
+    }
+
+    private onDocumentPointerDownForPreviewEngagement = (e: PointerEvent) => {
+        if (!this.floatingSearchPanel) {
+            this.floatingSearchSurfaceEngaged = false;
+            return;
+        }
+        if (!this.floatingNotePopover) {
+            this.floatingSearchSurfaceEngaged = false;
+            return;
+        }
+        if (this.floatingNoteVisibilityPinned) return;
+        const t = e.target;
+        if (!(t instanceof Node)) return;
+        const inPanel = this.floatingSearchPanel.rootEl.contains(t);
+        const inPreview = this.floatingNotePopover.rootEl.contains(t);
+        this.floatingSearchSurfaceEngaged = inPanel || inPreview;
+        this.updateFloatingNotePreviewVisibility();
+    };
+
+    private updateFloatingNotePreviewVisibility(): void {
+        const pop = this.floatingNotePopover;
+        if (!pop || !this.floatingSearchPanel) return;
+        if (this.floatingNoteVisibilityPinned) {
+            pop.rootEl.removeClass('asui-preview-window--inactive-hidden');
+            return;
+        }
+        const show = this.isFloatingSearchWorkflowActive();
+        pop.rootEl.toggleClass('asui-preview-window--inactive-hidden', !show);
+    }
+
+    /** Settings, workspace patches, search UI injection hooks, and global preview engagement listeners. */
+    async initWorkspaceAndServices(): Promise<void> {
         await this.loadSettings();
 
         if (this.settings.autoScaleUI) {
-            document.body.classList.add('advanced-search-auto-scale');
+            activeDocument.body.classList.add('advanced-search-auto-scale');
         }
 
-        this.app.workspace.onLayoutReady(() => this.injectSearchUI());
-        this.registerEvent(this.app.workspace.on('layout-change', () => this.injectSearchUI()));
+        this.pluginHost.app.workspace.onLayoutReady(() => this.injectSearchUI());
+        this.pluginHost.registerEvent(this.pluginHost.app.workspace.on('layout-change', () => this.injectSearchUI()));
         this.patchWorkspaceSearchRouting();
+        this.patchFloatingResultOpenRouting();
+        this.updateInterval();
+        this.pluginHost.registerEvent(
+            this.pluginHost.app.workspace.on('active-leaf-change', leaf => {
+                this.cachedActiveWorkspaceLeaf = leaf;
+                const active = leaf;
+                const inWorkflow =
+                    !!(this.floatingSearchLeaf && active === this.floatingSearchLeaf) ||
+                    !!(this.floatingNotePopover?.getLeaf() && active === this.floatingNotePopover.getLeaf());
+                if (!inWorkflow) this.floatingSearchSurfaceEngaged = false;
+                this.updateFloatingNotePreviewVisibility();
+            })
+        );
+        const seedActiveLeafCache = () => {
+            if (this.cachedActiveWorkspaceLeaf == null) {
+                this.cachedActiveWorkspaceLeaf = this.pluginHost.app.workspace.getMostRecentLeaf();
+            }
+        };
+        if (this.pluginHost.app.workspace.layoutReady) {
+            seedActiveLeafCache();
+        } else {
+            this.pluginHost.app.workspace.onLayoutReady(() => seedActiveLeafCache());
+        }
+        this.pluginHost.registerDomEvent(activeDocument, 'pointerdown', this.onDocumentPointerDownForPreviewEngagement, true);
+    }
+
+    /** Commands, ribbon, and the settings tab — entry points intended to be invoked from root `main.ts`. */
+    registerCommandsAndSettingsUi(): void {
         this.registerFloatingPanelCommands();
-        this.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL'), () => {
+        this.pluginHost.addRibbonIcon('text-search', t('TOGGLE_FLOATING_SEARCH_PANEL'), () => {
             this.toggleFloatingSearchPanel();
         });
-        this.updateInterval();
-        this.addSettingTab(new AdvancedSearchSettingTab(this.app, this));
+        this.pluginHost.addSettingTab(
+            new AdvancedSearchSettingTab(this.pluginHost.app, this.pluginHost as Plugin & AdvancedSearchPluginFacade)
+        );
     }
 
     public updateInterval() {
         if (this.settings.adaptToFloatSearch) {
             if (!this.injectionInterval) {
-                this.injectionInterval = window.setInterval(() => this.injectSearchUI(), 500);
-                this.registerInterval(this.injectionInterval);
+                this.injectionInterval = activeWindow.setInterval(() => this.injectSearchUI(), 500);
+                this.pluginHost.registerInterval(this.injectionInterval);
             }
 
             if (!this.observer) {
@@ -126,7 +222,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     for (const mutation of mutations) {
                         if (mutation.addedNodes.length > 0) {
                             for (const node of Array.from(mutation.addedNodes)) {
-                                if (!(node instanceof HTMLElement)) continue;
+                                if (!node.instanceOf(HTMLElement)) continue;
                                 if (node.classList.contains('asui-search-form-container') || node.classList.contains('advanced-search-view-switch')) continue;
                                 if (
                                     node.classList.contains('modal-container') ||
@@ -145,11 +241,11 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     }
                     if (shouldInject) this.injectSearchUI();
                 });
-                this.observer.observe(document.body, { childList: true, subtree: true });
+                this.observer.observe(activeDocument.body, { childList: true, subtree: true });
             }
         } else {
             if (this.injectionInterval) {
-                window.clearInterval(this.injectionInterval);
+                activeWindow.clearInterval(this.injectionInterval);
                 this.injectionInterval = null;
             }
             if (this.observer) {
@@ -160,95 +256,32 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     async loadSettings() {
-        const rawSettings = ((await this.loadData()) as LegacyAdvancedSearchSettings | null) || {};
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, rawSettings);
-
-        if (rawSettings.enableExperimentalDragAndDrop !== undefined) {
-            if (rawSettings.enableExperimentalGroupDragAndDrop === undefined) {
-                this.settings.enableExperimentalGroupDragAndDrop = rawSettings.enableExperimentalDragAndDrop;
-            }
-            if (rawSettings.enableExperimentalRowDragAndDrop === undefined) {
-                this.settings.enableExperimentalRowDragAndDrop = false;
-            }
-        }
+        const rawSettings = ((await this.pluginHost.loadData()) as LegacyAdvancedSearchSettings | null) || {};
+        this.settings = migrateLegacyAdvancedSearchSettings(rawSettings);
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        await this.pluginHost.saveData(this.settings);
     }
 
     private patchWorkspaceSearchRouting() {
-        this.workspaceEnsureSideLeafUninstall?.();
-        this.workspaceSetActiveLeafUninstall?.();
-        this.workspaceRevealLeafUninstall?.();
-
-        const getRoutableFloatingSearchLeaf = () => this.getRoutableFloatingSearchLeaf();
-        const getSidebarSearchLeaf = () => this.getSidebarSearchLeaf();
-        const activateFloatingSearchLeaf = (options?: WorkspaceEnsureSideLeafOptions) => this.activateFloatingSearchLeaf(options);
-
-        this.workspaceEnsureSideLeafUninstall = around(Workspace.prototype, {
-            ensureSideLeaf: (oldEnsureSideLeaf: Workspace['ensureSideLeaf']) => {
-                return async function (
-                    this: Workspace,
-                    type: string,
-                    side: Parameters<Workspace['ensureSideLeaf']>[1],
-                    options?: WorkspaceEnsureSideLeafOptions
-                ) {
-                    const floatingLeaf = getRoutableFloatingSearchLeaf();
-                    if (type !== 'search' || !floatingLeaf) {
-                        return oldEnsureSideLeaf.call(this, type, side, options);
-                    }
-
-                    activateFloatingSearchLeaf(options);
-                    return floatingLeaf;
-                };
-            }
+        this.workspaceSearchRoutingDispose?.();
+        this.workspaceSearchRoutingDispose = installWorkspaceSearchRoutingPatches({
+            register: fn => this.pluginHost.register(fn),
+            getRoutableFloatingSearchLeaf: () => this.getRoutableFloatingSearchLeaf(),
+            getSidebarSearchLeaf: () => this.getSidebarSearchLeaf(),
+            activateFloatingSearchLeaf: options => this.activateFloatingSearchLeaf(options)
         });
+    }
 
-        this.workspaceSetActiveLeafUninstall = around(Workspace.prototype, {
-            setActiveLeaf: (oldSetActiveLeaf: Workspace['setActiveLeaf']) => {
-                const getFloatingLeaf = () => getRoutableFloatingSearchLeaf();
-                const getSidebarLeaf = () => getSidebarSearchLeaf();
-                const activateFloatingLeaf = () => activateFloatingSearchLeaf({ active: true });
-
-                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, params?: WorkspaceSetActiveLeafParams): void;
-                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, pushHistory: boolean, focus: boolean): void;
-                function patchedSetActiveLeaf(this: Workspace, leaf: WorkspaceLeaf, ...args: WorkspaceSetActiveLeafArgs) {
-                    const floatingLeaf = getFloatingLeaf();
-                    const sidebarLeaf = getSidebarLeaf();
-                    if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
-                        return oldSetActiveLeaf.call(this, leaf, ...(args as [WorkspaceSetActiveLeafParams?] | [boolean, boolean]));
-                    }
-
-                    activateFloatingLeaf();
-                    return;
-                }
-
-                return patchedSetActiveLeaf;
-            }
-        });
-
-        this.workspaceRevealLeafUninstall = around(Workspace.prototype, {
-            revealLeaf: (oldRevealLeaf: Workspace['revealLeaf']) => {
-                return async function (this: Workspace, leaf: WorkspaceLeaf) {
-                    const floatingLeaf = getRoutableFloatingSearchLeaf();
-                    const sidebarLeaf = getSidebarSearchLeaf();
-                    if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
-                        return oldRevealLeaf.call(this, leaf);
-                    }
-
-                    activateFloatingSearchLeaf({ reveal: true });
-                };
-            }
-        });
-
-        this.register(() => {
-            this.workspaceEnsureSideLeafUninstall?.();
-            this.workspaceEnsureSideLeafUninstall = null;
-            this.workspaceSetActiveLeafUninstall?.();
-            this.workspaceSetActiveLeafUninstall = null;
-            this.workspaceRevealLeafUninstall?.();
-            this.workspaceRevealLeafUninstall = null;
+    private patchFloatingResultOpenRouting() {
+        this.floatingResultRoutingDispose?.();
+        this.floatingResultRoutingDispose = installFloatingResultOpenRoutingPatches({
+            register: fn => this.pluginHost.register(fn),
+            app: this.pluginHost.app,
+            shouldRouteToFloatingNotePanel: () => this.shouldRouteToFloatingNotePanel(),
+            getFloatingNoteLeaf: () => this.floatingNotePopover?.getLeaf() ?? null,
+            openFileInFloatingNoteWindow: file => this.openFileInFloatingNoteWindow(file)
         });
     }
 
@@ -261,7 +294,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private getSidebarSearchLeaf(): WorkspaceLeaf | null {
-        return this.app.workspace
+        return this.pluginHost.app.workspace
             .getLeavesOfType('search')
             .find(leaf => leaf !== this.floatingSearchLeaf) ?? null;
     }
@@ -284,30 +317,26 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.requestFloatingSearchLayout();
     }
 
-    onunload() {
-        document.body.classList.remove('advanced-search-auto-scale');
+    dispose(): void {
+        activeDocument.body.classList.remove('advanced-search-auto-scale');
         this.observer?.disconnect();
         this.observer = null;
         if (this.injectionInterval) {
-            window.clearInterval(this.injectionInterval);
+            activeWindow.clearInterval(this.injectionInterval);
             this.injectionInterval = null;
         }
 
         this.closeFloatingSearchPanel();
-        document.querySelectorAll('.asui-search-form-container').forEach(container => {
-            this.containerGroups.delete(container as HTMLElement);
-            container.remove();
-        });
-        document.querySelectorAll('.advanced-search-ui-toggle-wrapper').forEach(btn => btn.remove());
+        removeDetachedSearchUiFromDocument(this.containerGroups);
         this.containerGroups.clear();
     }
 
     private injectSearchUI() {
         const searchContainers = new Set<HTMLElement>();
-        this.app.workspace.getLeavesOfType('search').forEach(leaf => searchContainers.add(leaf.view.containerEl));
+        this.pluginHost.app.workspace.getLeavesOfType('search').forEach(leaf => searchContainers.add(leaf.view.containerEl));
 
         if (this.settings.adaptToFloatSearch) {
-            document.querySelectorAll('.search-params').forEach(searchParams => {
+            activeDocument.querySelectorAll('.search-params').forEach(searchParams => {
                 let parent = searchParams.parentElement;
                 while (parent && !parent.querySelector('.search-input-container') && !parent.classList.contains('modal')) {
                     parent = parent.parentElement;
@@ -318,7 +347,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         searchContainers.forEach(searchContainer => {
             const searchParams = searchContainer.querySelector('.search-params');
-            if (!(searchParams instanceof HTMLElement)) return;
+            if (!searchParams?.instanceOf(HTMLElement)) return;
 
             this.ensureSearchFormMounted({
                 host: searchContainer,
@@ -329,9 +358,9 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             });
 
             const searchRow = searchContainer.querySelector('.search-row');
-            if (searchRow instanceof HTMLElement && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
+            if (searchRow?.instanceOf(HTMLElement) && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
                 const switchWrapper = searchRow.createDiv({ cls: 'advanced-search-ui-toggle-wrapper' });
-                const toggleBtn = switchWrapper.createEl('div', {
+                const toggleBtn = switchWrapper.createDiv({
                     cls: 'clickable-icon advanced-search-toggle',
                     attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') }
                 });
@@ -343,7 +372,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     e.preventDefault();
                     e.stopPropagation();
                     const queryControlsContainer = searchContainer.querySelector('.asui-search-form-container');
-                    if (!(queryControlsContainer instanceof HTMLElement)) return;
+                    if (!queryControlsContainer?.instanceOf(HTMLElement)) return;
                     const isHidden = queryControlsContainer.classList.toggle('is-hidden');
                     toggleBtn.classList.toggle('is-active', !isHidden);
                 };
@@ -365,7 +394,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         allowGraph: boolean;
     }): HTMLElement {
         const existing = options.host.querySelector(':scope > .asui-search-form-container');
-        if (existing instanceof HTMLElement) {
+        if (existing?.instanceOf(HTMLElement)) {
             return existing;
         }
 
@@ -397,7 +426,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         this.containerGroups.set(queryControlsContainer, []);
         this.handleKeyboardEvents(queryControlsContainer);
 
-        if (options.insertAfter instanceof HTMLElement) {
+        if (options.insertAfter?.instanceOf(HTMLElement)) {
             options.insertAfter.insertAdjacentElement('afterend', queryControlsContainer);
         } else {
             options.mountParent.prepend(queryControlsContainer);
@@ -426,7 +455,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     }
 
     private registerFloatingPanelCommands() {
-        this.addCommand({
+        this.pluginHost.addCommand({
             id: 'open-floating-search-panel',
             name: t('OPEN_FLOATING_SEARCH_PANEL'),
             callback: () => this.openFloatingSearchPanel()
@@ -445,29 +474,41 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private openFloatingSearchPanel() {
         if (this.floatingSearchPanel) {
             this.floatingSearchPanel.focus();
+            this.floatingSearchSurfaceEngaged = true;
+            this.updateFloatingNotePreviewVisibility();
             return;
         }
 
         const panel = new FloatingSearchPanel({
             title: t('TOGGLE_ADVANCED_SEARCH'),
             bounds: this.settings.floatingPanelBounds,
-            mountEl: this.app.workspace.containerEl,
+            mountEl: this.pluginHost.app.workspace.containerEl,
+            showPictureInPictureButton: true,
             onClose: () => this.closeFloatingSearchPanel(),
             onOpenSettings: () => this.openPluginSettings(),
             onBoundsChange: bounds => this.updateFloatingPanelBounds(bounds),
             onResize: () => this.requestFloatingSearchLayout(),
             onCollapsedChange: collapsed => this.toggleFloatingSearchCollapsed(collapsed),
-            onCompactChange: compact => this.toggleFloatingSearchCompact(compact)
+            onCompactChange: compact => this.toggleFloatingSearchCompact(compact),
+            onPictureInPictureToggle: active => {
+                void this.toggleFloatingNoteWindow(active);
+            }
         });
 
         this.floatingSearchPanel = panel;
+        this.floatingNoteVisibilityPinned = this.settings.floatingSearchNotePreviewDefaultPinned;
+        this.floatingNoteDockedToPanel = this.settings.floatingSearchNotePreviewDefaultBind;
+        this.floatingNotePipMode = this.settings.floatingSearchNotePreviewDefaultOn;
+        panel.setPictureInPictureActive(this.floatingNotePipMode, false);
         void this.mountFloatingSearchPanelContent(panel);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();
+        this.floatingSearchSurfaceEngaged = true;
+        this.updateFloatingNotePreviewVisibility();
     }
 
     private createFloatingSearchLeaf(): WorkspaceLeaf | null {
-        const workspace = this.app.workspace as WorkspaceWithDetachedLeaf;
+        const workspace = this.pluginHost.app.workspace as WorkspaceWithDetachedLeaf;
 
         if (typeof workspace.createDetachedLeaf === 'function') {
             return workspace.createDetachedLeaf();
@@ -477,7 +518,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             return workspace.createLeafInParent(workspace.floatingSplit, 0);
         }
 
-        return this.app.workspace.getLeaf(false);
+        return this.pluginHost.app.workspace.getLeaf(false);
     }
 
     private async mountFloatingSearchPanelContent(panel: FloatingSearchPanel) {
@@ -496,12 +537,13 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         const container = leaf.view.containerEl;
         host.appendChild(container);
+        container.addEventListener('pointerdown', this.markFloatingSearchResultInteraction, true);
         this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
         this.toggleFloatingSearchCollapsed(panel.windowEl.classList.contains('is-collapsed'));
         this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
         this.requestFloatingSearchLayout();
 
-        window.setTimeout(() => {
+        activeWindow.setTimeout(() => {
             this.injectSearchUI();
             this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
             this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
@@ -513,15 +555,17 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private updateFloatingPanelBounds(bounds: FloatingPanelBounds) {
         this.settings.floatingPanelBounds = { ...bounds };
         void this.saveSettings();
+        this.syncFloatingNoteWindowPosition();
     }
 
     private requestFloatingSearchLayout() {
         const leaf = this.floatingSearchLeaf;
         if (!leaf) return;
 
-        window.requestAnimationFrame(() => {
+        activeWindow.requestAnimationFrame(() => {
             leaf.onResize?.();
             leaf.view?.onResize?.();
+            this.syncFloatingNoteWindowPosition();
         });
     }
 
@@ -545,18 +589,164 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
             this.floatingSearchContainer = null;
         }
 
+        if (this.floatingSearchLeaf?.view?.containerEl) {
+            this.floatingSearchLeaf.view.containerEl.removeEventListener('pointerdown', this.markFloatingSearchResultInteraction, true);
+        }
+
         if (this.floatingSearchLeaf) {
             this.floatingSearchLeaf.detach();
             this.floatingSearchLeaf = null;
         }
 
+        this.floatingNotePipMode = false;
+        this.floatingSearchSurfaceEngaged = false;
+        this.closeFloatingNoteWindow(false);
         this.floatingSearchLeafHost = null;
         this.floatingSearchPanel?.destroy();
         this.floatingSearchPanel = null;
     }
 
+    private shouldRouteToFloatingNotePanel() {
+        return (
+            this.floatingNotePipMode &&
+            !!this.floatingSearchPanel &&
+            Date.now() <= this.floatingSearchResultOpenContextUntil
+        );
+    }
+
+    private markFloatingSearchResultInteraction = (event: Event) => {
+        const target = event.target;
+        if (!(target as Node).instanceOf(HTMLElement)) return;
+        const el = target as HTMLElement;
+        if (!el.closest('.search-result, .search-result-file-match, .search-result-container, .tree-item-self, .search-result-file-title')) {
+            return;
+        }
+        this.floatingSearchResultOpenContextUntil = Date.now() + 1500;
+    };
+
+    private async toggleFloatingNoteWindow(active: boolean) {
+        if (active) {
+            this.floatingNotePipMode = true;
+            this.floatingSearchPanel?.setPictureInPictureActive(true, false);
+            return;
+        }
+
+        this.closeFloatingNoteWindow(true);
+    }
+
+    private async openFloatingNoteWindow() {
+        if (this.floatingNotePopover) {
+            this.floatingSearchPanel?.setPictureInPictureActive(true, false);
+            this.floatingNotePopover.focus();
+            this.syncFloatingNoteWindowPosition();
+            this.updateFloatingNotePreviewVisibility();
+            return;
+        }
+
+        this.floatingNotePopover = new HoverNoteLeafPopover({
+            plugin: this.pluginHost,
+            mountEl: this.pluginHost.app.workspace.containerEl,
+            bounds: this.settings.floatingNotePanelBounds,
+            defaultBound: this.floatingNoteDockedToPanel,
+            defaultVisibilityPinned: this.floatingNoteVisibilityPinned,
+            defaultMarkdownMode: this.settings.floatingSearchNotePreviewDefaultMarkdownMode,
+            previewScale: this.settings.floatingSearchNotePreviewScale,
+            onClose: () => this.closeFloatingNotePreviewOnly(),
+            onBoundsChange: bounds => this.updateFloatingNotePanelBounds(bounds),
+            onBindChange: bound => {
+                this.floatingNoteDockedToPanel = bound;
+                if (bound) this.syncFloatingNoteWindowPosition();
+            },
+            onVisibilityPinnedChange: pinned => {
+                this.floatingNoteVisibilityPinned = pinned;
+                this.updateFloatingNotePreviewVisibility();
+            }
+        });
+
+        this.syncFloatingNoteWindowPosition();
+        this.floatingSearchPanel?.setPictureInPictureActive(true, false);
+        this.floatingNotePopover.focus();
+        this.updateFloatingNotePreviewVisibility();
+    }
+
+    private destroyFloatingNotePopoverShell(opts: { clearLastFile?: boolean; resetPipToggle?: boolean }) {
+        if (this.floatingNotePopover) {
+            this.updateFloatingNotePanelBounds(this.floatingNotePopover.getPersistedBounds());
+        }
+        this.floatingNotePopover?.destroy();
+        this.floatingNotePopover = null;
+        if (opts.clearLastFile) {
+            this.lastFloatingNoteFile = null;
+        }
+        if (opts.resetPipToggle) {
+            this.floatingNotePipMode = false;
+            this.floatingSearchPanel?.setPictureInPictureActive(false, false);
+        }
+    }
+
+    private closeFloatingNoteWindow(updateSearchButton = true) {
+        this.destroyFloatingNotePopoverShell({ resetPipToggle: updateSearchButton });
+    }
+
+    /** Close the preview shell only; keep PiP mode so the next result opens in the small window again. */
+    private closeFloatingNotePreviewOnly() {
+        this.destroyFloatingNotePopoverShell({ clearLastFile: true });
+    }
+
+    private updateFloatingNotePanelBounds(bounds: FloatingPanelBounds) {
+        this.settings.floatingNotePanelBounds = { ...bounds };
+        void this.saveSettings();
+    }
+
+    private syncFloatingNoteWindowPosition() {
+        if (!this.floatingNoteDockedToPanel || !this.floatingSearchPanel || !this.floatingNotePopover) return;
+
+        const source = this.floatingSearchPanel.getBounds();
+        const current = this.floatingNotePopover.getBounds();
+        const gap = 16;
+        const margin = 8;
+        const leftDocked = source.left - current.width - gap;
+        const fitsLeft = leftDocked >= margin;
+        const rightDocked = source.left + source.width + gap;
+        const fitsRight = rightDocked + current.width <= activeWindow.innerWidth - margin;
+        const preferLeft = this.settings.floatingSearchNotePreviewBindSide === 'left';
+        let left: number;
+        if (preferLeft) {
+            if (fitsLeft) {
+                left = leftDocked;
+            } else if (fitsRight) {
+                left = rightDocked;
+            } else {
+                left = Math.max(margin, Math.min(leftDocked, activeWindow.innerWidth - current.width - margin));
+            }
+        } else if (fitsRight) {
+            left = rightDocked;
+        } else if (fitsLeft) {
+            left = leftDocked;
+        } else {
+            left = Math.max(margin, Math.min(leftDocked, activeWindow.innerWidth - current.width - margin));
+        }
+        const top = Math.max(0, Math.min(source.top, activeWindow.innerHeight - current.height));
+
+        this.floatingNotePopover.setBounds({
+            left,
+            top,
+            width: current.width,
+            height: current.height
+        });
+    }
+
+    private async openFileInFloatingNoteWindow(file: TFile) {
+        if (!this.floatingNotePipMode) return;
+        await this.openFloatingNoteWindow();
+        this.lastFloatingNoteFile = file;
+        await this.floatingNotePopover?.openFile(file);
+        this.floatingNotePopover?.focus();
+        this.updateFloatingNotePreviewVisibility();
+    }
+
     private openPluginSettings() {
-        const setting = (this.app as AppWithInternalSettings).setting;
+        const setting = (this.pluginHost.app as AppWithInternalSettings).setting;
         if (!setting) {
             new Notice(t('FAILED_TO_OPEN_PLUGIN_SETTINGS'));
             return;
@@ -564,8 +754,8 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         setting.open();
 
-        const pluginSettingTabId = this.manifest.id;
-        const communityPluginSettingTabId = `community-plugins:${this.manifest.id}`;
+        const pluginSettingTabId = this.pluginHost.manifest.id;
+        const communityPluginSettingTabId = `community-plugins:${this.pluginHost.manifest.id}`;
         if (typeof setting.openTabById === 'function') {
             setting.openTabById(communityPluginSettingTabId);
             if (setting.activeTab?.id === communityPluginSettingTabId) return;
@@ -575,14 +765,14 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         }
 
         const tabs = setting.tabContentContainer?.querySelectorAll('.vertical-tab-nav-item');
-        const pluginName = this.manifest.name;
+        const pluginName = this.pluginHost.manifest.name;
         const matchedTab = Array.from(tabs || []).find(tab => {
             const tabId = tab.getAttribute('data-tab-id');
             const title = tab.textContent?.trim();
             return tabId === communityPluginSettingTabId || tabId === pluginSettingTabId || title === pluginName;
         });
 
-        if (matchedTab instanceof HTMLElement) {
+        if (matchedTab?.instanceOf(HTMLElement)) {
             matchedTab.click();
             return;
         }
@@ -603,15 +793,15 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
     private handleKeyboardEvents(container: HTMLElement) {
         const handleKeydown = (e: KeyboardEvent) => {
             e.stopPropagation();
-            const active = document.activeElement;
-            if (!(active instanceof HTMLElement)) return;
+            const active = activeDocument.activeElement;
+            if (!active?.instanceOf(HTMLElement)) return;
 
             if (e.key === 'Tab' && active.matches('input.asui-search-input')) {
                 e.preventDefault();
                 const focusableInputs = Array.from(container.querySelectorAll('input.asui-search-input')).filter(
                     (el): el is HTMLInputElement => {
-                        if (!(el instanceof HTMLInputElement)) return false;
-                        const style = window.getComputedStyle(el);
+                        if (!el.instanceOf(HTMLInputElement)) return false;
+                        const style = activeWindow.getComputedStyle(el);
                         return style.display !== 'none' && style.visibility !== 'hidden' && !el.disabled;
                     }
                 );
@@ -659,7 +849,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
     private findGroupByRow(currentRow: SearchRow): SearchGroup | null {
         const groupEl = currentRow.container.closest('.asui-search-group');
-        if (!(groupEl instanceof HTMLElement)) return null;
+        if (!groupEl?.instanceOf(HTMLElement)) return null;
         for (const groups of this.containerGroups.values()) {
             const group = groups.find(item => item.container === groupEl);
             if (group) return group;
@@ -871,7 +1061,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         const groups = this.containerGroups.get(container) || [];
         const groupIndex = groups.indexOf(currentGroup);
-        const newGroup = new SearchGroup(this.app, currentGroup.container.parentElement || container, this);
+        const newGroup = new SearchGroup(this.pluginHost.app, currentGroup.container.parentElement || container, this);
         this.updateGroupDragState(newGroup);
         newGroup.setData({
             operator: currentGroup.operatorSelect.value as 'AND' | 'OR' | 'NOT',
@@ -889,7 +1079,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
         const groups = this.containerGroups.get(container) || [];
         const groupIndex = groups.indexOf(currentGroup);
-        const duplicateGroup = new SearchGroup(this.app, currentGroup.container.parentElement || container, this);
+        const duplicateGroup = new SearchGroup(this.pluginHost.app, currentGroup.container.parentElement || container, this);
         this.updateGroupDragState(duplicateGroup);
         duplicateGroup.setData(currentGroup.getData());
 
@@ -1006,7 +1196,7 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
                     }
 
                     const section = targetContainer.querySelector('.search-section');
-                    if (section instanceof HTMLElement) {
+                    if (section?.instanceOf(HTMLElement)) {
                         const referenceGroup = targetGroups[insertIndex + 1];
                         if (referenceGroup) {
                             section.insertBefore(draggingGroup.container, referenceGroup.container);
@@ -1037,10 +1227,10 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
 
             const nextGroups: SearchGroup[] = [];
             const section = container.querySelector('.search-section');
-            if (!(section instanceof HTMLElement)) return;
+            if (!section?.instanceOf(HTMLElement)) return;
 
             for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
-                const group = new SearchGroup(this.app, section, this);
+                const group = new SearchGroup(this.pluginHost.app, section, this);
                 this.updateGroupDragState(group);
 
                 const rows: SearchGroupData['rows'] = Array.from({ length: rowsPerGroup }, () => ({
@@ -1071,13 +1261,3 @@ export default class AdvancedSearchPlugin extends Plugin implements SearchGroupD
         });
     }
 }
-
-type AppWithInternalSettings = Plugin['app'] & {
-    setting?: {
-        open: () => void;
-        openTabById?: (id: string) => void;
-        activeTab?: { id?: string };
-        tabContentContainer?: HTMLElement;
-        pluginTabs?: Record<string, { id: string }>;
-    };
-};

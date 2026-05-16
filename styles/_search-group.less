@@ -1,0 +1,153 @@
+/* ============================================================================
+   Search group
+   Group container layout, drag states, and drop feedback.
+   ========================================================================== */
+
+.asui-search-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+
+  &.is-grouping-disabled {
+    .asui-search-group-rows {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &.is-draggable .asui-search-group-handle {
+    cursor: grab;
+  }
+
+  &.is-draggable .asui-search-group-handle:active {
+    cursor: grabbing;
+  }
+
+  &.is-draggable .asui-search-group-header button,
+  &.is-draggable .asui-search-group-header select {
+    cursor: pointer;
+  }
+
+  &.is-dragging {
+    z-index: 2;
+    opacity: 1;
+  }
+
+  &.is-drag-dimmed {
+    opacity: 0.45;
+  }
+
+  &.is-drop-target,
+  &.is-row-drop-target {
+    border-radius: 6px;
+    background-color: var(--background-modifier-hover);
+  }
+
+  &.is-drop-before::before,
+  &.is-drop-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 999px;
+    background-color: var(--interactive-accent);
+    pointer-events: none;
+  }
+
+  &.is-drop-before::before {
+    top: -6px;
+  }
+
+  &.is-drop-after::after {
+    bottom: -6px;
+  }
+
+  &.is-collapsed {
+
+    .asui-search-group-header {
+      margin-bottom: 0;
+
+      .asui-search-group-divider::before {
+        background-color: var(--interactive-accent) !important;
+        opacity: 1;
+        height: 2px;
+      }
+    }
+
+    .asui-search-group-rows {
+      display: none;
+    }
+
+
+  }
+}
+
+/* Group header: operator selector, drag handle, divider, and actions. */
+.asui-search-form-container .asui-search-group-header {
+  display: flex;
+  order: -1;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 6px;
+
+  button,
+  select {
+    min-height: 0;
+    height: auto !important;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .asui-group-operator {
+    flex: 0 0 auto;
+    margin-right: 4px;
+  }
+
+  .asui-search-group-handle {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 4px;
+    border-radius: 4px;
+    user-select: none;
+  }
+
+  .asui-search-group-divider {
+    position: relative;
+    flex: 1 1 auto;
+    height: 100%;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      transform: translateY(-50%);
+      background-color: var(--background-modifier-border);
+      opacity: 0.8;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+  }
+
+  .asui-search-group-handle:hover .asui-search-group-divider::before {
+    opacity: 1;
+  }
+
+  .asui-search-group-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+}

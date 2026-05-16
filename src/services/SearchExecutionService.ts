@@ -18,7 +18,7 @@ export class SearchExecutionService {
 
     public executeSearch(uiContainer?: HTMLElement) {
         const containers = this.getAdaptToFloatSearchEnabled()
-            ? Array.from(document.querySelectorAll('.search-params')).map(el => el.parentElement).filter(el => el)
+            ? Array.from(activeDocument.querySelectorAll('.search-params')).map(el => el.parentElement).filter(el => el)
             : this.app.workspace.getLeavesOfType('search').map(leaf => leaf.view.containerEl);
 
         const uniqueContainers = Array.from(new Set(containers as HTMLElement[]));
@@ -66,7 +66,7 @@ export class SearchExecutionService {
             }
         }
 
-        window.setTimeout(() => {
+        activeWindow.setTimeout(() => {
             const resolvedLeaf = targetLeaf || this.getPreferredGraphLeaf();
             if (!resolvedLeaf) return;
 

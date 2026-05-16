@@ -23,7 +23,7 @@ export class GenericSuggester extends FuzzySuggestModal<string> {
     }
 
     // 事件：用户敲击或者鼠标选了这个选项时的回调
-    onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
+    onChooseItem(item: string, _evt: MouseEvent | KeyboardEvent): void {
         this.resolve(item);
     }
 

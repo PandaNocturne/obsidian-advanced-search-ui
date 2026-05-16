@@ -1,0 +1,99 @@
+/* ============================================================================
+   Search layout shell
+   Search panel container, native search params host, and shared form controls.
+   ========================================================================== */
+
+// .search-params {
+//   display: flex;
+//   flex-flow: row wrap;
+//   justify-content: space-between;
+//   gap: 4px;
+
+//   & > .setting-item {
+//     border: none !important;
+//     padding: 8px 10px !important;
+//   }
+// }
+
+.asui-search-form-container {
+  width: auto;
+  max-width: 100%;
+  height: fit-content;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  // margin: 0 5px 5px;
+  margin: 0 var(--size-4-3) var(--size-4-2);
+  padding: 5px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--background-primary);
+
+  .search-section {
+    margin-bottom: 8px;
+  }
+
+  button {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--interactive-normal);
+    color: var(--text-normal);
+    box-shadow: none !important;
+    transition: all 0.15s ease;
+  }
+
+  button:hover {
+    border-color: var(--text-muted);
+    background-color: var(--interactive-hover);
+    color: var(--text-normal);
+  }
+
+  select {
+    padding: 0 28px 0 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-modifier-form-field);
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+      linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 12px) calc(50% - 1px),
+      calc(100% - 8px) calc(50% - 1px);
+    background-repeat: no-repeat;
+    background-size: 4px 4px, 4px 4px;
+    color: var(--text-normal);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: all 0.15s ease;
+
+    option {
+      padding: 6px 10px;
+      background-color: var(--background-primary);
+      color: var(--text-normal);
+    }
+  }
+
+  select:focus {
+    border-color: var(--interactive-accent);
+    // box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent) !important;
+  }
+
+  select:hover {
+    border-color: var(--text-muted);
+    background-color: var(--background-modifier-hover);
+  }
+
+  label,
+  button {
+    padding: 4px;
+  }
+}
+
+.asui-search-form-container .search-section {
+  // max-height: 40vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}

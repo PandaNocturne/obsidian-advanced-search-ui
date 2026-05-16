@@ -1,13 +1,14 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import AdvancedSearchPlugin from '../main';
+import { App, PluginSettingTab, Setting, type Plugin } from 'obsidian';
+import type { AdvancedSearchPluginFacade } from '../plugin/plugin-public-api';
 import { t } from '../lang/helpers';
+import { DEFAULT_SETTINGS } from '../settings';
 
 const FLOAT_SEARCH_PLUGIN_URI = 'obsidian://show-plugin?id=float-search';
 
 export class AdvancedSearchSettingTab extends PluginSettingTab {
-    plugin: AdvancedSearchPlugin;
+    plugin: Plugin & AdvancedSearchPluginFacade;
 
-    constructor(app: App, plugin: AdvancedSearchPlugin) {
+    constructor(app: App, plugin: Plugin & AdvancedSearchPluginFacade) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -68,9 +69,9 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.autoScaleUI = value;
                     await this.plugin.saveSettings();
                     if (value) {
-                        document.body.classList.add('advanced-search-auto-scale');
+                        activeDocument.body.classList.add('advanced-search-auto-scale');
                     } else {
-                        document.body.classList.remove('advanced-search-auto-scale');
+                        activeDocument.body.classList.remove('advanced-search-auto-scale');
                     }
                 }));
 
@@ -83,6 +84,104 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.floatingPanelDefaultCompact = value;
                     await this.plugin.saveSettings();
                 }));
+
+        const previewGroup = this.createSettingGroup(
+            containerEl,
+            t('SETTING_GROUP_PREVIEW_WINDOW') || 'Preview window',
+            t('SETTING_GROUP_PREVIEW_WINDOW_DESC') || 'Defaults for the floating note preview (PiP) window.'
+        );
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW') || 'Default preview on')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultOn)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultOn = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyFloatingSearchNotePreviewDefaultSetting();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED') || 'Default pin preview window')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_PINNED_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultPinned)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultPinned = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT') || 'Hide YAML by default')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_YAML_HIDDEN_BY_DEFAULT_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewYamlHiddenByDefault)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewYamlHiddenByDefault = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyPreviewMetadataVisibility();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND') || 'Default bind to floating panel')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_BIND_DESC') || '')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultBind)
+                .onChange(async (value) => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultBind = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW') || 'Default view')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_DEFAULT_VIEW_DESC') || '')
+            .addDropdown(dropdown => dropdown
+                .addOption('preview', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_READING') || 'Reading')
+                .addOption('source', t('FLOATING_SEARCH_NOTE_PREVIEW_VIEW_EDITING') || 'Editing')
+                .setValue(this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode)
+                .onChange(async (value: 'preview' | 'source') => {
+                    this.plugin.settings.floatingSearchNotePreviewDefaultMarkdownMode = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE') || 'Preferred bind side')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_SIDE_DESC') || '')
+            .addDropdown(dropdown => dropdown
+                .addOption('left', t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_LEFT') || 'Left')
+                .addOption('right', t('FLOATING_SEARCH_NOTE_PREVIEW_BIND_RIGHT') || 'Right')
+                .setValue(this.plugin.settings.floatingSearchNotePreviewBindSide)
+                .onChange(async (value: 'left' | 'right') => {
+                    this.plugin.settings.floatingSearchNotePreviewBindSide = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshOpenFloatingNotePreviewChrome();
+                }));
+
+        new Setting(previewGroup)
+            .setName(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE') || 'Preview window scale')
+            .setDesc(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE_DESC') || '')
+            .addSlider(slider => slider
+                .setLimits(0.5, 1, 0.1)
+                .setValue(this.plugin.settings.floatingSearchNotePreviewScale)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    const rounded = Math.round(Math.max(0.5, Math.min(1, value)) * 10) / 10;
+                    this.plugin.settings.floatingSearchNotePreviewScale = rounded;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyPreviewWindowScale();
+                }))
+            .addExtraButton(button =>
+                button
+                    .setIcon('rotate-ccw')
+                    .setTooltip(t('FLOATING_SEARCH_NOTE_PREVIEW_SCALE_RESET') || 'Reset to default')
+                    .onClick(async () => {
+                        this.plugin.settings.floatingSearchNotePreviewScale = DEFAULT_SETTINGS.floatingSearchNotePreviewScale;
+                        await this.plugin.saveSettings();
+                        this.plugin.applyPreviewWindowScale();
+                        this.display();
+                    })
+            );
 
         const searchGroup = this.createSettingGroup(
             containerEl,

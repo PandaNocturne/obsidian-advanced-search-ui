@@ -40,11 +40,11 @@ export class GraphColorGroupService {
 
     private applyByDom(leaf: unknown, payloads: GraphColorGroupPayload[]): boolean {
         const container = this.getContainerEl(leaf);
-        if (!(container instanceof HTMLElement)) return false;
+        if (!container?.instanceOf(HTMLElement)) return false;
 
         const groupsContainer = container.querySelector('.graph-color-groups-container');
         const addButton = container.querySelector('.graph-color-button-container > button');
-        if (!(groupsContainer instanceof HTMLElement) || !(addButton instanceof HTMLButtonElement)) {
+        if (!groupsContainer?.instanceOf(HTMLElement) || !addButton?.instanceOf(HTMLButtonElement)) {
             return false;
         }
 
@@ -57,7 +57,7 @@ export class GraphColorGroupService {
         for (const payload of payloads) {
             addButton.click();
             const groupEl = groupsContainer.lastElementChild;
-            if (!(groupEl instanceof HTMLElement)) return false;
+            if (!groupEl?.instanceOf(HTMLElement)) return false;
             this.populateDomGroup(groupEl, payload);
         }
 
@@ -66,12 +66,12 @@ export class GraphColorGroupService {
 
     private clearDomGroups(groupsContainer: HTMLElement): void {
         const existingGroups = Array.from(groupsContainer.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement
+            (child): child is HTMLElement => child.instanceOf(HTMLElement)
         );
 
         existingGroups.forEach(groupEl => {
             const removeButton = groupEl.querySelector('button[aria-label*="Remove"], button[aria-label*="删除"], .clickable-icon[aria-label*="Remove"], .clickable-icon[aria-label*="删除"]');
-            if (removeButton instanceof HTMLElement) {
+            if (removeButton?.instanceOf(HTMLElement)) {
                 removeButton.click();
                 return;
             }
@@ -93,12 +93,12 @@ export class GraphColorGroupService {
 
     private findGroupQueryInput(groupEl: HTMLElement): HTMLInputElement | HTMLTextAreaElement | null {
         const directInput = groupEl.querySelector('input[type="search"], input[type="text"], textarea');
-        if (directInput instanceof HTMLInputElement || directInput instanceof HTMLTextAreaElement) {
+        if (directInput?.instanceOf(HTMLInputElement) || directInput?.instanceOf(HTMLTextAreaElement)) {
             return directInput;
         }
 
         const labeledInput = Array.from(groupEl.querySelectorAll('input, textarea')).find(element => {
-            if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false;
+            if (!(element.instanceOf(HTMLInputElement) || element.instanceOf(HTMLTextAreaElement))) return false;
             const label = [
                 element.getAttribute('aria-label'),
                 element.getAttribute('placeholder'),
@@ -108,7 +108,7 @@ export class GraphColorGroupService {
             return label.includes('query') || label.includes('search') || label.includes('查询') || label.includes('检索');
         });
 
-        return labeledInput instanceof HTMLInputElement || labeledInput instanceof HTMLTextAreaElement ? labeledInput : null;
+        return labeledInput?.instanceOf(HTMLInputElement) || labeledInput?.instanceOf(HTMLTextAreaElement) ? labeledInput : null;
     }
 
     private applyByViewState(leaf: unknown, payloads: GraphColorGroupPayload[]): boolean {
@@ -201,7 +201,8 @@ export class GraphColorGroupService {
     private getContainerEl(leaf: unknown): HTMLElement | null {
         const view = this.getView(leaf);
         const containerEl = view ? this.getObject(view, 'containerEl') : null;
-        return containerEl instanceof HTMLElement ? containerEl : null;
+        const el = containerEl as unknown;
+        return el && (el as Node).instanceOf(HTMLElement) ? (el as HTMLElement) : null;
     }
 
     private getObject(source: unknown, key: string): Record<string, unknown> | null {
