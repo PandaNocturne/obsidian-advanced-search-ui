@@ -11,23 +11,23 @@
   overflow: hidden;
 }
 
-.asui-input-group input {
+.asui-search-form-container .asui-input-group input {
   flex: 1;
-  margin: 0 !important;
+  margin: 0;
   padding: 0 8px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px 0 0 4px;
   background-color: var(--background-modifier-form-field);
   color: var(--text-normal);
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
-.asui-input-group .asui-icon-button {
+.asui-search-form-container .asui-input-group .asui-icon-button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
-  margin: 0 !important;
+  margin: 0;
   border-left: none;
   border-radius: 0 4px 4px 0;
   color: var(--text-normal);
@@ -59,7 +59,7 @@
   cursor: not-allowed;
 }
 
-.asui-toggle-label {
+.asui-controls .asui-toggle-label {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,30 +68,30 @@
   border-radius: 4px;
   background-color: var(--interactive-normal);
   color: var(--text-normal);
-  box-shadow: none !important;
+  box-shadow: none;
   transition: all 0.15s ease;
 }
 
-.asui-toggle.is-disabled .asui-toggle-label {
+.asui-controls .asui-toggle.is-disabled .asui-toggle-label {
   border-color: var(--background-modifier-border);
   background-color: var(--background-secondary);
   color: var(--text-faint);
   opacity: 0.6;
 }
 
-.asui-toggle-label:hover {
+.asui-controls .asui-toggle-label:hover {
   border-color: var(--text-muted);
   background-color: var(--interactive-hover);
   color: var(--text-normal);
 }
 
-.asui-toggle.is-disabled .asui-toggle-label:hover {
+.asui-controls .asui-toggle.is-disabled .asui-toggle-label:hover {
   border-color: var(--background-modifier-border);
   background-color: var(--background-secondary);
   color: var(--text-faint);
 }
 
-.asui-toggle input:checked+.asui-toggle-label {
+.asui-controls .asui-toggle input:checked + .asui-toggle-label {
   border-color: var(--interactive-accent);
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);

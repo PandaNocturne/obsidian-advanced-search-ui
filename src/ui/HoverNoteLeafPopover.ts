@@ -67,6 +67,7 @@ export class HoverNoteLeafPopover {
     private readonly titleTextEl: HTMLElement;
     private readonly modeToggleBtn: HTMLButtonElement;
     private readonly metadataRevealBtn: HTMLButtonElement;
+    private readonly openInTabBtn: HTMLButtonElement;
     private readonly visibilityPinBtn: HTMLButtonElement;
     private readonly bindBtn: HTMLButtonElement;
     private readonly rootSplit: WorkspaceSplit;
@@ -175,6 +176,18 @@ export class HoverNoteLeafPopover {
             options.onBindChange?.(bound);
         });
 
+        this.openInTabBtn = controlsEl.createEl('button', {
+            cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--open-tab',
+            attr: { type: 'button', 'aria-label': t('FLOATING_NOTE_OPEN_IN_TAB') }
+        });
+        setIcon(this.openInTabBtn, 'external-link');
+        this.openInTabBtn.style.display = 'none';
+        this.openInTabBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            void this.openCurrentFileInWorkspaceTab();
+        });
+
         const closeBtn = controlsEl.createEl('button', {
             cls: 'clickable-icon asui-preview-window-control asui-floating-panel-control asui-preview-window-control--close asui-floating-panel-close',
             attr: { type: 'button', 'aria-label': t('FLOATING_NOTE_CLOSE') }
@@ -235,6 +248,7 @@ export class HoverNoteLeafPopover {
         );
 
         this.syncModeToggleUi();
+        this.syncOpenInTabUi();
         this.headerEl.addEventListener('pointerdown', this.onTitlePointerDown);
         for (const dir of RESIZE_DIRECTIONS) {
             this.rootEl
@@ -354,6 +368,7 @@ export class HoverNoteLeafPopover {
         const leaf = this.leaf;
         if (!leaf?.view) {
             this.titleTextEl.setText(t('FLOATING_NOTE_WINDOW_TITLE'));
+            this.syncOpenInTabUi();
             return;
         }
         const display = leaf.getDisplayText();
@@ -364,6 +379,7 @@ export class HoverNoteLeafPopover {
         } else {
             this.titleTextEl.removeAttribute('data-path');
         }
+        this.syncOpenInTabUi();
     }
 
     requestLeafMeasure(): void {
@@ -373,6 +389,39 @@ export class HoverNoteLeafPopover {
             leaf.onResize?.();
             leaf.view?.onResize?.();
         });
+    }
+
+    private syncOpenInTabUi(): void {
+        const view = this.leaf?.view;
+        const file = view instanceof FileView ? view.file : null;
+        this.openInTabBtn.style.display = file ? '' : 'none';
+    }
+
+    /** Open the preview’s current file in a normal workspace tab (sidebar/root tabs). */
+    private async openCurrentFileInWorkspaceTab(): Promise<void> {
+        const previewLeaf = this.leaf;
+        const view = previewLeaf?.view;
+        if (!previewLeaf || !view) return;
+
+        const file = view instanceof FileView ? view.file : null;
+        if (!file) return;
+
+        const ws = this.plugin.app.workspace;
+        const targetLeaf = ws.getLeaf('tab');
+
+        if (view instanceof MarkdownView && file.extension === 'md') {
+            const mode = view.getMode() === 'source' ? 'source' : 'preview';
+            await targetLeaf.setViewState({
+                type: 'markdown',
+                state: { file: file.path, mode },
+                active: true
+            });
+        } else {
+            await targetLeaf.openFile(file, { active: true });
+        }
+
+        await targetLeaf.loadIfDeferred?.();
+        ws.setActiveLeaf(targetLeaf, { focus: true });
     }
 
     private syncModeToggleUi(): void {

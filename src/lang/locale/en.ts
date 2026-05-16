@@ -29,6 +29,7 @@ export default {
     "FLOATING_NOTE_BIND": "Dock note window to search panel",
     "FLOATING_NOTE_VISIBILITY_PIN": "Pin preview visibility (always show while panel is open)",
     "FLOATING_NOTE_METADATA_TOGGLE": "Show or hide Properties (metadata) in this preview",
+    "FLOATING_NOTE_OPEN_IN_TAB": "Open in workspace tab",
     "CLOSE_PANEL": "Close panel",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "Failed to open plugin settings",
     "OPEN_FLOATING_SEARCH_PANEL": "Open floating search panel",

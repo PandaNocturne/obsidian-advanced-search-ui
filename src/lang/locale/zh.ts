@@ -29,6 +29,7 @@ export default {
     "FLOATING_NOTE_BIND": "绑定到搜索面板",
     "FLOATING_NOTE_VISIBILITY_PIN": "固定预览显示（打开面板时常显）",
     "FLOATING_NOTE_METADATA_TOGGLE": "显示或隐藏本预览中的属性（Properties / metadata）",
+    "FLOATING_NOTE_OPEN_IN_TAB": "在主工作区标签页打开",
     "CLOSE_PANEL": "关闭面板",
     "FAILED_TO_OPEN_PLUGIN_SETTINGS": "打开插件设置失败",
     "OPEN_FLOATING_SEARCH_PANEL": "打开悬浮搜索面板",
