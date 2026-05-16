@@ -21,6 +21,21 @@
 - **悬浮检索面板**：支持独立悬浮使用高级检索面板，在不同工作区布局下也能快速调用。
 - **图谱联动增强**：支持将检索条件带入图谱视图，并可导入颜色组配置，便于按颜色分组观察筛选结果。
 
+## 隐私与数据处理
+
+插件在 vault 内**完全本地运行**，不开启遥测。
+
+| 能力 | 说明 |
+| --- | --- |
+| **剪贴板** | **复制**（整页查询或分组菜单）会向 `navigator.clipboard` **写入**。分组 **粘贴** 会**读取**剪贴板。均由你手动触发；粘贴路径可能读到在 Obsidian 外复制的内容。 |
+| **文库文件枚举** | 检索行旁的快捷选择在解析 **Markdown 名称**、**已加载文件** 及 **元数据缓存中的标签** 时会访问 Obsidian 提供的路径信息，不向外部上传。 |
+
+以上均服务于 UI 联想与导入/导出查询，不包含网络请求。
+
+## 可验证的来源（Release）
+
+在向仓库推送 **semver 形如 `MAJOR.MINOR.PATCH`** 的标签时，会运行 **Release assets — build and attest**：执行 `npm ci` / `npm run build`，并对 `main.js`、`styles.css` 生成 [GitHub 工件来源证明（attestation）](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)。发布 Release 时请尽量上传 **同一次 CI 构建产物**，便于与二进制摘要对齐（可用 `gh attestation verify …`）。工作流也可在 Actions 页面通过 **workflow_dispatch** 手动运行。
+
 ## 如何使用
 
 1. 启动 Advanced Search UI 插件。

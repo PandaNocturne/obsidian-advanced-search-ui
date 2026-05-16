@@ -31,6 +31,8 @@
 
   .search-section {
     margin-bottom: 8px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   button {
@@ -38,7 +40,7 @@
     border-radius: 4px;
     background-color: var(--interactive-normal);
     color: var(--text-normal);
-    box-shadow: none !important;
+    box-shadow: none;
     transition: all 0.15s ease;
   }
 
@@ -65,8 +67,8 @@
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
-    box-shadow: none !important;
-    outline: none !important;
+    box-shadow: none;
+    outline: none;
     transition: all 0.15s ease;
 
     option {
@@ -92,8 +94,15 @@
   }
 }
 
-.asui-search-form-container .search-section {
-  // max-height: 40vh;
-  overflow-x: hidden;
-  overflow-y: auto;
+/* Scoped hides for Advanced Search UI (avoid a global `.is-hidden` affecting the rest of the app). */
+.asui-search-form-container.is-hidden {
+  display: none;
+}
+
+.asui-search-form-container .asui-search-group-header.is-hidden {
+  display: none;
+}
+
+.asui-search-form-container .navigation-buttons button.is-hidden {
+  display: none;
 }

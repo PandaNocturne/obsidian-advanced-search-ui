@@ -22,6 +22,21 @@ This plugin is implemented entirely on top of Obsidian's official query syntax. 
 - **Floating search panel**: Use the advanced search panel as a standalone floating panel for faster access in different workspace layouts.
 - **Enhanced graph integration**: Send search conditions into Graph view and import color group configurations to inspect filtered results by color grouping.
 
+## Privacy / data handling
+
+This plugin runs **100% offline** in your vault except for what Obsidian exposes to plugins.
+
+| Practice | Detail |
+| --- | --- |
+| **Clipboard** | **Copy** (whole query / group actions) writes text to `navigator.clipboard`. **Paste** (group paste) reads from the clipboard. Only invoked when you use those controls. Paste may read content that was copied from outside Obsidian. |
+| **Vault file enumeration** | The quick pickers next to criteria can resolve **Markdown note names**, **loaded files**, and **tags via the metadata cache**. That accesses file paths/names Obsidian exposes to the vault (not uploads). |
+
+Both follow from core features and are scoped to enabling search UI autocomplete and copy/paste; there is **no telemetry** and **no outbound network**.
+
+## Verifiable release builds
+
+When someone pushes an Obsidian semver tag (`MAJOR.MINOR.PATCH`), the workflow **Release assets — build and attest** runs `npm ci` / `npm run build`, then creates [GitHub artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds) for `main.js` and `styles.css`. Prefer attaching binaries **from that same CI run** when publishing Releases so reviewers can correlate digests (`gh attestation verify …`). You may also invoke the workflow manually via **workflow_dispatch**.
+
 ## How to use
 
 1. Enable the Advanced Search UI plugin.
