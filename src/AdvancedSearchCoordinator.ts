@@ -166,7 +166,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         await this.loadSettings();
 
         if (this.settings.autoScaleUI) {
-            document.body.classList.add('advanced-search-auto-scale');
+            activeDocument.body.classList.add('advanced-search-auto-scale');
         }
 
         this.pluginHost.app.workspace.onLayoutReady(() => this.injectSearchUI());
@@ -195,7 +195,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         } else {
             this.pluginHost.app.workspace.onLayoutReady(() => seedActiveLeafCache());
         }
-        this.pluginHost.registerDomEvent(document, 'pointerdown', this.onDocumentPointerDownForPreviewEngagement, true);
+        this.pluginHost.registerDomEvent(activeDocument, 'pointerdown', this.onDocumentPointerDownForPreviewEngagement, true);
     }
 
     /** Commands, ribbon, and the settings tab — entry points intended to be invoked from root `main.ts`. */
@@ -212,7 +212,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     public updateInterval() {
         if (this.settings.adaptToFloatSearch) {
             if (!this.injectionInterval) {
-                this.injectionInterval = window.setInterval(() => this.injectSearchUI(), 500);
+                this.injectionInterval = activeWindow.setInterval(() => this.injectSearchUI(), 500);
                 this.pluginHost.registerInterval(this.injectionInterval);
             }
 
@@ -222,7 +222,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
                     for (const mutation of mutations) {
                         if (mutation.addedNodes.length > 0) {
                             for (const node of Array.from(mutation.addedNodes)) {
-                                if (!(node instanceof HTMLElement)) continue;
+                                if (!node.instanceOf(HTMLElement)) continue;
                                 if (node.classList.contains('asui-search-form-container') || node.classList.contains('advanced-search-view-switch')) continue;
                                 if (
                                     node.classList.contains('modal-container') ||
@@ -241,11 +241,11 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
                     }
                     if (shouldInject) this.injectSearchUI();
                 });
-                this.observer.observe(document.body, { childList: true, subtree: true });
+                this.observer.observe(activeDocument.body, { childList: true, subtree: true });
             }
         } else {
             if (this.injectionInterval) {
-                window.clearInterval(this.injectionInterval);
+                activeWindow.clearInterval(this.injectionInterval);
                 this.injectionInterval = null;
             }
             if (this.observer) {
@@ -318,11 +318,11 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     }
 
     dispose(): void {
-        document.body.classList.remove('advanced-search-auto-scale');
+        activeDocument.body.classList.remove('advanced-search-auto-scale');
         this.observer?.disconnect();
         this.observer = null;
         if (this.injectionInterval) {
-            window.clearInterval(this.injectionInterval);
+            activeWindow.clearInterval(this.injectionInterval);
             this.injectionInterval = null;
         }
 
@@ -336,7 +336,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.pluginHost.app.workspace.getLeavesOfType('search').forEach(leaf => searchContainers.add(leaf.view.containerEl));
 
         if (this.settings.adaptToFloatSearch) {
-            document.querySelectorAll('.search-params').forEach(searchParams => {
+            activeDocument.querySelectorAll('.search-params').forEach(searchParams => {
                 let parent = searchParams.parentElement;
                 while (parent && !parent.querySelector('.search-input-container') && !parent.classList.contains('modal')) {
                     parent = parent.parentElement;
@@ -347,7 +347,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
         searchContainers.forEach(searchContainer => {
             const searchParams = searchContainer.querySelector('.search-params');
-            if (!(searchParams instanceof HTMLElement)) return;
+            if (!searchParams?.instanceOf(HTMLElement)) return;
 
             this.ensureSearchFormMounted({
                 host: searchContainer,
@@ -358,9 +358,9 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
             });
 
             const searchRow = searchContainer.querySelector('.search-row');
-            if (searchRow instanceof HTMLElement && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
+            if (searchRow?.instanceOf(HTMLElement) && !searchRow.querySelector('.advanced-search-ui-toggle-wrapper')) {
                 const switchWrapper = searchRow.createDiv({ cls: 'advanced-search-ui-toggle-wrapper' });
-                const toggleBtn = switchWrapper.createEl('div', {
+                const toggleBtn = switchWrapper.createDiv({
                     cls: 'clickable-icon advanced-search-toggle',
                     attr: { 'aria-label': t('TOGGLE_ADVANCED_SEARCH') }
                 });
@@ -372,7 +372,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
                     e.preventDefault();
                     e.stopPropagation();
                     const queryControlsContainer = searchContainer.querySelector('.asui-search-form-container');
-                    if (!(queryControlsContainer instanceof HTMLElement)) return;
+                    if (!queryControlsContainer?.instanceOf(HTMLElement)) return;
                     const isHidden = queryControlsContainer.classList.toggle('is-hidden');
                     toggleBtn.classList.toggle('is-active', !isHidden);
                 };
@@ -394,7 +394,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         allowGraph: boolean;
     }): HTMLElement {
         const existing = options.host.querySelector(':scope > .asui-search-form-container');
-        if (existing instanceof HTMLElement) {
+        if (existing?.instanceOf(HTMLElement)) {
             return existing;
         }
 
@@ -426,7 +426,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.containerGroups.set(queryControlsContainer, []);
         this.handleKeyboardEvents(queryControlsContainer);
 
-        if (options.insertAfter instanceof HTMLElement) {
+        if (options.insertAfter?.instanceOf(HTMLElement)) {
             options.insertAfter.insertAdjacentElement('afterend', queryControlsContainer);
         } else {
             options.mountParent.prepend(queryControlsContainer);
@@ -543,7 +543,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
         this.requestFloatingSearchLayout();
 
-        window.setTimeout(() => {
+        activeWindow.setTimeout(() => {
             this.injectSearchUI();
             this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
             this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
@@ -562,7 +562,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         const leaf = this.floatingSearchLeaf;
         if (!leaf) return;
 
-        window.requestAnimationFrame(() => {
+        activeWindow.requestAnimationFrame(() => {
             leaf.onResize?.();
             leaf.view?.onResize?.();
             this.syncFloatingNoteWindowPosition();
@@ -616,8 +616,9 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
     private markFloatingSearchResultInteraction = (event: Event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) return;
-        if (!target.closest('.search-result, .search-result-file-match, .search-result-container, .tree-item-self, .search-result-file-title')) {
+        if (!(target as Node).instanceOf(HTMLElement)) return;
+        const el = target as HTMLElement;
+        if (!el.closest('.search-result, .search-result-file-match, .search-result-container, .tree-item-self, .search-result-file-title')) {
             return;
         }
         this.floatingSearchResultOpenContextUntil = Date.now() + 1500;
@@ -707,7 +708,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         const leftDocked = source.left - current.width - gap;
         const fitsLeft = leftDocked >= margin;
         const rightDocked = source.left + source.width + gap;
-        const fitsRight = rightDocked + current.width <= window.innerWidth - margin;
+        const fitsRight = rightDocked + current.width <= activeWindow.innerWidth - margin;
         const preferLeft = this.settings.floatingSearchNotePreviewBindSide === 'left';
         let left: number;
         if (preferLeft) {
@@ -716,16 +717,16 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
             } else if (fitsRight) {
                 left = rightDocked;
             } else {
-                left = Math.max(margin, Math.min(leftDocked, window.innerWidth - current.width - margin));
+                left = Math.max(margin, Math.min(leftDocked, activeWindow.innerWidth - current.width - margin));
             }
         } else if (fitsRight) {
             left = rightDocked;
         } else if (fitsLeft) {
             left = leftDocked;
         } else {
-            left = Math.max(margin, Math.min(leftDocked, window.innerWidth - current.width - margin));
+            left = Math.max(margin, Math.min(leftDocked, activeWindow.innerWidth - current.width - margin));
         }
-        const top = Math.max(0, Math.min(source.top, window.innerHeight - current.height));
+        const top = Math.max(0, Math.min(source.top, activeWindow.innerHeight - current.height));
 
         this.floatingNotePopover.setBounds({
             left,
@@ -771,7 +772,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
             return tabId === communityPluginSettingTabId || tabId === pluginSettingTabId || title === pluginName;
         });
 
-        if (matchedTab instanceof HTMLElement) {
+        if (matchedTab?.instanceOf(HTMLElement)) {
             matchedTab.click();
             return;
         }
@@ -792,15 +793,15 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     private handleKeyboardEvents(container: HTMLElement) {
         const handleKeydown = (e: KeyboardEvent) => {
             e.stopPropagation();
-            const active = document.activeElement;
-            if (!(active instanceof HTMLElement)) return;
+            const active = activeDocument.activeElement;
+            if (!active?.instanceOf(HTMLElement)) return;
 
             if (e.key === 'Tab' && active.matches('input.asui-search-input')) {
                 e.preventDefault();
                 const focusableInputs = Array.from(container.querySelectorAll('input.asui-search-input')).filter(
                     (el): el is HTMLInputElement => {
-                        if (!(el instanceof HTMLInputElement)) return false;
-                        const style = window.getComputedStyle(el);
+                        if (!el.instanceOf(HTMLInputElement)) return false;
+                        const style = activeWindow.getComputedStyle(el);
                         return style.display !== 'none' && style.visibility !== 'hidden' && !el.disabled;
                     }
                 );
@@ -848,7 +849,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
     private findGroupByRow(currentRow: SearchRow): SearchGroup | null {
         const groupEl = currentRow.container.closest('.asui-search-group');
-        if (!(groupEl instanceof HTMLElement)) return null;
+        if (!groupEl?.instanceOf(HTMLElement)) return null;
         for (const groups of this.containerGroups.values()) {
             const group = groups.find(item => item.container === groupEl);
             if (group) return group;
@@ -1195,7 +1196,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
                     }
 
                     const section = targetContainer.querySelector('.search-section');
-                    if (section instanceof HTMLElement) {
+                    if (section?.instanceOf(HTMLElement)) {
                         const referenceGroup = targetGroups[insertIndex + 1];
                         if (referenceGroup) {
                             section.insertBefore(draggingGroup.container, referenceGroup.container);
@@ -1226,7 +1227,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
             const nextGroups: SearchGroup[] = [];
             const section = container.querySelector('.search-section');
-            if (!(section instanceof HTMLElement)) return;
+            if (!section?.instanceOf(HTMLElement)) return;
 
             for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
                 const group = new SearchGroup(this.pluginHost.app, section, this);

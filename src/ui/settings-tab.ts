@@ -69,9 +69,9 @@ export class AdvancedSearchSettingTab extends PluginSettingTab {
                     this.plugin.settings.autoScaleUI = value;
                     await this.plugin.saveSettings();
                     if (value) {
-                        document.body.classList.add('advanced-search-auto-scale');
+                        activeDocument.body.classList.add('advanced-search-auto-scale');
                     } else {
-                        document.body.classList.remove('advanced-search-auto-scale');
+                        activeDocument.body.classList.remove('advanced-search-auto-scale');
                     }
                 }));
 

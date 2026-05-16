@@ -66,17 +66,17 @@ export class FloatingSearchPanel {
         this.onCollapsedChange = options.onCollapsedChange;
         this.onCompactChange = options.onCompactChange;
         this.onPictureInPictureToggle = options.onPictureInPictureToggle;
-        const mountEl = options.mountEl ?? document.body;
+        const mountEl = options.mountEl ?? activeDocument.body;
         this.rootEl = mountEl.createDiv({ cls: 'asui-floating-panel-root' });
         this.windowEl = this.rootEl.createDiv({ cls: 'asui-floating-panel-window' });
 
-        const defaultWidth = Math.min(720, window.innerWidth - 48);
-        const defaultHeight = Math.min(560, window.innerHeight - 48);
+        const defaultWidth = Math.min(720, activeWindow.innerWidth - 48);
+        const defaultHeight = Math.min(560, activeWindow.innerHeight - 48);
         const bounds = options.bounds;
-        const initialWidth = bounds ? Math.min(bounds.width, window.innerWidth - VIEWPORT_MARGIN) : defaultWidth;
-        const initialHeight = bounds ? Math.min(bounds.height, window.innerHeight - VIEWPORT_MARGIN) : defaultHeight;
-        const initialLeft = bounds ? bounds.left : Math.max(0, Math.round((window.innerWidth - initialWidth) / 2));
-        const initialTop = bounds ? bounds.top : Math.max(0, Math.round((window.innerHeight - initialHeight) / 2));
+        const initialWidth = bounds ? Math.min(bounds.width, activeWindow.innerWidth - VIEWPORT_MARGIN) : defaultWidth;
+        const initialHeight = bounds ? Math.min(bounds.height, activeWindow.innerHeight - VIEWPORT_MARGIN) : defaultHeight;
+        const initialLeft = bounds ? bounds.left : Math.max(0, Math.round((activeWindow.innerWidth - initialWidth) / 2));
+        const initialTop = bounds ? bounds.top : Math.max(0, Math.round((activeWindow.innerHeight - initialHeight) / 2));
 
         this.applyBounds(
             {
@@ -164,9 +164,9 @@ export class FloatingSearchPanel {
         this.createResizeHandles();
 
         headerEl.addEventListener('pointerdown', this.onPointerDown);
-        window.addEventListener('pointermove', this.onPointerMove);
-        window.addEventListener('pointerup', this.onPointerUp);
-        window.addEventListener('pointercancel', this.onPointerUp);
+        activeWindow.addEventListener('pointermove', this.onPointerMove);
+        activeWindow.addEventListener('pointerup', this.onPointerUp);
+        activeWindow.addEventListener('pointercancel', this.onPointerUp);
         this.resizeObserver = new ResizeObserver(() => this.emitResize());
         this.resizeObserver.observe(this.windowEl);
     }
@@ -191,9 +191,9 @@ export class FloatingSearchPanel {
     public destroy() {
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
-        window.removeEventListener('pointermove', this.onPointerMove);
-        window.removeEventListener('pointerup', this.onPointerUp);
-        window.removeEventListener('pointercancel', this.onPointerUp);
+        activeWindow.removeEventListener('pointermove', this.onPointerMove);
+        activeWindow.removeEventListener('pointerup', this.onPointerUp);
+        activeWindow.removeEventListener('pointercancel', this.onPointerUp);
         this.rootEl.remove();
     }
 
@@ -258,10 +258,10 @@ export class FloatingSearchPanel {
     }
 
     private applyBounds(bounds: FloatingPanelBounds, emit = true) {
-        const width = Math.max(MIN_PANEL_WIDTH, Math.min(bounds.width, window.innerWidth - VIEWPORT_MARGIN));
-        const height = Math.max(MIN_PANEL_HEIGHT, Math.min(bounds.height, window.innerHeight - VIEWPORT_MARGIN));
-        const maxLeft = Math.max(0, window.innerWidth - width);
-        const maxTop = Math.max(0, window.innerHeight - height);
+        const width = Math.max(MIN_PANEL_WIDTH, Math.min(bounds.width, activeWindow.innerWidth - VIEWPORT_MARGIN));
+        const height = Math.max(MIN_PANEL_HEIGHT, Math.min(bounds.height, activeWindow.innerHeight - VIEWPORT_MARGIN));
+        const maxLeft = Math.max(0, activeWindow.innerWidth - width);
+        const maxTop = Math.max(0, activeWindow.innerHeight - height);
         const left = Math.min(maxLeft, Math.max(0, bounds.left));
         const top = Math.min(maxTop, Math.max(0, bounds.top));
 
@@ -280,8 +280,8 @@ export class FloatingSearchPanel {
 
         const deltaX = event.clientX - this.resizeStartX;
         const deltaY = event.clientY - this.resizeStartY;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
+        const viewportWidth = activeWindow.innerWidth;
+        const viewportHeight = activeWindow.innerHeight;
 
         let left = this.resizeStartBounds.left;
         let top = this.resizeStartBounds.top;
@@ -415,8 +415,8 @@ export class FloatingSearchPanel {
 
         if (!this.isDragging || this.dragPointerId !== event.pointerId) return;
 
-        const maxLeft = Math.max(0, window.innerWidth - this.windowEl.offsetWidth);
-        const maxTop = Math.max(0, window.innerHeight - this.windowEl.offsetHeight);
+        const maxLeft = Math.max(0, activeWindow.innerWidth - this.windowEl.offsetWidth);
+        const maxTop = Math.max(0, activeWindow.innerHeight - this.windowEl.offsetHeight);
         const nextLeft = Math.min(maxLeft, Math.max(0, event.clientX - this.dragOffsetX));
         const nextTop = Math.min(maxTop, Math.max(0, event.clientY - this.dragOffsetY));
 

@@ -66,11 +66,11 @@ export class SearchRow {
 
         this.caseLabel = controls.createEl('label', { cls: 'asui-toggle' });
         this.caseInput = this.caseLabel.createEl('input', { type: 'radio' });
-        this.caseLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-case-sensitive' });
+        this.caseLabel.createSpan({ cls: 'asui-toggle-label asui-icon-case-sensitive' });
 
         this.regexLabel = controls.createEl('label', { cls: 'asui-toggle' });
         this.regexInput = this.regexLabel.createEl('input', { type: 'radio' });
-        this.regexLabel.createEl('span', { cls: 'asui-toggle-label asui-icon-regex' });
+        this.regexLabel.createSpan({ cls: 'asui-toggle-label asui-icon-regex' });
 
         this.container.createEl('button', { cls: 'asui-remove-row', attr: { 'aria-label': t('REMOVE_CRITERIA'), type: 'button' } });
         this.container.createEl('button', { cls: 'asui-add-row', attr: { 'aria-label': t('ADD_CRITERIA'), type: 'button' } });
