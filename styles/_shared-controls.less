@@ -35,8 +35,13 @@
   box-shadow: none;
 }
 
-.asui-icon-button[data-select-option=""] {
+/* Higher specificity than the rule above so empty data-select-option does not reserve space. */
+.asui-search-form-container .asui-input-group .asui-icon-button[data-select-option=""] {
   display: none;
+}
+
+.asui-search-form-container .asui-input-group:has(.asui-icon-button[data-select-option=""]) > input.asui-search-input {
+  border-radius: 4px;
 }
 
 .asui-controls {
