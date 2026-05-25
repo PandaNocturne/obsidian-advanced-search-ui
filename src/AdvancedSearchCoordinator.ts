@@ -531,7 +531,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         const container = this.floatingSearchLeaf?.view?.containerEl;
         if (!container) return;
 
-        const searchInput = container.querySelector('.search-input-container > input') as HTMLInputElement | null;
+        const searchInput = container.querySelector<HTMLInputElement>('.search-input-container > input');
         if (!searchInput) return;
 
         searchInput.value = query;

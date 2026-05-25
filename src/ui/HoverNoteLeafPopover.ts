@@ -181,7 +181,7 @@ export class HoverNoteLeafPopover {
             attr: { type: 'button', 'aria-label': t('FLOATING_NOTE_OPEN_IN_TAB') }
         });
         setIcon(this.openInTabBtn, 'external-link');
-        this.openInTabBtn.style.display = 'none';
+        this.openInTabBtn.addClass('is-hidden');
         this.openInTabBtn.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
@@ -394,7 +394,7 @@ export class HoverNoteLeafPopover {
     private syncOpenInTabUi(): void {
         const view = this.leaf?.view;
         const file = view instanceof FileView ? view.file : null;
-        this.openInTabBtn.style.display = file ? '' : 'none';
+        this.openInTabBtn.classList.toggle('is-hidden', !file);
     }
 
     /** Open the preview’s current file in a normal workspace tab (sidebar/root tabs). */
