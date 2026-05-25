@@ -26,6 +26,7 @@ import { SearchExecutionService } from './services/SearchExecutionService';
 import { SearchImportService } from './services/SearchImportService';
 import { GraphColorGroupService } from './services/GraphColorGroupService';
 import { QueryParser } from './utils/QueryParser';
+import { getActiveSelectionText } from './utils/get-active-selection';
 
 export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     public settings!: AdvancedSearchSettings;
@@ -472,10 +473,15 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     }
 
     private openFloatingSearchPanel() {
+        const initialQuery = getActiveSelectionText(this.pluginHost.app);
+
         if (this.floatingSearchPanel) {
             this.floatingSearchPanel.focus();
             this.floatingSearchSurfaceEngaged = true;
             this.updateFloatingNotePreviewVisibility();
+            if (initialQuery) {
+                this.applyQueryToFloatingSearchInput(initialQuery);
+            }
             return;
         }
 
@@ -500,7 +506,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.floatingNoteDockedToPanel = this.settings.floatingSearchNotePreviewDefaultBind;
         this.floatingNotePipMode = this.settings.floatingSearchNotePreviewDefaultOn;
         panel.setPictureInPictureActive(this.floatingNotePipMode, false);
-        void this.mountFloatingSearchPanelContent(panel);
+        void this.mountFloatingSearchPanelContent(panel, initialQuery || undefined);
         panel.setCompact(this.settings.floatingPanelDefaultCompact);
         panel.focus();
         this.floatingSearchSurfaceEngaged = true;
@@ -521,7 +527,19 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         return this.pluginHost.app.workspace.getLeaf(false);
     }
 
-    private async mountFloatingSearchPanelContent(panel: FloatingSearchPanel) {
+    private applyQueryToFloatingSearchInput(query: string) {
+        const container = this.floatingSearchLeaf?.view?.containerEl;
+        if (!container) return;
+
+        const searchInput = container.querySelector('.search-input-container > input') as HTMLInputElement | null;
+        if (!searchInput) return;
+
+        searchInput.value = query;
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        searchInput.focus();
+    }
+
+    private async mountFloatingSearchPanelContent(panel: FloatingSearchPanel, initialQuery?: string) {
         panel.contentEl.empty();
         const host = panel.contentEl.createDiv({ cls: 'asui-floating-panel-host' });
         this.floatingSearchLeafHost = host;
@@ -534,6 +552,10 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
 
         this.floatingSearchLeaf = leaf;
         await leaf.setViewState({ type: 'search', active: true });
+
+        if (initialQuery) {
+            this.applyQueryToFloatingSearchInput(initialQuery);
+        }
 
         const container = leaf.view.containerEl;
         host.appendChild(container);
@@ -548,6 +570,9 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
             this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
             this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
             this.toggleFloatingSearchCollapsed(panel.windowEl.classList.contains('is-collapsed'));
+            if (initialQuery) {
+                this.applyQueryToFloatingSearchInput(initialQuery);
+            }
             this.requestFloatingSearchLayout();
         }, 0);
     }
