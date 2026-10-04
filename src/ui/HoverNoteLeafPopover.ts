@@ -73,6 +73,7 @@ export class HoverNoteLeafPopover {
     private readonly rootSplit: WorkspaceSplit;
     private readonly defaultMarkdownMode: 'preview' | 'source';
     private readonly plugin: Plugin;
+    private readonly onClose: () => void;
     private readonly onBoundsChange: (bounds: FloatingPanelBounds) => void;
     private readonly onResize?: () => void;
     private leaf: WorkspaceLeaf | null = null;
@@ -96,6 +97,7 @@ export class HoverNoteLeafPopover {
     constructor(options: HoverNoteLeafPopoverOptions) {
         this.plugin = options.plugin;
         this.defaultMarkdownMode = options.defaultMarkdownMode === 'source' ? 'source' : 'preview';
+        this.onClose = options.onClose;
         this.onBoundsChange = options.onBoundsChange;
         this.onResize = options.onResize;
 
@@ -196,7 +198,7 @@ export class HoverNoteLeafPopover {
         closeBtn.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
-            options.onClose();
+            this.onClose();
         });
 
         const SplitCtor = WorkspaceSplit as unknown as WorkspaceSplitCtor;
@@ -422,6 +424,7 @@ export class HoverNoteLeafPopover {
 
         await targetLeaf.loadIfDeferred?.();
         ws.setActiveLeaf(targetLeaf, { focus: true });
+        this.onClose();
     }
 
     private syncModeToggleUi(): void {
