@@ -5,14 +5,13 @@ import type { AdvancedSearchSettings } from './src/settings';
 
 export default class AdvancedSearchPlugin extends Plugin implements AdvancedSearchPluginFacade {
     private core!: AdvancedSearchCoordinator;
-
-    public get settings(): AdvancedSearchSettings {
-        return this.core.settings;
-    }
+    /** Concrete settings object shared with {@link AdvancedSearchCoordinator}. */
+    settings!: AdvancedSearchSettings;
 
     async onload(): Promise<void> {
         this.core = new AdvancedSearchCoordinator(this);
         await this.core.initWorkspaceAndServices();
+        this.settings = this.core.settings;
         this.core.registerCommandsAndSettingsUi();
     }
 
@@ -22,6 +21,7 @@ export default class AdvancedSearchPlugin extends Plugin implements AdvancedSear
 
     async saveSettings(): Promise<void> {
         await this.core.saveSettings();
+        this.settings = this.core.settings;
     }
 
     refreshSearchUI(): void {

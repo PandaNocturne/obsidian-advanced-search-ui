@@ -10,10 +10,12 @@ export default tseslint.config(
 				...globals.browser,
 				activeWindow: 'readonly',
 				activeDocument: 'readonly',
+				createFragment: 'readonly',
 			},
 			parserOptions: {
 				projectService: {
 					allowDefaultProject: [
+						'eslint.config.mts',
 						'eslint.config.js',
 						'manifest.json'
 					]
@@ -31,6 +33,7 @@ export default tseslint.config(
 		".tmp",
 		"esbuild.config.mjs",
 		"eslint.config.js",
+		"eslint.config.mts",
 		"version-bump.mjs",
 		"versions.json",
 		"main.js",

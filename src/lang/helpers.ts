@@ -43,8 +43,6 @@ function getCurrentLocale(): string {
     globalApp?.language,
     globalApp?.loadLocalStorage?.("language"),
     globalApp?.loadLocalStorage?.("locale"),
-    activeWindow.localStorage?.getItem("language"),
-    activeWindow.localStorage?.getItem("locale"),
     activeWindow.navigator?.language,
   ];
 

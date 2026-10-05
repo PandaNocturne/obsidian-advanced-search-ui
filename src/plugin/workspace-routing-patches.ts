@@ -65,11 +65,11 @@ export function installWorkspaceSearchRoutingPatches(host: WorkspaceSearchRoutin
                 const floatingLeaf = getFloatingLeaf();
                 const sidebarLeaf = getSidebarLeaf();
                 if (!floatingLeaf || !sidebarLeaf || leaf !== sidebarLeaf) {
-                    return oldSetActiveLeaf.call(this, leaf, ...(args as [WorkspaceSetActiveLeafParams?] | [boolean, boolean]));
+                    Reflect.apply(oldSetActiveLeaf, this, [leaf, ...args]);
+                    return;
                 }
 
                 activateFloatingLeafActive();
-                return;
             }
 
             return patchedSetActiveLeaf;

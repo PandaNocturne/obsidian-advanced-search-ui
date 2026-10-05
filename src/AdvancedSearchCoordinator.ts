@@ -213,7 +213,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
     public updateInterval() {
         if (this.settings.adaptToFloatSearch) {
             if (!this.injectionInterval) {
-                this.injectionInterval = activeWindow.setInterval(() => this.injectSearchUI(), 500);
+                this.injectionInterval = window.setInterval(() => this.injectSearchUI(), 500);
                 this.pluginHost.registerInterval(this.injectionInterval);
             }
 
@@ -246,7 +246,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
             }
         } else {
             if (this.injectionInterval) {
-                activeWindow.clearInterval(this.injectionInterval);
+                window.clearInterval(this.injectionInterval);
                 this.injectionInterval = null;
             }
             if (this.observer) {
@@ -323,7 +323,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.observer?.disconnect();
         this.observer = null;
         if (this.injectionInterval) {
-            activeWindow.clearInterval(this.injectionInterval);
+            window.clearInterval(this.injectionInterval);
             this.injectionInterval = null;
         }
 
@@ -565,7 +565,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
         this.requestFloatingSearchLayout();
 
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
             this.injectSearchUI();
             this.floatingSearchContainer = container.querySelector('.asui-search-form-container');
             this.toggleFloatingSearchCompact(panel.windowEl.classList.contains('is-compact'));
@@ -587,7 +587,7 @@ export class AdvancedSearchCoordinator implements SearchGroupDelegate {
         const leaf = this.floatingSearchLeaf;
         if (!leaf) return;
 
-        activeWindow.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             leaf.onResize?.();
             leaf.view?.onResize?.();
             this.syncFloatingNoteWindowPosition();

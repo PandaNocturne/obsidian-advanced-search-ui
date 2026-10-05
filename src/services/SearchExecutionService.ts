@@ -66,7 +66,7 @@ export class SearchExecutionService {
             }
         }
 
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
             const resolvedLeaf = targetLeaf || this.getPreferredGraphLeaf();
             if (!resolvedLeaf) return;
 

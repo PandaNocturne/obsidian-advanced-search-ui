@@ -1,9 +1,52 @@
 import { App, Notice } from 'obsidian';
 import { SearchGroup, SearchGroupData } from '../components/SearchGroup';
 import { SearchGroupDelegate } from '../components/SearchGroup';
+import { SearchRow } from '../components/SearchRow';
 import { t } from '../lang/helpers';
 import { AdvancedSearchSettings } from '../settings';
-import { QueryParser } from '../utils/QueryParser';
+import { ParsedRow, QueryParser } from '../utils/QueryParser';
+
+type SearchOperator = SearchGroupData['operator'];
+type SearchRowData = SearchGroupData['rows'][number];
+
+type RowDedupePayload = {
+    groupOperator: string;
+    operator: string;
+    type: string;
+    value: string;
+    caseSensitive: boolean;
+    regex: boolean;
+};
+
+function asSearchOperator(value: string): SearchOperator {
+    return value === 'OR' || value === 'NOT' ? value : 'AND';
+}
+
+function toSearchRowData(row: ParsedRow): SearchRowData {
+    return {
+        operator: row.operator,
+        type: row.type,
+        value: row.value,
+        caseSensitive: row.caseSensitive,
+        regex: row.isRegex
+    };
+}
+
+function rowDedupePayload(group: SearchGroup, row: SearchRow): RowDedupePayload {
+    return {
+        groupOperator: group.operatorSelect.value,
+        operator: row.operatorSelect.value,
+        type: row.typeSelect.value,
+        value: row.getValue(),
+        caseSensitive: row.caseInput.checked,
+        regex: row.regexInput.checked
+    };
+}
+
+function findSearchInput(root: ParentNode): HTMLInputElement | null {
+    const el = root.querySelector('.search-input-container input, .search-input-container > input, input[type="search"]');
+    return el instanceof HTMLInputElement ? el : null;
+}
 
 export class SearchImportService {
     constructor(
@@ -22,14 +65,14 @@ export class SearchImportService {
         let searchInput: HTMLInputElement | null = null;
         const leaf = this.app.workspace.getLeavesOfType('search').find(item => item.view.containerEl.contains(uiContainer));
         if (leaf) {
-            searchInput = leaf.view.containerEl.querySelector('.search-input-container > input') as HTMLInputElement;
+            searchInput = findSearchInput(leaf.view.containerEl);
         }
 
         if (!searchInput) {
             const container = uiContainer.closest('.workspace-leaf-content, .view-content, .search-view, .float-search-container, .modal-container');
-            if (container instanceof HTMLElement) searchInput = container.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
+            if (container instanceof HTMLElement) searchInput = findSearchInput(container);
             if (!searchInput && uiContainer.parentElement) {
-                searchInput = uiContainer.parentElement.querySelector('.search-input-container input, input[type="search"]') as HTMLInputElement;
+                searchInput = findSearchInput(uiContainer.parentElement);
             }
         }
 
@@ -56,14 +99,11 @@ export class SearchImportService {
         if (!settings.enableExperimentalGrouping) {
             const groups = shouldStartFresh ? [] : [...existingGroups];
             const dedupeKeys = new Set(
-                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
-                    groupOperator: group.operatorSelect.value,
-                    operator: row.operatorSelect.value,
-                    type: row.typeSelect.value,
-                    value: row.getValue(),
-                    caseSensitive: row.caseInput.checked,
-                    regex: row.regexInput.checked
-                })))
+                groups.flatMap(group =>
+                    group.rows
+                        .filter(row => !!row.getValue())
+                        .map(row => JSON.stringify(rowDedupePayload(group, row)))
+                )
             );
 
             if (shouldStartFresh) {
@@ -87,19 +127,13 @@ export class SearchImportService {
                     if (dedupeKeys.has(dedupeKey)) return false;
                     dedupeKeys.add(dedupeKey);
                     return true;
-                }).map(row => ({
-                    operator: row.operator,
-                    type: row.type,
-                    value: row.value,
-                    caseSensitive: row.caseSensitive,
-                    regex: row.isRegex
-                }));
+                }).map(toSearchRowData);
 
                 if (!uniqueRows.length) return;
 
                 const group = new SearchGroup(this.app, section, this.delegate);
                 this.updateGroupDragState(group);
-                group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
+                group.setData({ operator: groupData.operator, rows: uniqueRows });
                 groups.push(group);
             });
 
@@ -110,13 +144,15 @@ export class SearchImportService {
 
             this.setGroupsForContainer(uiContainer, groups);
 
-            const mergedRows: SearchGroupData['rows'] = groups.flatMap(group => group.rows.map(row => ({
-                operator: row.operatorSelect.value as 'AND' | 'OR' | 'NOT',
-                type: row.typeSelect.value,
-                value: row.getValue(),
-                caseSensitive: row.caseInput.checked,
-                regex: row.regexInput.checked
-            })));
+            const mergedRows: SearchGroupData['rows'] = groups.flatMap(group =>
+                group.rows.map(row => ({
+                    operator: asSearchOperator(row.operatorSelect.value),
+                    type: row.typeSelect.value,
+                    value: row.getValue(),
+                    caseSensitive: row.caseInput.checked,
+                    regex: row.regexInput.checked
+                }))
+            );
 
             this.clearSearchForm(uiContainer, 1, Math.max(mergedRows.length || 2, 2));
             this.getGroupsForContainer(uiContainer)[0]?.setData({
@@ -147,14 +183,11 @@ export class SearchImportService {
             }
 
             const dedupeKeys = new Set(
-                groups.flatMap(group => group.rows.filter(row => !!row.getValue()).map(row => JSON.stringify({
-                    groupOperator: group.operatorSelect.value,
-                    operator: row.operatorSelect.value,
-                    type: row.typeSelect.value,
-                    value: row.getValue(),
-                    caseSensitive: row.caseInput.checked,
-                    regex: row.regexInput.checked
-                })))
+                groups.flatMap(group =>
+                    group.rows
+                        .filter(row => !!row.getValue())
+                        .map(row => JSON.stringify(rowDedupePayload(group, row)))
+                )
             );
 
             parsedGroups.forEach(groupData => {
@@ -174,20 +207,14 @@ export class SearchImportService {
                     if (dedupeKeys.has(dedupeKey)) return false;
                     dedupeKeys.add(dedupeKey);
                     return true;
-                }).map(row => ({
-                    operator: row.operator,
-                    type: row.type,
-                    value: row.value,
-                    caseSensitive: row.caseSensitive,
-                    regex: row.isRegex
-                }));
+                }).map(toSearchRowData);
 
                 if (!uniqueRows.length) return;
 
                 if (isMultiGroupImport) {
                     const group = new SearchGroup(this.app, section, this.delegate);
                     this.updateGroupDragState(group);
-                    group.setData({ operator: groupData.operator, rows: uniqueRows as SearchGroupData['rows'] });
+                    group.setData({ operator: groupData.operator, rows: uniqueRows });
                     groups.push(group);
                 } else if (targetGroup) {
                     const meaningfulRows = targetGroup.rows.filter(row => !!row.getValue());

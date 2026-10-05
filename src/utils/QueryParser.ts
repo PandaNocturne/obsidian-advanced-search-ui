@@ -13,10 +13,17 @@ export interface ParsedGroup {
 
 export class QueryParser {
     static parse(query: string): ParsedRow[] {
-        return this.parseGroups(query).flatMap(group => group.rows.map((row, index) => ({
-            ...row,
-            operator: index === 0 ? group.operator : row.operator
-        })));
+        const groups = this.parseGroups(query);
+        const rows: ParsedRow[] = [];
+        for (const group of groups) {
+            group.rows.forEach((row, index) => {
+                rows.push({
+                    ...row,
+                    operator: index === 0 ? group.operator : row.operator
+                });
+            });
+        }
+        return rows;
     }
 
     static parseGroups(query: string): ParsedGroup[] {

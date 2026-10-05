@@ -532,12 +532,6 @@ export class HoverNoteLeafPopover {
         this.rootEl.style.left = `${left}px`;
         this.rootEl.style.top = `${top}px`;
 
-        const layer = getComputedStyle(document.documentElement).getPropertyValue('--layer-popover').trim();
-        this.rootEl.setCssProps({
-            position: 'fixed',
-            'z-index': layer || 'var(--layer-modal)'
-        });
-
         if (emit) {
             this.onBoundsChange(this.getBounds());
         }
